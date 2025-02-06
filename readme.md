@@ -15,7 +15,7 @@
 На данный момент `pyddd` не опубликован в PyPI. Вы можете установить его из исходного кода:
 
 ```bash
-pip install git+https://github.com/yourusername/pyddd.git
+pip install git+https://github.com/vmorugin/pyddd.git
 ```
 
 ## Быстрый старт
