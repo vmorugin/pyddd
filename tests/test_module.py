@@ -59,6 +59,33 @@ class TestModule:
         with pytest.raises(AttributeError):
             module.subscribe('domain.Test')(foo)
 
+    def test_can_handle_unregistered_event_must_false(self):
+        module = Module('test')
+        assert module.can_handle(TestEvent()) is False
+
+    def test_can_handle_unregistered_command_must_false(self):
+        module = Module('test')
+        assert module.can_handle(TestCommand()) is False
+
+    def test_can_handle_registered_command_must_true(self):
+        module = Module('test')
+
+        @module.register
+        def foo(cmd: TestCommand):
+            return True
+
+        assert module.can_handle(TestCommand()) is True
+
+    def test_can_handle_registered_event_must_true(self):
+        module = Module('test')
+
+        @module.subscribe('test.TestEvent')
+        @module.register
+        def foo(cmd: TestCommand):
+            return True
+
+        assert module.can_handle(TestEvent()) is True
+
     def test_register_twice_error(self):
         def foo(cmd: TestCommand):
             ...

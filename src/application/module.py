@@ -58,3 +58,6 @@ class Module:
         todo: Handler executor
         """
         return self._executor.process_event(event, self._event_handlers[event.topic], **kwargs)
+
+    def can_handle(self, message: IMessage) -> bool:
+        return message.topic in self._event_handlers | self._command_handlers

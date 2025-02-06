@@ -1,7 +1,10 @@
+import time
+import datetime as dt
 from unittest.mock import Mock
 
 from application import (
     SyncExecutor,
+    ThreadExecutor,
     CommandHandler,
     EventHandler,
 )
@@ -58,3 +61,89 @@ class TestSyncExecutor:
             ]
         )
         assert result == [1, 2]
+
+    def test_must_execute_events_with_errors(self):
+        def foo(cmd: TestCommand):
+            raise RuntimeError()
+
+        def bar(cmd: TestCommand):
+            return 2
+
+        executor = SyncExecutor()
+        result = executor.process_event(
+            event=TestEvent(),
+            handlers=[
+                EventHandler(CommandHandler(foo)),
+                EventHandler(CommandHandler(bar))
+            ]
+        )
+        assert isinstance(result[0], RuntimeError)
+        assert result[1] == 2
+
+class TestThreadExecutor:
+    def test_must_implement_interface(self):
+        executor = ThreadExecutor()
+        assert isinstance(executor, IExecutor)
+
+    def test_must_execute_command_sync(self):
+        def foo(cmd: TestCommand):
+            return True
+
+        executor = ThreadExecutor()
+        result = executor.process_command(command=TestCommand(), handler=CommandHandler(foo))
+        assert result is True
+
+    def test_must_execute_events_right_order(self):
+        def foo(cmd: TestCommand):
+            return 1
+
+        def bar(cmd: TestCommand):
+            return 2
+
+        executor = ThreadExecutor()
+        result = executor.process_event(
+            event=TestEvent(),
+            handlers=[
+                EventHandler(CommandHandler(foo)),
+                EventHandler(CommandHandler(bar))
+            ]
+        )
+        assert result == [1, 2]
+
+    def test_must_execute_events_async(self):
+        def foo(cmd: TestCommand):
+            time.sleep(0.01)
+            return 1
+
+        def bar(cmd: TestCommand):
+            time.sleep(0.01)
+            return 2
+
+        executor = ThreadExecutor()
+        before = dt.datetime.now()
+        executor.process_event(
+            event=TestEvent(),
+            handlers=[
+                EventHandler(CommandHandler(foo)),
+                EventHandler(CommandHandler(bar))
+            ]
+        )
+        assert dt.datetime.now() - before < dt.timedelta(milliseconds=20)
+
+    def test_must_execute_events_with_errors(self):
+        def foo(cmd: TestCommand):
+            raise RuntimeError()
+
+        def bar(cmd: TestCommand):
+            return 2
+
+        executor = ThreadExecutor()
+        result = executor.process_event(
+            event=TestEvent(),
+            handlers=[
+                EventHandler(CommandHandler(foo)),
+                EventHandler(CommandHandler(bar))
+            ]
+        )
+        assert isinstance(result[0], RuntimeError)
+        assert result[1] == 2

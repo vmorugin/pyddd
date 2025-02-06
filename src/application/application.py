@@ -14,6 +14,8 @@ class Application:
 
     def set_defaults(self, domain: str, **kwargs):
         self._defaults[domain].update(kwargs)
+        if module := self._modules.get(domain):
+            module.set_defaults(kwargs)
 
     def include(self, module: Module):
         if module.domain in self._modules:
@@ -23,13 +25,27 @@ class Application:
         self._modules[module.domain] = module
 
     def handle(self, message: IMessage, **kwargs):
-        module = self._modules.get(message.domain)
         if message.type == MessageType.COMMAND:
+            module = self._modules.get(message.domain)
             if not module:
                 raise ValueError(f'Unregistered module for domain {message.domain}')
             return module.handle_command(message, **kwargs)
         elif message.type == MessageType.EVENT:
-            if not module:
-                # todo: log
-                return
-            return module.handle_event(message, **kwargs)
+            result = []
+            for module in self._modules.values():
+                if module.can_handle(message):
+                    result.extend(module.handle_event(message, **kwargs))
+            return result
+
+
+__context = None
+
+
+def set_application(app: Application):
+    global __context
+    __context = app
+
+
+def get_application():
+    global __context
+    return __context

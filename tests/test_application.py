@@ -2,6 +2,10 @@ import pytest
 
 from application import Application
 from application import Module
+from application.application import (
+    set_application,
+    get_application,
+)
 
 from domain import (
     DomainCommand,
@@ -78,3 +82,8 @@ class TestApplication:
         app.include(module)
         result = app.handle(TestCommand(), atr='success')
         assert result == 'success'
+
+def test_set_and_get_application():
+    app = Application()
+    set_application(app)
+    assert get_application() == app
