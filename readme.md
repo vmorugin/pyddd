@@ -23,24 +23,12 @@ pip install git+https://github.com/vmorugin/pyddd.git
 ### Определение доменной модели
 
 ```python
-import abc
 import dataclasses
 import uuid
-from uuid import NAMESPACE_URL
-
-from application import (
-    Module,
-    Application,
-)
 from domain import (
     RootEntity,
-    DomainCommand,
     DomainEvent,
-    EntityId,
 )
-
-class CreatePet(DomainCommand, domain='pet'):
-    name: str
 
 class PetCreated(DomainEvent, domain='pet'):
     pet_id: str
@@ -71,7 +59,12 @@ class IPetRepository(abc.ABC):
     def get(self, name: str) -> Pet:
         ...
 
+class CreatePet(DomainCommand, domain='pet'):
+    name: str
+    
+
 pet_module = Module('pet')
+
 
 @pet_module.register
 def create_pet(cmd: CreatePet, repository: IPetRepository):
