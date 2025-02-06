@@ -32,4 +32,4 @@ class Application:
             if not module:
                 # todo: log
                 return
-            module.handle_event(message, **kwargs)
+            return module.handle_event(message, **kwargs)

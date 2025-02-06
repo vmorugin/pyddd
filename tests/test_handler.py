@@ -63,6 +63,20 @@ class TestEventHandler:
         handler.handle(CustomEvent(id='123'), callback=mock)
         mock.assert_called_with(reference='123')
 
+    def test_must_returns_result(self):
+        class CustomEvent(DomainEvent, domain='test'):
+            id: int
+
+        class CustomCommand(DomainCommand, domain='test'):
+            id: str
+
+        def foo(cmd: CustomCommand):
+            return cmd.id
+
+        handler = EventHandler(CommandHandler(foo))
+        result = handler.handle(CustomEvent(id=12))
+        assert result == '12'
+
 
 class TestCommandHandler:
     def test_handle(self):

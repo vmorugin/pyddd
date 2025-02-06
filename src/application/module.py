@@ -57,4 +57,4 @@ class Module:
         """
         todo: Handler executor
         """
-        self._executor.process_event(event, self._event_handlers[event.topic], **kwargs)
+        return self._executor.process_event(event, self._event_handlers[event.topic], **kwargs)

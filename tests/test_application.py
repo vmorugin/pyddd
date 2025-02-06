@@ -7,8 +7,6 @@ from domain import (
     DomainCommand,
     DomainEvent,
 )
-from unittest.mock import Mock
-
 
 
 class TestCommand(DomainCommand, domain='test'):
@@ -38,16 +36,15 @@ class TestApplication:
         assert result is True
 
     def test_handle_event(self):
-        def foo(cmd: TestCommand, callback):
-            callback()
+        def foo(cmd: TestCommand):
+            return 1
 
         app = Application()
         module = Module('test')
         module.subscribe(TestEvent.__topic__)(foo)
         app.include(module)
-        mock = Mock()
-        app.handle(TestEvent(), callback=mock)
-        assert mock.called
+        result = app.handle(TestEvent())
+        assert result == [1]
 
     def test_handle_unresolved_event(self):
         app = Application()
@@ -68,4 +65,16 @@ class TestApplication:
         module.register(foo)
         app.include(module)
         result = app.handle(TestCommand())
+        assert result == 'success'
+
+    def test_handle_with_overwrite_defaults(self):
+        def foo(cmd: TestCommand, atr: str):
+            return atr
+
+        app = Application()
+        app.set_defaults('test', atr='fail')
+        module = Module('test')
+        module.register(foo)
+        app.include(module)
+        result = app.handle(TestCommand(), atr='success')
         assert result == 'success'

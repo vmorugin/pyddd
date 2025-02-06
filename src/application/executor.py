@@ -29,9 +29,11 @@ class SyncExecutor(IExecutor):
         return handler.handle(command, **kwargs)
 
     def process_event(self, event: DomainEvent, handlers: list[EventHandler], **kwargs):
+        result = []
         for handler in handlers:
             try:
-                handler.handle(event, **kwargs)
+                result.append(handler.handle(event, **kwargs))
             except Exception as ex:
                 """Log exception!"""
-                pass
+                result.append(ex)
+        return result

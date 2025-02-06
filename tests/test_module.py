@@ -2,7 +2,10 @@ from unittest.mock import Mock
 
 import pytest
 
-from application import Module
+from application import (
+    Module,
+    SyncExecutor,
+)
 from domain import (
     DomainCommand,
     DomainEvent,
@@ -96,6 +99,27 @@ class TestModule:
         module.set_defaults(dict(callback=mock))
         module.handle_event(TestEvent())
         assert mock.call_count == 2
+
+    def test_must_return_results_when_handle_events(self):
+        class TestCommand2(DomainCommand, domain='test'):
+            ...
+
+        module = Module(domain='test', executor=SyncExecutor())
+
+        @module.subscribe(TestEvent.__topic__)
+        @module.register
+        def foo(command: TestCommand):
+            return 1
+
+        @module.subscribe(TestEvent.__topic__)
+        @module.register
+        def bzz(command: TestCommand2, callback):
+            return 2
+
+        mock = Mock()
+        module.set_defaults(dict(callback=mock))
+        result = module.handle_event(TestEvent())
+        assert result == [1, 2]
 
     def test_handle_event_with_fail(self):
         def foo(command: TestCommand):

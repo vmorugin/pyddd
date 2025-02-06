@@ -41,3 +41,20 @@ class TestSyncExecutor:
         mock = Mock()
         executor.process_event(event=TestEvent(), handlers=[EventHandler(CommandHandler(foo))], callback=mock)
         mock.assert_called_with(True)
+
+    def test_process_event_must_return_results(self):
+        def foo(cmd: TestCommand):
+            return 1
+
+        def bar(cmd: TestCommand):
+            return 2
+
+        executor = SyncExecutor()
+        result = executor.process_event(
+            event=TestEvent(),
+            handlers=[
+                EventHandler(CommandHandler(foo)),
+                EventHandler(CommandHandler(bar))
+            ]
+        )
+        assert result == [1, 2]

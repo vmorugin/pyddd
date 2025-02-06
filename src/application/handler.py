@@ -48,7 +48,7 @@ class EventHandler(IHandler):
 
     def handle(self, message: IMessage, **kwargs):
         command_parameter = self._handler.get_command_parameter()
-        self._handler.handle(message=command_parameter.annotation(**self._converter(message.to_dict())), **kwargs)
+        return self._handler.handle(message=command_parameter.annotation(**self._converter(message.to_dict())), **kwargs)
 
 
 class CommandHandler(ICommandHandler):
