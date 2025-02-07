@@ -100,6 +100,11 @@ class TestApplication:
         assert isinstance(result[0], Exception)
         assert result[1] is True
 
+    def test_handle_unknown_message_type(self):
+        app = Application()
+        with pytest.raises(RuntimeError):
+            app.handle(...)
+
 
 def test_set_and_get_application():
     app = Application()

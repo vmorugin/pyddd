@@ -1,4 +1,5 @@
 import abc
+import asyncio
 import logging
 from functools import partial
 
@@ -47,3 +48,28 @@ class SyncExecutor(IExecutor):
         except Exception as exc:
             self._logger.warning(f'Unhandled event {event}', exc_info=exc)
             return exc
+
+
+class AsyncExecutor(IExecutor):
+
+    def process_command(self, command: IMessage, handler: IHandler, **kwargs):
+        future = asyncio.Future()
+        task = asyncio.create_task(handler.handle(message=command, **kwargs))
+        task.add_done_callback(partial(self._set_task_result, future=future))
+        return future
+
+    def process_event(self, event: IMessage, handlers: list[IHandler], **kwargs):
+        future = asyncio.Future()
+        tasks = []
+        for handler in handlers:
+            tasks.append(asyncio.create_task(handler.handle(event, **kwargs)))
+        result = asyncio.gather(*tasks, return_exceptions=True)
+        result.add_done_callback(partial(self._set_task_result, future=future))
+        return future
+
+    @staticmethod
+    def _set_task_result(task: asyncio.Future, /, future: asyncio.Future):
+        if task.exception() is not None:
+            future.set_exception(task.exception())  # type: ignore
+        else:
+            future.set_result(task.result())

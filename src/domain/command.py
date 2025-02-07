@@ -8,7 +8,7 @@ from domain.message import (
 
 
 class _DomainCommandMeta(BaseDomainMessageMeta):
-    def __init__(cls, name, bases, namespace, *, domain: str | None = None):
+    def __init__(cls, name, bases, namespace, *, domain: str = None):
         super().__init__(name, bases, namespace, domain=domain)
         if domain is None and cls.__module__ != __name__:
             try:

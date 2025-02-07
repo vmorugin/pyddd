@@ -5,7 +5,10 @@ from application import (
     CommandHandler,
     EventHandler,
 )
-from application.executor import IExecutor
+from application.executor import (
+    IExecutor,
+    AsyncExecutor,
+)
 from domain import (
     DomainCommand,
     DomainEvent,
@@ -68,6 +71,64 @@ class TestSyncExecutor:
 
         executor = SyncExecutor()
         result = executor.process_event(
+            event=TestEvent(),
+            handlers=[
+                EventHandler(CommandHandler(foo)),
+                EventHandler(CommandHandler(bar))
+            ]
+        )
+        assert isinstance(result[0], RuntimeError)
+        assert result[1] == 2
+
+
+class TestAsyncExecutor:
+    def test_init(self):
+        executor = AsyncExecutor()
+        assert isinstance(executor, IExecutor)
+
+    async def test_process_command(self):
+        async def foo(cmd: TestCommand):
+            return True
+
+        executor = AsyncExecutor()
+        result = await executor.process_command(command=TestCommand(), handler=CommandHandler(foo))
+        assert result is True
+
+    async def test_process_event(self):
+        async def foo(cmd: TestCommand, callback):
+            callback(True)
+
+        executor = AsyncExecutor()
+        mock = Mock()
+        await executor.process_event(event=TestEvent(), handlers=[EventHandler(CommandHandler(foo))], callback=mock)
+        mock.assert_called_with(True)
+
+    async def test_process_event_must_return_results(self):
+        async def foo(cmd: TestCommand):
+            return 1
+
+        async def bar(cmd: TestCommand):
+            return 2
+
+        executor = AsyncExecutor()
+        result = await executor.process_event(
+            event=TestEvent(),
+            handlers=[
+                EventHandler(CommandHandler(foo)),
+                EventHandler(CommandHandler(bar))
+            ]
+        )
+        assert result == [1, 2]
+
+    async def test_must_execute_events_with_errors(self):
+        async def foo(cmd: TestCommand):
+            raise RuntimeError()
+
+        async def bar(cmd: TestCommand):
+            return 2
+
+        executor = AsyncExecutor()
+        result = await executor.process_event(
             event=TestEvent(),
             handlers=[
                 EventHandler(CommandHandler(foo)),

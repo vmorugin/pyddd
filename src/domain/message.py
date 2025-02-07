@@ -2,6 +2,10 @@ import abc
 import datetime as dt
 import json
 from enum import Enum
+from typing import (
+    Optional,
+    Union,
+)
 from uuid import (
     uuid4,
     UUID,
@@ -78,10 +82,10 @@ class Message(IMessage):
     def __init__(
             self,
             full_name: str,
-            message_type: MessageType | str,
+            message_type: Union[MessageType, str],
             payload: dict,
-            message_id: str | None = None,
-            occurred_on: dt.datetime | None = None,
+            message_id: Optional[str] = None,
+            occurred_on: Optional[dt.datetime] = None,
     ):
         self._domain, self._name = full_name.rsplit('.', 1)
         self._type = MessageType(message_type)
@@ -124,13 +128,13 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     _domain_name: str
     _message_name: str
 
-    def __new__(mcs, name, bases, namespace, domain: str | None = None):
+    def __new__(mcs, name, bases, namespace, domain: Optional[str] = None):
         cls = super().__new__(mcs, name, bases, namespace)
         if domain is not None:
             cls._domain_name = domain
         return cls
 
-    def __init__(cls, name, bases, namespace, *, domain: str | None = None):
+    def __init__(cls, name, bases, namespace, *, domain: Optional[str] = None):
         super().__init__(name, bases, namespace, domain=domain)
         cls._message_name = name
 
