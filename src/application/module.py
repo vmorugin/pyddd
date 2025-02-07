@@ -1,4 +1,5 @@
 from collections import defaultdict
+
 from application.executor import (
     IExecutor,
     SyncExecutor,
@@ -7,8 +8,8 @@ from application.handler import (
     EventHandler,
     CommandHandler,
     IPayloadConverter,
+    IHandler,
 )
-from domain.message import IMessage
 
 
 class Module:
@@ -50,14 +51,13 @@ class Module:
 
         return wrapper
 
-    def handle_command(self, command: IMessage, **kwargs):
-        return self._executor.process_command(command, self._command_handlers[command.topic], **kwargs)
+    def get_command_handler(self, topic: str) -> IHandler:
+        if topic not in self._command_handlers:
+            raise RuntimeError(f'Unregistered command {topic} in {self.__class__.__name__}:{self._domain}')
+        return self._command_handlers[topic]
 
-    def handle_event(self, event: IMessage, **kwargs):
-        """
-        todo: Handler executor
-        """
-        return self._executor.process_event(event, self._event_handlers[event.topic], **kwargs)
-
-    def can_handle(self, message: IMessage) -> bool:
-        return message.topic in self._event_handlers | self._command_handlers
+    def get_event_handlers(self, topic: str) -> list[IHandler]:
+        handlers = []
+        for handler in self._event_handlers.get(topic, []):
+            handlers.append(handler)
+        return handlers

@@ -1,5 +1,3 @@
-import time
-import datetime as dt
 from unittest.mock import Mock
 
 from application import (

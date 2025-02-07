@@ -11,6 +11,7 @@ from domain import (
     DomainEvent,
 )
 
+
 class TestCommand(DomainCommand, domain='test'):
     ...
 
@@ -59,33 +60,6 @@ class TestModule:
         with pytest.raises(AttributeError):
             module.subscribe('domain.Test')(foo)
 
-    def test_can_handle_unregistered_event_must_false(self):
-        module = Module('test')
-        assert module.can_handle(TestEvent()) is False
-
-    def test_can_handle_unregistered_command_must_false(self):
-        module = Module('test')
-        assert module.can_handle(TestCommand()) is False
-
-    def test_can_handle_registered_command_must_true(self):
-        module = Module('test')
-
-        @module.register
-        def foo(cmd: TestCommand):
-            return True
-
-        assert module.can_handle(TestCommand()) is True
-
-    def test_can_handle_registered_event_must_true(self):
-        module = Module('test')
-
-        @module.subscribe('test.TestEvent')
-        @module.register
-        def foo(cmd: TestCommand):
-            return True
-
-        assert module.can_handle(TestEvent()) is True
-
     def test_register_twice_error(self):
         def foo(cmd: TestCommand):
             ...
@@ -95,6 +69,11 @@ class TestModule:
         with pytest.raises(ValueError, match="Already registered command 'test.TestCommand'"):
             module.register(foo)
 
+    def test_handler_unregistered_command_must_fail(self):
+        module = Module('domain')
+        with pytest.raises(RuntimeError, match='Unregistered command test.TestCommand in Module:domain'):
+            module.get_command_handler(TestCommand.__topic__)
+
     def test_handle_command(self):
         module = Module(domain='test')
 
@@ -103,8 +82,8 @@ class TestModule:
             return bar
 
         module.set_defaults(dict(bar='bzz'))
-        result = module.handle_command(TestCommand())
-        assert result == 'bzz'
+        handler = module.get_command_handler(TestCommand.__topic__)
+        assert handler.handle(TestCommand()) == 'bzz'
 
     def test_handle_events(self):
         class TestCommand2(DomainCommand, domain='test'):
@@ -124,8 +103,32 @@ class TestModule:
 
         mock = Mock()
         module.set_defaults(dict(callback=mock))
-        module.handle_event(TestEvent())
+        handlers = module.get_event_handlers(TestEvent.__topic__)
+        [handler.handle(TestEvent()) for handler in handlers]
         assert mock.call_count == 2
+
+    def test_could_subscribe_with_two_events_to_one_command(self):
+        class TestEvent1(DomainEvent, domain='test'):
+            ...
+
+        class TestEvent2(DomainEvent, domain='test'):
+            ...
+
+        module = Module(domain='test')
+
+        @module.subscribe(TestEvent1.__topic__)
+        @module.subscribe(TestEvent2.__topic__)
+        @module.register
+        def bzz(command: TestCommand):
+            return 1
+
+        handlers = module.get_event_handlers(TestEvent1.__topic__)
+        assert len(handlers) == 1
+        assert handlers[0].handle(TestEvent1()) == 1
+
+        handlers = module.get_event_handlers(TestEvent2.__topic__)
+        assert len(handlers) == 1
+        assert handlers[0].handle(TestEvent2()) == 1
 
     def test_must_return_results_when_handle_events(self):
         class TestCommand2(DomainCommand, domain='test'):
@@ -145,25 +148,9 @@ class TestModule:
 
         mock = Mock()
         module.set_defaults(dict(callback=mock))
-        result = module.handle_event(TestEvent())
-        assert result == [1, 2]
+        handlers = module.get_event_handlers(TestEvent.__topic__)
 
-    def test_handle_event_with_fail(self):
-        def foo(command: TestCommand):
-            assert False
-
-        def bzz(command: TestCommand, callback):
-            assert isinstance(command, TestCommand)
-            callback()
-
-        module = Module(domain='test')
-        mock = Mock()
-        module.set_defaults(dict(callback=mock))
-        module.register(foo)
-        module.subscribe(TestEvent.__topic__)(foo)
-        module.subscribe(TestEvent.__topic__)(bzz)
-        module.handle_event(TestEvent())
-        assert mock.call_count == 1
+        assert [h.handle(TestEvent()) for h in handlers] == [1, 2]
 
     def test_subscribe_with_converter(self):
         class TestCommandWithParam(DomainCommand, domain='test'):
@@ -181,5 +168,40 @@ class TestModule:
         module.set_defaults(dict(callback=mock))
         module.register(foo)
         module.subscribe(TestEventWithParam.__topic__, converter=lambda x: {'reference': x['param_id']})(foo)
-        module.handle_event(TestEventWithParam(param_id='123'), callback=mock)
+        handlers = module.get_event_handlers(TestEventWithParam.__topic__)
+        assert len(handlers) == 1
+        handlers[0].handle(TestEventWithParam(param_id='123'), callback=mock)
         mock.assert_called_with(reference='123')
+
+    def test_must_fail_when_get_command_handler_not_existed(self):
+        module = Module('...')
+        with pytest.raises(RuntimeError):
+            module.get_command_handler(TestCommand.__topic__)
+
+    def test_must_fail_when_get_command_handler_but_got_event(self):
+        module = Module('...')
+
+        @module.subscribe(TestEvent.__topic__)
+        @module.register
+        def foo(command: TestCommand):
+            return True
+
+        with pytest.raises(RuntimeError):
+            module.get_command_handler(TestEvent.__topic__)
+
+    def test_must_return_empty_list_when_get_unregistered_event_handlers(self):
+        module = Module('...')
+        handlers = module.get_event_handlers(TestEvent.__topic__)
+        assert handlers == []
+
+    def test_must_returns_list_event_handlers_when_registered(self):
+        module = Module('...')
+
+        @module.subscribe(TestEvent.__topic__)
+        @module.register
+        def foo(command: TestCommand):
+            return True
+
+        handlers = module.get_event_handlers(TestEvent.__topic__)
+        assert len(handlers) == 1
+        assert handlers[0].handle(TestEvent()) == True

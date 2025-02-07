@@ -167,7 +167,10 @@ app.set_defaults('greet', repository=InMemoryGreetRepo({}))
 # set app_globally
 set_application(app)
 
-fluff = app.handle(CreatePat(name='Fluff'))
-max_pet = app.handle(CreatePat(name='Max'))
-greet_fluff = app.handle(SayGreetCommand(pat_id=fluff))
+fluff_id = app.handle(CreatePat(name='Fluff'))
+max_id = app.handle(CreatePat(name='Max'))
+greet_fluff = app.handle(SayGreetCommand(pat_id=fluff_id))
 assert greet_fluff == 'Hi, Fluff!'
+
+greet_max = app.handle(SayGreetCommand(pat_id=max_id))
+assert greet_max == 'Hi, Max!'

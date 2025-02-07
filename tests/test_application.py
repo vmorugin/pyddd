@@ -83,6 +83,24 @@ class TestApplication:
         result = app.handle(TestCommand(), atr='success')
         assert result == 'success'
 
+    def test_must_return_exceptions_when_handle_event(self):
+        module = Module(domain='test')
+
+        @module.subscribe(TestEvent.__topic__)
+        def foo(command: TestCommand):
+            raise Exception()
+
+        @module.subscribe(TestEvent.__topic__)
+        def bzz(command: TestCommand):
+            return True
+
+        application = Application()
+        application.include(module)
+        result = application.handle(TestEvent())
+        assert isinstance(result[0], Exception)
+        assert result[1] is True
+
+
 def test_set_and_get_application():
     app = Application()
     set_application(app)
