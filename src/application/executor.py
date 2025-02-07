@@ -1,5 +1,6 @@
 import abc
 import logging
+from functools import partial
 
 from application.handler import (
     IHandler,
@@ -13,7 +14,9 @@ from domain import (
     DomainCommand,
     DomainEvent,
 )
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import (
+    ThreadPoolExecutor,
+)
 
 
 class IExecutor(abc.ABC):
@@ -34,37 +37,13 @@ class SyncExecutor(IExecutor):
         return handler.handle(command, **kwargs)
 
     def process_event(self, event: DomainEvent, handlers: list[EventHandler], **kwargs):
-        result = []
-        for handler in handlers:
-            try:
-                result.append(handler.handle(event, **kwargs))
-            except Exception as exc:
-                self._logger.warning(f'Unhandled event {event}', exc_info=exc)
-                result.append(exc)
-        return result
-
-class ThreadExecutor(IExecutor):
-    def __init__(self, logger_name: str = 'pyddd.executor'):
-        self._logger = logging.getLogger(logger_name)
-
-    def process_command(self, command: DomainCommand, handler: CommandHandler, **kwargs):
-        return handler.handle(command, **kwargs)
-
-    def process_event(self, event: DomainEvent, handlers: list[EventHandler], **kwargs):
-        result = []
-        futures = []
         with ThreadPoolExecutor() as pool:
-            for handler in handlers:
-                future = pool.submit(handler.handle, event, **kwargs)
-                futures.append(future)
-        while futures:
-            future = futures.pop(0)
-            if future.running():
-                futures.insert(0, future)
-            elif exc := future.exception():
-                self._logger.warning(f'Unhandled event {event}', exc_info=exc)
-                result.append(exc)
-            else:
-                result.append(future.result())
-        return result
+            func = partial(self._process_handler, event=event, **kwargs)
+            return list(pool.map(func, handlers))
 
+    def _process_handler(self, handler: EventHandler, event: DomainEvent, **kwargs):
+        try:
+            return handler.handle(event, **kwargs)
+        except Exception as exc:
+            self._logger.warning(f'Unhandled event {event}', exc_info=exc)
+            return exc
