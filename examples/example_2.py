@@ -14,33 +14,33 @@ from application.application import (
 )
 from application.executor import AsyncExecutor
 from domain import (
-    RootEntity,
+    IRootEntity,
     DomainCommand,
     DomainEvent,
-    EntityId,
 )
+from domain.entity import RootEntity
 
 
-class CreatePat(DomainCommand, domain='pet'):
+class CreatePet(DomainCommand, domain='pet'):
     name: str
 
 
-class PatCreated(DomainEvent, domain='pet'):
-    pat_id: str
+class PetCreated(DomainEvent, domain='pet'):
+    pet_id: str
     name: str
 
 
 @dataclasses.dataclass(kw_only=True)
 class Pet(RootEntity):
     def __init__(self, name: str):
-        super().__init__(__reference__=str(uuid.uuid4()))
+        super().__init__(reference=str(uuid.uuid4()))
         self.name = name
 
     @classmethod
     def create(cls, name: str):
-        pat = cls(name)
-        pat.register_event(PatCreated(name=name, pat_id=pat.__reference__))
-        return pat
+        pet = cls(name)
+        pet.register_event(PetCreated(name=name, pet_id=pet.reference))
+        return pet
 
     def rename(self, name: str):
         self.name = name
@@ -48,7 +48,7 @@ class Pet(RootEntity):
 
 class IRepository(abc.ABC):
     @abc.abstractmethod
-    async def save(self, entity: RootEntity):
+    async def save(self, entity: IRootEntity):
         ...
 
 
@@ -59,78 +59,75 @@ class IPetRepository(IRepository, abc.ABC):
         ...
 
 
-pat_module = Module('pet')
+pet_module = Module('pet')
 
 
-@pat_module.register
-async def create_pat(cmd: CreatePat, repository: IPetRepository):
-    pat = Pet.create(cmd.name)
-    await repository.save(pat)
-    return pat.__reference__
+@pet_module.register
+async def create_pet(cmd: CreatePet, repository: IPetRepository):
+    pet = Pet.create(cmd.name)
+    await repository.save(pet)
+    return pet.reference
 
 
 class InsertGreetLogCommand(DomainCommand, domain='greet'):
-    pat_id: str
+    pet_id: str
     name: str
 
 
 class SayGreetCommand(DomainCommand, domain='greet'):
-    pat_id: str
+    pet_id: str
 
 
-class GreetReference(EntityId):
-    def __init__(self, value: uuid.UUID):
-        self._value = value
+class GreetReference(uuid.UUID):
+    def __init__(self, value: str):
+        super().__init__(value)
 
     @classmethod
-    def generate(cls, pat_id: str) -> 'EntityId':
-        return cls(uuid.uuid5(NAMESPACE_URL, f'/journal/{pat_id}'))
-
-    def __hash__(self):
-        return hash(self._value)
+    def generate(cls, pet_id: str) -> 'GreetReference':
+        return cls(str(uuid.uuid5(NAMESPACE_URL, f'/journal/{pet_id}')))
 
 
 @dataclasses.dataclass
-class PerGreetJournal(RootEntity):
-    def __init__(self, pat_id: str, pat_name: str):
-        super().__init__(__reference__=GreetReference.generate(pat_id))
-        self.pat_name = pat_name
+class PerGreetJournal(RootEntity[GreetReference]):
+    def __init__(self, pet_id: str, pet_name: str):
+        super().__init__(reference=GreetReference.generate(pet_id))
+        self.pet_name = pet_name
 
     def greet(self):
-        return f'Hi, {self.pat_name}!'
+        return f'Hi, {self.pet_name}!'
 
 
 class IPetGreetRepo(IRepository, abc.ABC):
     @abc.abstractmethod
-    async def get_by_pat_id(self, pat_id: str) -> PerGreetJournal:
+    async def get_by_pet_id(self, pet_id: str) -> PerGreetJournal:
         ...
 
 
 greet_module = Module('greet')
 
 
-@greet_module.subscribe('pet.PatCreated')
+@greet_module.subscribe('pet.PetCreated')
 @greet_module.register
-async def register_pat(cmd: InsertGreetLogCommand, repository: IPetGreetRepo):
-    journal = await repository.get_by_pat_id(cmd.pat_id)
+async def register_pet(cmd: InsertGreetLogCommand, repository: IPetGreetRepo):
+    journal = await repository.get_by_pet_id(cmd.pet_id)
     if journal is None:
-        journal = PerGreetJournal(pat_id=cmd.pat_id, pat_name=cmd.name)
+        journal = PerGreetJournal(pet_id=cmd.pet_id, pet_name=cmd.name)
         await repository.save(journal)
-    return journal.__reference__
+    return journal.reference
 
 
 @greet_module.register
 async def say_greet(cmd: SayGreetCommand, repository: IPetGreetRepo):
-    pat = await repository.get_by_pat_id(cmd.pat_id)
-    return pat.greet()
+    pet = await repository.get_by_pet_id(cmd.pet_id)
+    return pet.greet()
 
 
 class BaseRepository(abc.ABC):
     @abc.abstractmethod
-    async def _insert(self, entity: RootEntity):
+    async def _insert(self, entity: IRootEntity):
         ...
 
-    async def save(self, entity: RootEntity):
+    async def save(self, entity: IRootEntity):
         await self._insert(entity)
         application = get_application()
         for event in entity.collect_events():
@@ -144,38 +141,38 @@ class InMemoryPetRepo(BaseRepository, IPetRepository):
     async def get(self, name: str) -> Pet:
         return self.memory.get(name)
 
-    async def _insert(self, pat: Pet):
-        self.memory[pat.name] = pat
+    async def _insert(self, pet: Pet):
+        self.memory[pet.name] = pet
 
 
 class InMemoryGreetRepo(BaseRepository, IPetGreetRepo):
     def __init__(self, memory: dict):
         self.memory = memory
 
-    async def get_by_pat_id(self, pat_id: str) -> PerGreetJournal:
-        return self.memory.get(GreetReference.generate(pat_id))
+    async def get_by_pet_id(self, pet_id: str) -> PerGreetJournal:
+        return self.memory.get(GreetReference.generate(pet_id))
 
     async def _insert(self, greet: PerGreetJournal):
-        self.memory[greet.__reference__] = greet
+        self.memory[greet.reference] = greet
 
 
 # prepare app
 async def main():
     app = Application(executor=AsyncExecutor())
     app.include(greet_module)
-    app.include(pat_module)
+    app.include(pet_module)
     app.set_defaults('pet', repository=InMemoryPetRepo({}))
     app.set_defaults('greet', repository=InMemoryGreetRepo({}))
 
     # set app_globally
     set_application(app)
 
-    fluff_id = await app.handle(CreatePat(name='Fluff'))
-    max_id = await app.handle(CreatePat(name='Max'))
-    greet_fluff = await app.handle(SayGreetCommand(pat_id=fluff_id))
+    fluff_id = await app.handle(CreatePet(name='Fluff'))
+    max_id = await app.handle(CreatePet(name='Max'))
+    greet_fluff = await app.handle(SayGreetCommand(pet_id=fluff_id))
     assert greet_fluff == 'Hi, Fluff!'
 
-    greet_max = await app.handle(SayGreetCommand(pat_id=max_id))
+    greet_max = await app.handle(SayGreetCommand(pet_id=max_id))
     assert greet_max == 'Hi, Max!'
 
 loop = asyncio.get_event_loop()

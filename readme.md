@@ -26,16 +26,18 @@ pip install git+https://github.com/vmorugin/pyddd.git
 import dataclasses
 import uuid
 from domain import (
-    RootEntity,
+    IRootEntity,
     DomainEvent,
 )
+
 
 class PetCreated(DomainEvent, domain='pet'):
     pet_id: str
     name: str
 
+
 @dataclasses.dataclass(kw_only=True)
-class Pet(RootEntity):
+class Pet(IRootEntity):
     def __init__(self, name: str):
         super().__init__(__reference__=str(uuid.uuid4()))
         self.name = name

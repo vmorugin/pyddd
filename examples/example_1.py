@@ -12,33 +12,33 @@ from application.application import (
     set_application,
 )
 from domain import (
-    RootEntity,
+    IRootEntity,
     DomainCommand,
     DomainEvent,
-    EntityId,
 )
+from domain.entity import RootEntity
 
 
-class CreatePat(DomainCommand, domain='pet'):
+class CreatePet(DomainCommand, domain='pet'):
     name: str
 
 
-class PatCreated(DomainEvent, domain='pet'):
-    pat_id: str
+class PetCreated(DomainEvent, domain='pet'):
+    pet_id: str
     name: str
 
 
 @dataclasses.dataclass(kw_only=True)
-class Pet(RootEntity):
+class Pet(RootEntity[uuid.UUID]):
     def __init__(self, name: str):
-        super().__init__(__reference__=str(uuid.uuid4()))
+        super().__init__(reference=uuid.uuid4())
         self.name = name
 
     @classmethod
     def create(cls, name: str):
-        pat = cls(name)
-        pat.register_event(PatCreated(name=name, pat_id=pat.__reference__))
-        return pat
+        pet = cls(name)
+        pet.register_event(PetCreated(name=name, pet_id=str(pet.reference)))
+        return pet
 
     def rename(self, name: str):
         self.name = name
@@ -46,7 +46,7 @@ class Pet(RootEntity):
 
 class IRepository(abc.ABC):
     @abc.abstractmethod
-    def save(self, entity: RootEntity):
+    def save(self, entity: IRootEntity):
         ...
 
 
@@ -57,78 +57,75 @@ class IPetRepository(IRepository, abc.ABC):
         ...
 
 
-pat_module = Module('pet')
+pet_module = Module('pet')
 
 
-@pat_module.register
-def create_pat(cmd: CreatePat, repository: IPetRepository):
-    pat = Pet.create(cmd.name)
-    repository.save(pat)
-    return pat.__reference__
+@pet_module.register
+def create_pet(cmd: CreatePet, repository: IPetRepository):
+    pet = Pet.create(cmd.name)
+    repository.save(pet)
+    return pet.reference
 
 
 class InsertGreetLogCommand(DomainCommand, domain='greet'):
-    pat_id: str
+    pet_id: str
     name: str
 
 
 class SayGreetCommand(DomainCommand, domain='greet'):
-    pat_id: str
+    pet_id: str
 
 
-class GreetReference(EntityId):
+class GreetReference(uuid.UUID):
     def __init__(self, value: uuid.UUID):
-        self._value = value
+        super().__init__(str(value))
 
     @classmethod
-    def generate(cls, pat_id: str) -> 'EntityId':
-        return cls(uuid.uuid5(NAMESPACE_URL, f'/journal/{pat_id}'))
-
-    def __hash__(self):
-        return hash(self._value)
+    def generate(cls, pet_id: str) -> 'GreetReference':
+        return cls(uuid.uuid5(NAMESPACE_URL, f'/journal/{pet_id}'))
 
 
 @dataclasses.dataclass
-class PerGreetJournal(RootEntity):
-    def __init__(self, pat_id: str, pat_name: str):
-        super().__init__(__reference__=GreetReference.generate(pat_id))
-        self.pat_name = pat_name
+class PerGreetJournal(RootEntity[GreetReference]):
+    def __init__(self, pet_id: str, pet_name: str):
+        super().__init__(reference=GreetReference.generate(pet_id))
+        self.pet_name = pet_name
 
     def greet(self):
-        return f'Hi, {self.pat_name}!'
+        return f'Hi, {self.pet_name}!'
 
 
 class IPetGreetRepo(IRepository, abc.ABC):
     @abc.abstractmethod
-    def get_by_pat_id(self, pat_id: str) -> PerGreetJournal:
+    def get_by_pet_id(self, pet_id: str) -> PerGreetJournal:
         ...
 
 
 greet_module = Module('greet')
 
 
-@greet_module.subscribe('pet.PatCreated')
+@greet_module.subscribe('pet.PetCreated')
 @greet_module.register
-def register_pat(cmd: InsertGreetLogCommand, repository: IPetGreetRepo):
-    journal = repository.get_by_pat_id(cmd.pat_id)
+def register_pet(cmd: InsertGreetLogCommand, repository: IPetGreetRepo):
+    journal = repository.get_by_pet_id(cmd.pet_id)
     if journal is None:
-        journal = PerGreetJournal(pat_id=cmd.pat_id, pat_name=cmd.name)
+        journal = PerGreetJournal(pet_id=cmd.pet_id, pet_name=cmd.name)
         repository.save(journal)
-    return journal.__reference__
+    return journal.reference
 
 
 @greet_module.register
 def say_greet(cmd: SayGreetCommand, repository: IPetGreetRepo):
-    pat = repository.get_by_pat_id(cmd.pat_id)
-    return pat.greet()
+    pet = repository.get_by_pet_id(cmd.pet_id)
+    return pet.greet()
 
 
 class BaseRepository(abc.ABC):
     @abc.abstractmethod
-    def _insert(self, entity: RootEntity):
+    def _insert(self, entity: IRootEntity):
         ...
 
-    def save(self, entity: RootEntity):
+    def save(self, entity: IRootEntity):
         self._insert(entity)
         application = get_application()
         for event in entity.collect_events():
@@ -142,35 +139,36 @@ class InMemoryPetRepo(BaseRepository, IPetRepository):
     def get(self, name: str) -> Pet:
         return self.memory.get(name)
 
-    def _insert(self, pat: Pet):
-        self.memory[pat.name] = pat
+    def _insert(self, pet: Pet):
+        self.memory[pet.name] = pet
 
 
 class InMemoryGreetRepo(BaseRepository, IPetGreetRepo):
     def __init__(self, memory: dict):
-        self.memory = memory
+        self.memory: dict[GreetReference, PerGreetJournal] = memory
 
-    def get_by_pat_id(self, pat_id: str) -> PerGreetJournal:
-        return self.memory.get(GreetReference.generate(pat_id))
+    def get_by_pet_id(self, pet_id: str) -> PerGreetJournal:
+        return self.memory.get(GreetReference.generate(pet_id))
 
     def _insert(self, greet: PerGreetJournal):
-        self.memory[greet.__reference__] = greet
+        self.memory[greet.reference] = greet
 
 
 # prepare app
 app = Application()
 app.include(greet_module)
-app.include(pat_module)
+app.include(pet_module)
 app.set_defaults('pet', repository=InMemoryPetRepo({}))
 app.set_defaults('greet', repository=InMemoryGreetRepo({}))
 
 # set app_globally
 set_application(app)
 
-fluff_id = app.handle(CreatePat(name='Fluff'))
-max_id = app.handle(CreatePat(name='Max'))
-greet_fluff = app.handle(SayGreetCommand(pat_id=fluff_id))
+fluff_id = app.handle(CreatePet(name='Fluff'))
+max_id = app.handle(CreatePet(name='Max'))
+
+greet_fluff = app.handle(SayGreetCommand(pet_id=str(fluff_id)))
 assert greet_fluff == 'Hi, Fluff!'
 
-greet_max = app.handle(SayGreetCommand(pat_id=max_id))
+greet_max = app.handle(SayGreetCommand(pet_id=str(max_id)))
 assert greet_max == 'Hi, Max!'

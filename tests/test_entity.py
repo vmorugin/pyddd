@@ -10,9 +10,9 @@ class TestEntity:
         class SomeEntity(Entity[str]):
             ...
 
-        entity = SomeEntity(__reference__='123')
-        assert entity.__reference__ == '123'
-        assert entity == SomeEntity(__reference__='123')
+        entity = SomeEntity(reference='123')
+        assert entity.reference == '123'
+        assert entity == SomeEntity(reference='123')
 
 class TestRootEntity:
     def test_root(self):
@@ -22,7 +22,7 @@ class TestRootEntity:
         class TestEvent(DomainEvent, domain='test'):
             ...
 
-        entity = SomeRootEntity(__reference__=123)
+        entity = SomeRootEntity(reference=123)
         event = TestEvent()
         entity.register_event(event)
         assert entity.collect_events() == [event]

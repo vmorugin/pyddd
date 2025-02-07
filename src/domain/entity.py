@@ -1,40 +1,59 @@
 import abc
 import typing as t
-from dataclasses import (
-    dataclass,
-    field,
-)
 
 from domain.event import DomainEvent
+
+
+class ValueObject:
+    ...
+
 
 T = t.TypeVar('T')
 
 
-class ValueObject(t.Hashable, abc.ABC):
-
-    def __eq__(self, other: object) -> bool:
-        return self.__class__ == other.__class__ and self.__hash__() == other.__hash__()
-
-
-class EntityId(ValueObject):
-    @classmethod
+class IEntity(t.Generic[T], abc.ABC):
+    @property
     @abc.abstractmethod
-    def generate(cls, *args, **kwargs) -> 'EntityId':
+    def reference(self) -> T:
         ...
 
-@dataclass(kw_only=True)
-class Entity(t.Generic[T]):
-    __reference__: T
+
+class IRootEntity(IEntity[T], abc.ABC):
+
+    @abc.abstractmethod
+    def register_event(self, event: DomainEvent):
+        ...
+
+    @abc.abstractmethod
+    def collect_events(self) -> list[DomainEvent]:
+        ...
 
 
-@dataclass(kw_only=True)
-class RootEntity(Entity[T]):
-    _events: list[DomainEvent] = field(default_factory=list)
+class Entity(IEntity[T]):
+    def __init__(self, reference: T):
+        self._reference = reference
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.reference == other.reference
+
+    @property
+    def reference(self) -> T:
+        return self._reference
+
+
+class RootEntity(IRootEntity[T]):
+    def __init__(self, reference: T):
+        self._reference = reference
+        self._events = []
 
     def register_event(self, event: DomainEvent):
         self._events.append(event)
 
     def collect_events(self) -> list[DomainEvent]:
-        events = list(self._events)
-        self._events.clear()
+        events = self._events
+        self._events = []
         return events
+
+    @property
+    def reference(self) -> T:
+        return self._reference
