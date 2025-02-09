@@ -6,10 +6,12 @@ from application import (
     Module,
     SyncExecutor,
 )
+from application.abstractions import ICondition
 from domain import (
     DomainCommand,
     DomainEvent,
 )
+from domain.event import IEvent
 
 
 class TestCommand(DomainCommand, domain='test'):
@@ -72,7 +74,7 @@ class TestModule:
     def test_handler_unregistered_command_must_fail(self):
         module = Module('domain')
         with pytest.raises(RuntimeError, match='Unregistered command test.TestCommand in Module:domain'):
-            module.get_command_handler(TestCommand.__topic__)
+            module.get_command_handler(TestCommand())
 
     def test_handle_command(self):
         module = Module(domain='test')
@@ -82,8 +84,8 @@ class TestModule:
             return bar
 
         module.set_defaults(dict(bar='bzz'))
-        handler = module.get_command_handler(TestCommand.__topic__)
-        assert handler.handle(TestCommand()) == 'bzz'
+        handler = module.get_command_handler(TestCommand())
+        assert handler() == 'bzz'
 
     def test_handle_events(self):
         class TestCommand2(DomainCommand, domain='test'):
@@ -103,8 +105,9 @@ class TestModule:
 
         mock = Mock()
         module.set_defaults(dict(callback=mock))
-        handlers = module.get_event_handlers(TestEvent.__topic__)
-        [handler.handle(TestEvent()) for handler in handlers]
+        event = TestEvent()
+        handlers = module.get_event_handlers(event)
+        [handler() for handler in handlers]
         assert mock.call_count == 2
 
     def test_could_subscribe_with_two_events_to_one_command(self):
@@ -122,13 +125,15 @@ class TestModule:
         def bzz(command: TestCommand):
             return 1
 
-        handlers = module.get_event_handlers(TestEvent1.__topic__)
+        event_1 = TestEvent1()
+        handlers = module.get_event_handlers(event_1)
         assert len(handlers) == 1
-        assert handlers[0].handle(TestEvent1()) == 1
+        assert handlers[0]() == 1
 
-        handlers = module.get_event_handlers(TestEvent2.__topic__)
+        event_2 = TestEvent2()
+        handlers = module.get_event_handlers(event_2)
         assert len(handlers) == 1
-        assert handlers[0].handle(TestEvent2()) == 1
+        assert handlers[0]() == 1
 
     def test_must_return_results_when_handle_events(self):
         class TestCommand2(DomainCommand, domain='test'):
@@ -148,9 +153,9 @@ class TestModule:
 
         mock = Mock()
         module.set_defaults(dict(callback=mock))
-        handlers = module.get_event_handlers(TestEvent.__topic__)
+        handlers = module.get_event_handlers(TestEvent())
 
-        assert [h.handle(TestEvent()) for h in handlers] == [1, 2]
+        assert [h() for h in handlers] == [1, 2]
 
     def test_subscribe_with_converter(self):
         class TestCommandWithParam(DomainCommand, domain='test'):
@@ -167,16 +172,17 @@ class TestModule:
         mock = Mock()
         module.set_defaults(dict(callback=mock))
         module.register(foo)
-        module.subscribe(TestEventWithParam.__topic__, converter=lambda x: {'reference': x['param_id']})(foo)
-        handlers = module.get_event_handlers(TestEventWithParam.__topic__)
+        event = TestEventWithParam(param_id='123')
+        module.subscribe(event.topic, converter=lambda x: {'reference': x['param_id']})(foo)
+        handlers = module.get_event_handlers(event)
         assert len(handlers) == 1
-        handlers[0].handle(TestEventWithParam(param_id='123'), callback=mock)
+        handlers[0](callback=mock)
         mock.assert_called_with(reference='123')
 
     def test_must_fail_when_get_command_handler_not_existed(self):
         module = Module('...')
         with pytest.raises(RuntimeError):
-            module.get_command_handler(TestCommand.__topic__)
+            module.get_command_handler(TestCommand())
 
     def test_must_fail_when_get_command_handler_but_got_event(self):
         module = Module('...')
@@ -187,11 +193,11 @@ class TestModule:
             return True
 
         with pytest.raises(RuntimeError):
-            module.get_command_handler(TestEvent.__topic__)
+            module.get_command_handler(TestEvent())
 
     def test_must_return_empty_list_when_get_unregistered_event_handlers(self):
         module = Module('...')
-        handlers = module.get_event_handlers(TestEvent.__topic__)
+        handlers = module.get_event_handlers(TestEvent())
         assert handlers == []
 
     def test_must_returns_list_event_handlers_when_registered(self):
@@ -202,6 +208,22 @@ class TestModule:
         def foo(command: TestCommand):
             return True
 
-        handlers = module.get_event_handlers(TestEvent.__topic__)
+        handlers = module.get_event_handlers(TestEvent())
         assert len(handlers) == 1
-        assert handlers[0].handle(TestEvent()) == True
+        assert handlers[0]() is True
+
+    def test_must_not_return_handler_if_fail_condition(self):
+        class FailCondition(ICondition):
+            def check(self, event: IEvent) -> bool:
+                return False
+
+        module = Module('test')
+        condition = FailCondition()
+
+        @module.subscribe(TestEvent.__topic__, condition=condition)
+        @module.register
+        def foo(command: TestCommand):
+            return True
+
+        handlers = module.get_event_handlers(TestEvent())
+        assert len(handlers) == 0

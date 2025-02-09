@@ -45,9 +45,10 @@ class TestApplication:
 
         app = Application()
         module = Module('test')
-        module.subscribe(TestEvent.__topic__)(foo)
+        event = TestEvent()
+        module.subscribe(event.topic)(foo)
         app.include(module)
-        result = app.handle(TestEvent())
+        result = app.handle(event)
         assert result == [1]
 
     def test_handle_unresolved_event(self):

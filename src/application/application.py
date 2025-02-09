@@ -1,7 +1,8 @@
 import logging
 from collections import defaultdict
 
-from application.executor import IExecutor, SyncExecutor
+from application.executor import SyncExecutor
+from application.abstractions import IExecutor
 from application.module import Module
 from domain.message import (
     IMessage,
@@ -43,14 +44,14 @@ class Application:
 
     def _handle_command(self, command: IMessage, **depends):
         module = self._get_module_by_domain(command.domain)
-        handler = module.get_command_handler(command.topic)
-        return self._executor.process_command(command, handler, **depends)
+        handler = module.get_command_handler(command)
+        return self._executor.process_handler(handler, **depends)
 
     def _handle_event(self, event: IMessage, **depends):
         handlers = []
         for module in self._modules.values():
-            handlers.extend(module.get_event_handlers(event.topic))
-        return self._executor.process_event(event, handlers, **depends)
+            handlers.extend(module.get_event_handlers(event))
+        return self._executor.process_handlers(handlers, **depends)
 
     def _get_module_by_domain(self, domain: str) -> Module:
         if module := self._modules.get(domain):

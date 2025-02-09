@@ -1,15 +1,21 @@
 from collections import defaultdict
 
-from application.executor import (
+from application.condition import (
+    none_condition,
+)
+from application.abstractions import (
+    ICondition,
     IExecutor,
+    IPayloadConverter,
+)
+from application.executor import (
     SyncExecutor,
 )
 from application.handler import (
     EventHandler,
     CommandHandler,
-    IPayloadConverter,
-    IHandler,
 )
+from domain.message import IMessage
 
 
 class Module:
@@ -41,23 +47,29 @@ class Module:
             event_name: str,
             *,
             converter: IPayloadConverter = lambda x: x,
+            condition: ICondition = none_condition,
     ):
         def wrapper(func):
             handler = EventHandler(CommandHandler(func))
             handler.set_converter(converter)
+            handler.set_condition(condition)
             handler.set_defaults(self._defaults)
             self._event_handlers[event_name].append(handler)
             return func
 
         return wrapper
 
-    def get_command_handler(self, topic: str) -> IHandler:
-        if topic not in self._command_handlers:
-            raise RuntimeError(f'Unregistered command {topic} in {self.__class__.__name__}:{self._domain}')
-        return self._command_handlers[topic]
+    def get_command_handler(self, command: IMessage):
+        if command.topic not in self._command_handlers:
+            raise RuntimeError(f'Unregistered command {command.topic} in {self.__class__.__name__}:{self._domain}')
+        return self._command_handlers[command.topic].resolve(command)
 
-    def get_event_handlers(self, topic: str) -> list[IHandler]:
+    def get_event_handlers(self, event: IMessage):
         handlers = []
-        for handler in self._event_handlers.get(topic, []):
-            handlers.append(handler)
+        for handler in self._event_handlers.get(event.topic, []):
+            try:
+                handlers.append(handler.resolve(event))
+            except Exception as exc:
+                # todo: log or handle NotResolvedError
+                pass
         return handlers
