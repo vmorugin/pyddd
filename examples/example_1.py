@@ -1,5 +1,4 @@
 import abc
-import dataclasses
 import logging
 import uuid
 from uuid import NAMESPACE_URL
@@ -29,7 +28,6 @@ class PetCreated(DomainEvent, domain='pet'):
     name: str
 
 
-@dataclasses.dataclass(kw_only=True)
 class Pet(RootEntity):
     def __init__(self, name: str):
         self.name = name
@@ -85,7 +83,6 @@ class GreetReference(uuid.UUID):
         return cls(uuid.uuid5(NAMESPACE_URL, f'/journal/{pet_id}'))
 
 
-@dataclasses.dataclass
 class PerGreetJournal(RootEntity[GreetReference]):
     def __init__(self, pet_id: str, pet_name: str):
         self._reference = GreetReference.generate(pet_id)
