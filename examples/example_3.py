@@ -7,7 +7,10 @@ from application import (
     Module,
     Application,
 )
-from application.condition import Equal
+from application.condition import (
+    Equal,
+    Not,
+)
 from domain import (
     DomainCommand,
     DomainEvent,
@@ -43,7 +46,11 @@ class ProductCreated(DomainEvent, domain=product_domain):
     price: int
 
 
-class PrintProductInfo(DomainCommand, domain=product_domain):
+class PrintCreatedZeroPriceInfo(DomainCommand, domain=product_domain):
+    reference: str
+    price: int
+
+class PrintCreatedProductInfo(DomainCommand, domain=product_domain):
     reference: str
     price: int
 
@@ -70,8 +77,14 @@ def create_product(cmd: CreateProduct, repository: IProductRepository):
 
 @module.subscribe(ProductCreated.__topic__, condition=Equal(price=0))
 @module.register
-def create_product_without_price(cmd: PrintProductInfo):
-    print(f"Product {cmd.reference} created with zero price!")
+def create_product_without_price(cmd: PrintCreatedZeroPriceInfo):
+    print(f"Product {cmd.reference} was created with zero price!")
+
+
+@module.subscribe(ProductCreated.__topic__, condition=Not(Equal(price=0)))
+@module.register
+def create_product_without_price(cmd: PrintCreatedProductInfo):
+    print(f"Product {cmd.reference} was created.")
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -163,18 +176,27 @@ class ImMemoryProductRepository(IProductRepository):
 def main():
     app = Application()
     app.include(module)
+
     stored_memory = []
     event_store = InMemoryEventStore(stored_memory)
     event_store_listener = EventStoreListener(event_store)
+
     app_message_listener = ApplicationHandlerListener(app)
+
     publisher = EventPublisher()
     publisher.subscribe(event_store_listener)
     publisher.subscribe(app_message_listener)
-    app.set_defaults(product_domain, repository=ImMemoryProductRepository({}, publisher=publisher))
 
-    app.handle(CreateProduct(sku='123', price=123))
-    app.handle(CreateProduct(sku='123', price=0))  # will not be printed because of zero price
+    repository_memory = {}
+    app.set_defaults(product_domain, repository=ImMemoryProductRepository(repository_memory, publisher=publisher))
+
+    product_1 = app.handle(CreateProduct(sku='123', price=123))
+    product_2 = app.handle(CreateProduct(sku='123', price=0))  # will not be printed because of zero price
+
     assert len(stored_memory) == 2
+
+    assert isinstance(repository_memory[product_1], Product)
+    assert isinstance(repository_memory[product_2], Product)
 
 
 main()
