@@ -1,5 +1,7 @@
 import abc
 import typing as t
+import uuid
+from uuid import UUID
 
 from domain.event import DomainEvent
 
@@ -8,17 +10,20 @@ class ValueObject:
     ...
 
 
-T = t.TypeVar('T')
+class EntityUid(ValueObject, UUID):
+    ...
+
+IdType = t.TypeVar('IdType', bound=EntityUid)
 
 
-class IEntity(t.Generic[T], abc.ABC):
+class IEntity(t.Generic[IdType], abc.ABC):
     @property
     @abc.abstractmethod
-    def reference(self) -> T:
+    def reference(self) -> IdType:
         ...
 
 
-class IRootEntity(IEntity[T], abc.ABC):
+class IRootEntity(IEntity[IdType], abc.ABC):
 
     @abc.abstractmethod
     def register_event(self, event: DomainEvent):
@@ -29,31 +34,47 @@ class IRootEntity(IEntity[T], abc.ABC):
         ...
 
 
-class Entity(IEntity[T]):
-    def __init__(self, reference: T):
-        self._reference = reference
+class _EntityMeta(abc.ABCMeta):
+    def __call__(cls, *args, reference: IdType = None, **kwargs):
+        if reference is None:
+            reference = EntityUid(str(uuid.uuid4()))
+        cls._reference = reference
+        return super().__call__(*args, **kwargs)
+
+
+class Entity(IEntity[IdType], metaclass=_EntityMeta):
+
+    @property
+    def reference(self) -> IdType:
+        return self._reference
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and self.reference == other.reference
 
-    @property
-    def reference(self) -> T:
-        return self._reference
+
+class _RootEntityMeta(abc.ABCMeta):
+
+    def __call__(cls, *args, reference: IdType = None, **kwargs):
+        if reference is None:
+            reference = EntityUid(str(uuid.uuid4()))
+        cls._reference = reference
+        cls._events = []
+        return super().__call__(*args, **kwargs)
 
 
-class RootEntity(IRootEntity[T]):
-    def __init__(self, reference: T):
-        self._reference = reference
-        self._events = []
+class RootEntity(IRootEntity[IdType], metaclass=_RootEntityMeta):
 
     def register_event(self, event: DomainEvent):
         self._events.append(event)
 
     def collect_events(self) -> list[DomainEvent]:
-        events = self._events
-        self._events = []
+        events = list(self._events)
+        self._events.clear()
         return events
 
     @property
-    def reference(self) -> T:
+    def reference(self) -> IdType:
         return self._reference
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.reference == other.reference

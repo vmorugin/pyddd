@@ -34,7 +34,7 @@ class PetCreated(DomainEvent, domain='pet'):
 @dataclasses.dataclass(kw_only=True)
 class Pet(RootEntity):
     def __init__(self, name: str):
-        super().__init__(reference=str(uuid.uuid4()))
+        self._reference = str(uuid.uuid4())
         self.name = name
 
     @classmethod
@@ -91,7 +91,7 @@ class GreetReference(uuid.UUID):
 @dataclasses.dataclass
 class PerGreetJournal(RootEntity[GreetReference]):
     def __init__(self, pet_id: str, pet_name: str):
-        super().__init__(reference=GreetReference.generate(pet_id))
+        self._reference = GreetReference.generate(pet_id)
         self.pet_name = pet_name
 
     def greet(self):

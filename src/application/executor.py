@@ -51,6 +51,6 @@ class AsyncExecutor(IExecutor):
     @staticmethod
     def _set_task_result(task: asyncio.Future, /, future: asyncio.Future):
         if task.exception() is not None:
-            future.set_exception(task.exception())  # type: ignore
+            future.set_exception(task.exception())
         else:
             future.set_result(task.result())
