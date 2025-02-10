@@ -23,29 +23,18 @@ pip install git+https://github.com/vmorugin/pyddd.git
 ### Определение доменной модели
 
 ```python
-import dataclasses
-import uuid
-from domain import (
-    IRootEntity,
-    DomainEvent,
-)
-
-
 class PetCreated(DomainEvent, domain='pet'):
     pet_id: str
     name: str
 
-
-@dataclasses.dataclass(kw_only=True)
-class Pet(IRootEntity):
+class Pet(RootEntity):
     def __init__(self, name: str):
-        super().__init__(__reference__=str(uuid.uuid4()))
         self.name = name
 
     @classmethod
     def create(cls, name: str):
         pet = cls(name)
-        pet.register_event(PetCreated(name=name, pet_id=pet.__reference__))
+        pet.register_event(PetCreated(name=name, pet_id=pet.reference))
         return pet
 ```
 
@@ -72,7 +61,7 @@ pet_module = Module('pet')
 def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     repository.save(pet)
-    return pet.__reference__
+    return pet.reference
 ```
 
 ### Запуск приложения
