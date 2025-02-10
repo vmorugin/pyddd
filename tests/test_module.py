@@ -7,7 +7,11 @@ from application import (
     Module,
     SyncExecutor,
 )
-from application.abstractions import ICondition
+from application.abstractions import (
+    ICondition,
+    IRetryStrategy,
+    ResolvedHandlerT,
+)
 from domain import (
     DomainCommand,
     DomainEvent,
@@ -260,3 +264,34 @@ class TestModule:
 
         handlers = module.get_event_handlers(TestEvent())
         assert len(handlers) == 0
+
+    def test_can_handle_with_retry_strategy(self):
+        class RetryStrategy(IRetryStrategy):
+            def __init__(self, retry_count: int):
+                self._count = retry_count
+
+            def __call__(self, func: ResolvedHandlerT) -> ResolvedHandlerT:
+                count = self._count
+                def wrapper(*args, **kwargs):
+                    nonlocal count
+                    while count > 0:
+                        try:
+                            return func(*args, **kwargs)
+                        except Exception:
+                            count -= 1
+                    return func(*args, **kwargs)
+                return wrapper
+
+
+        module = Module('test')
+
+        @module.subscribe(TestEvent.__topic__, retry_strategy=RetryStrategy(retry_count=3))
+        @module.register
+        def foo(command: TestCommand, callback):
+            return callback()
+
+        mock = Mock(side_effect=[Exception(), Exception(), 1])
+        handlers = module.get_event_handlers(TestEvent())
+        assert len(handlers) == 1
+        assert handlers[0](callback=mock) == 1
+        assert mock.call_count == 3

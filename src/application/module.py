@@ -8,6 +8,7 @@ from application.abstractions import (
     ICondition,
     IExecutor,
     IPayloadConverter,
+    IRetryStrategy,
 )
 from application.exceptions import FailedHandlerCondition
 from application.executor import (
@@ -17,6 +18,7 @@ from application.handler import (
     EventHandler,
     CommandHandler,
 )
+from application.retry import none_retry
 from domain.message import IMessage
 
 
@@ -56,12 +58,14 @@ class Module:
             *,
             converter: IPayloadConverter = lambda x: x,
             condition: ICondition = none_condition,
+            retry_strategy: IRetryStrategy = none_retry,
     ):
         def wrapper(func):
             handler = EventHandler(CommandHandler(func))
             handler.set_converter(converter)
             handler.set_condition(condition)
             handler.set_defaults(self._defaults)
+            handler.set_retry_strategy(retry_strategy)
             self._event_handlers[event_name].append(handler)
             return func
 

@@ -2,9 +2,9 @@ import abc
 from typing import (
     ParamSpec,
     Callable,
-    Any,
     Protocol,
     Mapping,
+    TypeVar,
 )
 
 from domain import DomainCommand
@@ -12,7 +12,8 @@ from domain.event import IEvent
 from domain.message import IMessage
 
 P = ParamSpec('P')
-ResolvedHandlerT = Callable[..., Any]
+R = TypeVar('R')
+ResolvedHandlerT = Callable[..., R]
 
 
 class IHandler(abc.ABC):
@@ -23,6 +24,12 @@ class IHandler(abc.ABC):
 
     @abc.abstractmethod
     def set_defaults(self, defaults: dict):
+        ...
+
+
+class ICommandHandler(IHandler, abc.ABC):
+    @abc.abstractmethod
+    def get_command_type(self) -> type[DomainCommand]:
         ...
 
 
@@ -42,12 +49,11 @@ class ICondition(abc.ABC):
         ...
 
 
-class ICommandHandler(IHandler, abc.ABC):
-    @abc.abstractmethod
-    def get_command_type(self) -> type[DomainCommand]:
-        ...
-
-
 class IPayloadConverter(Protocol):
     def __call__(self, payload: Mapping) -> Mapping:
+        ...
+
+class IRetryStrategy(abc.ABC):
+    @abc.abstractmethod
+    def __call__(self, func: ResolvedHandlerT) -> ResolvedHandlerT:
         ...

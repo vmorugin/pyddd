@@ -13,8 +13,10 @@ from application.abstractions import (
     ICommandHandler,
     IPayloadConverter,
     ResolvedHandlerT,
+    IRetryStrategy,
 )
 from application.exceptions import FailedHandlerCondition
+from application.retry import none_retry
 from domain.message import (
     IMessage,
     IMessageMeta,
@@ -28,6 +30,7 @@ class EventHandler(IHandler):
         self._handler = handler
         self._converter: IPayloadConverter = lambda x: x
         self._condition = none_condition
+        self._retry_strategy = none_retry
         self._defaults = {}
 
     def set_defaults(self, defaults: dict):
@@ -41,7 +44,7 @@ class EventHandler(IHandler):
             )
         command_type = self._handler.get_command_type()
         message = command_type(**self._converter(message.to_dict()))
-        return self._handler.resolve(message=message)
+        return self._retry_strategy(self._handler.resolve(message=message))
 
     def set_condition(self, condition: ICondition):
         self._condition = condition
@@ -49,9 +52,8 @@ class EventHandler(IHandler):
     def set_converter(self, converter: IPayloadConverter):
         self._converter = converter
 
-    @property
-    def condition(self):
-        return self._condition
+    def set_retry_strategy(self, strategy: IRetryStrategy):
+        self._retry_strategy = strategy
 
 
 class CommandHandler(ICommandHandler):

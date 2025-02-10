@@ -11,6 +11,7 @@ from application.abstractions import (
     ICondition,
     ICommandHandler,
     ResolvedHandlerT,
+    IRetryStrategy,
 )
 from domain import (
     DomainEvent,
@@ -80,17 +81,6 @@ class TestEventHandler:
         func = handler.resolve(CustomEvent(id=12))
         assert func() == '12'
 
-    def test_can_set_condition(self):
-        class FailCondition(ICondition):
-            def check(self, event: IEvent) -> bool:
-                return False
-
-        callback = Mock()
-        handler = EventHandler(FakeCommandHandler(TestCommand, callback))
-        condition = FailCondition()
-        handler.set_condition(condition)
-        assert handler.condition == condition
-
     def test_must_resolve_event(self):
         callback = Mock(return_value='123')
         handler = EventHandler(FakeCommandHandler(TestCommand, callback))
@@ -121,3 +111,11 @@ class TestEventHandler:
         handler.set_condition(FailCondition())
         with pytest.raises(FailedHandlerCondition, match='Failed check condition FailCondition'):
             handler.resolve(TestEvent())
+
+    def test_always_call_retry_strategy(self):
+        mock = Mock()
+        retry_mock = Mock(spec=IRetryStrategy)
+        handler = EventHandler(FakeCommandHandler(TestCommand, mock))
+        handler.set_retry_strategy(retry_mock)
+        handler.resolve(TestEvent())
+        assert retry_mock.called
