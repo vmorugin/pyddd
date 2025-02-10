@@ -1,5 +1,6 @@
 import abc
 import dataclasses
+import logging
 import uuid
 from uuid import NAMESPACE_URL
 
@@ -153,6 +154,8 @@ class InMemoryGreetRepo(BaseRepository, IPetGreetRepo):
     def _insert(self, greet: PerGreetJournal):
         self.memory[greet.reference] = greet
 
+
+logging.basicConfig()
 
 # prepare app
 app = Application()

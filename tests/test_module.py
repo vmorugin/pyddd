@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import Mock
 
 import pytest
@@ -157,7 +158,7 @@ class TestModule:
 
         assert [h() for h in handlers] == [1, 2]
 
-    def test_subscribe_with_converter(self):
+    def test_can_subscribe_with_converter(self):
         class TestCommandWithParam(DomainCommand, domain='test'):
             reference: str
 
@@ -178,6 +179,38 @@ class TestModule:
         assert len(handlers) == 1
         handlers[0](callback=mock)
         mock.assert_called_with(reference='123')
+
+    def test_can_subscribe_with_different_converters(self):
+        class TestCommandWithReferenceParam(DomainCommand, domain='test'):
+            reference: str
+
+        class TestEventWithFooParam(DomainEvent, domain='test'):
+            foo: str
+
+        class TestEventWithBarParam(DomainEvent, domain='test'):
+            bar: str
+
+        module = Module(domain='test')
+
+        @module.subscribe(TestEventWithFooParam.__topic__, converter=lambda x: {'reference': x['foo']})
+        @module.subscribe(TestEventWithBarParam.__topic__, converter=lambda x: {'reference': x['bar']})
+        @module.register
+        def foo(command: TestCommandWithReferenceParam, callback):
+            assert isinstance(command, TestCommandWithReferenceParam)
+            callback(reference=command.reference)
+
+        mock = Mock()
+        foo_event = TestEventWithFooParam(foo=str(uuid.uuid4()))
+        handlers = module.get_event_handlers(foo_event)
+        assert len(handlers) == 1
+        handlers[0](callback=mock)
+        mock.assert_called_with(reference=foo_event.foo)
+
+        bar_event = TestEventWithBarParam(bar=str(uuid.uuid4()))
+        handlers = module.get_event_handlers(bar_event)
+        assert len(handlers) == 1
+        handlers[0](callback=mock)
+        mock.assert_called_with(reference=bar_event.bar)
 
     def test_must_fail_when_get_command_handler_not_existed(self):
         module = Module('...')

@@ -14,6 +14,7 @@ from application.abstractions import (
     IPayloadConverter,
     ResolvedHandlerT,
 )
+from application.exceptions import FailedHandlerCondition
 from domain.message import (
     IMessage,
     IMessageMeta,
@@ -34,7 +35,7 @@ class EventHandler(IHandler):
 
     def resolve(self, message: IMessage) -> ResolvedHandlerT:
         if not self._condition.check(message):
-            raise RuntimeError(
+            raise FailedHandlerCondition(
                 f'Failed check condition {self._condition.__class__.__name__} '
                 f'with message {message.topic}:{message.to_json()}'
             )

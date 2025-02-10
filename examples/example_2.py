@@ -1,6 +1,7 @@
 import abc
 import asyncio
 import dataclasses
+import logging
 import uuid
 from uuid import NAMESPACE_URL
 
@@ -26,7 +27,7 @@ class CreatePet(DomainCommand, domain='pet'):
 
 
 class PetCreated(DomainEvent, domain='pet'):
-    pet_id: str
+    reference: str
     name: str
 
 
@@ -39,7 +40,7 @@ class Pet(RootEntity):
     @classmethod
     def create(cls, name: str):
         pet = cls(name)
-        pet.register_event(PetCreated(name=name, pet_id=pet.reference))
+        pet.register_event(PetCreated(name=name, reference=pet.reference))
         return pet
 
     def rename(self, name: str):
@@ -69,7 +70,7 @@ async def create_pet(cmd: CreatePet, repository: IPetRepository):
     return pet.reference
 
 
-class InsertGreetLogCommand(DomainCommand, domain='greet'):
+class CreateGreetLogCommand(DomainCommand, domain='greet'):
     pet_id: str
     name: str
 
@@ -106,9 +107,9 @@ class IPetGreetRepo(IRepository, abc.ABC):
 greet_module = Module('greet')
 
 
-@greet_module.subscribe('pet.PetCreated')
+@greet_module.subscribe('pet.PetCreated', converter=lambda x: {"pet_id": x['reference'], "name": x['name']})
 @greet_module.register
-async def register_pet(cmd: InsertGreetLogCommand, repository: IPetGreetRepo):
+async def register_pet(cmd: CreateGreetLogCommand, repository: IPetGreetRepo):
     journal = await repository.get_by_pet_id(cmd.pet_id)
     if journal is None:
         journal = PerGreetJournal(pet_id=cmd.pet_id, pet_name=cmd.name)
@@ -175,5 +176,7 @@ async def main():
     greet_max = await app.handle(SayGreetCommand(pet_id=max_id))
     assert greet_max == 'Hi, Max!'
 
+
+logging.basicConfig()
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())

@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 
 from application.condition import (
@@ -8,6 +9,7 @@ from application.abstractions import (
     IExecutor,
     IPayloadConverter,
 )
+from application.exceptions import FailedHandlerCondition
 from application.executor import (
     SyncExecutor,
 )
@@ -19,12 +21,18 @@ from domain.message import IMessage
 
 
 class Module:
-    def __init__(self, domain: str, executor: IExecutor = None):
+    def __init__(
+            self,
+            domain: str,
+            executor: IExecutor = None,
+            logger_name: str = 'pyddd.module'
+    ):
         self._domain = domain
         self._executor = executor or SyncExecutor()
         self._defaults = {}
         self._event_handlers: dict[str, list[EventHandler]] = defaultdict(list)
         self._command_handlers: dict[str, CommandHandler] = {}
+        self._logger = logging.getLogger(logger_name)
 
     @property
     def domain(self) -> str:
@@ -69,7 +77,8 @@ class Module:
         for handler in self._event_handlers.get(event.topic, []):
             try:
                 handlers.append(handler.resolve(event))
+            except FailedHandlerCondition as exc:
+                self._logger.debug(f"Handler {handler} with event {event} did not pass condition", exc_info=exc)
             except Exception as exc:
-                # todo: log or handle NotResolvedError
-                pass
+                self._logger.warning(f"Can not resolve message {event} with handler {handler}", exc_info=exc)
         return handlers

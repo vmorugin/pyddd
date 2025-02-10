@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from application.exceptions import FailedHandlerCondition
 from application.handler import (
     EventHandler,
 )
@@ -118,5 +119,5 @@ class TestEventHandler:
         mock = Mock()
         handler = EventHandler(FakeCommandHandler(TestCommand, mock))
         handler.set_condition(FailCondition())
-        with pytest.raises(RuntimeError, match='Failed check condition FailCondition'):
+        with pytest.raises(FailedHandlerCondition, match='Failed check condition FailCondition'):
             handler.resolve(TestEvent())

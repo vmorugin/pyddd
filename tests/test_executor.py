@@ -44,10 +44,10 @@ class TestSyncExecutor:
         mock.assert_called_with(True)
 
     def test_process_event_must_return_results(self):
-        def foo(*args):
+        def foo():
             return 1
 
-        def bar(*args):
+        def bar():
             return 2
 
         executor = SyncExecutor()
@@ -55,10 +55,10 @@ class TestSyncExecutor:
         assert result == [1, 2]
 
     def test_must_execute_events_with_errors(self):
-        def foo(*args):
+        def foo():
             raise RuntimeError()
 
-        def bar(*args):
+        def bar():
             return 2
 
         executor = SyncExecutor()
@@ -73,7 +73,7 @@ class TestAsyncExecutor:
         assert isinstance(executor, IExecutor)
 
     async def test_process_command(self):
-        async def foo(*args):
+        async def foo():
             return True
 
         executor = AsyncExecutor()
@@ -90,10 +90,10 @@ class TestAsyncExecutor:
         mock.assert_called_with(True)
 
     async def test_process_event_must_return_results(self):
-        async def foo(*args):
+        async def foo():
             return 1
 
-        async def bar(*args):
+        async def bar():
             return 2
 
         executor = AsyncExecutor()
@@ -101,10 +101,10 @@ class TestAsyncExecutor:
         assert result == [1, 2]
 
     async def test_must_execute_events_with_errors(self):
-        async def foo(*args):
+        async def foo():
             raise RuntimeError()
 
-        async def bar(*args):
+        async def bar():
             return 2
 
         executor = AsyncExecutor()
