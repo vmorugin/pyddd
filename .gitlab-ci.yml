@@ -1,0 +1,47 @@
+include:
+  - project: 'pythagoras/ci-templates'
+    file:
+      - '/jobs/dependency-track.yml'
+      - '/jobs/defect-dojo.yml'
+
+workflow:
+  rules:
+    - if: $FORCE_PIPELINE == "True"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - when: never
+
+stages:
+  - test
+  - publish
+  - scan
+
+variables:
+  VENV_DIR: "$CI_PROJECT_DIR/.venv"
+
+Unit Tests:
+  stage: test
+  extends: .in-docker
+  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+      when: on_success
+  before_script:
+    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install poetry && poetry install
+    - cd src
+  script:
+    - python -m pytest $CI_PROJECT_DIR/tests
+
+Publish:
+ image: mwalbeck/python-poetry:1.2-3.11
+ stage: publish
+ before_script:
+   - poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
+   - poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
+ script:
+   - poetry publish --build --repository pgs
