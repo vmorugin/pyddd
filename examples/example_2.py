@@ -13,7 +13,7 @@ from pyddd.application import (
     set_application,
 )
 from pyddd.application import AsyncExecutor
-from domain import (
+from pyddd.domain import (
     IRootEntity,
     DomainCommand,
     DomainEvent,

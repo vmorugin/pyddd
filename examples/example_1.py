@@ -11,7 +11,7 @@ from pyddd.application import (
     get_application,
     set_application,
 )
-from domain import (
+from pyddd.domain import (
     IRootEntity,
     DomainCommand,
     DomainEvent,

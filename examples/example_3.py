@@ -11,7 +11,7 @@ from pyddd.application import (
     Equal,
     Not,
 )
-from domain import (
+from pyddd.domain import (
     DomainCommand,
     DomainEvent,
 )
@@ -19,7 +19,7 @@ from pyddd.domain.entity import (
     RootEntity,
     IRootEntity,
 )
-from domain.event import IEvent
+from pyddd.domain.event import IEvent
 
 product_domain = 'product'
 
