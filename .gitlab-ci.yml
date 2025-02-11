@@ -26,7 +26,6 @@ variables:
 
 Unit Tests:
   stage: test
-  extends: .in-docker
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
