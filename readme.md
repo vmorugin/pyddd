@@ -67,17 +67,20 @@ def create_pet(cmd: CreatePet, repository: IPetRepository):
 ### Запуск приложения
 
 ```python
-from application.application import get_application, set_application
+from pyddd.application import get_application,
+    set_application
+
 
 class InMemoryPetRepo(IPetRepository):
     def __init__(self):
         self.memory = {}
-    
+
     def get(self, name: str) -> Pet:
         return self.memory.get(name)
-    
+
     def save(self, entity: Pet):
         self.memory[entity.name] = entity
+
 
 # Настройка приложения
 app = Application()

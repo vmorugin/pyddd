@@ -1,4 +1,4 @@
-from application.abstractions import (
+from pyddd.application.abstractions import (
     IRetryStrategy,
     ResolvedHandlerT,
 )

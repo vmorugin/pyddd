@@ -1,5 +1,5 @@
-from application.abstractions import ICondition
-from domain.event import IEvent
+from pyddd.application.abstractions import ICondition
+from pyddd.domain.event import IEvent
 
 
 class NoneCondition(ICondition):

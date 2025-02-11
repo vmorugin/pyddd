@@ -2,7 +2,7 @@ import asyncio
 import logging
 from functools import partial
 
-from application.abstractions import (
+from pyddd.application.abstractions import (
     IExecutor,
     ResolvedHandlerT,
 )

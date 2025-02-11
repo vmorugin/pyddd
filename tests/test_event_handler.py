@@ -3,29 +3,29 @@ from unittest.mock import Mock
 
 import pytest
 
-from application.exceptions import FailedHandlerCondition
-from application.handler import (
+from pyddd.application.exceptions import FailedHandlerCondition
+from pyddd.application.handler import (
     EventHandler,
 )
-from application.abstractions import (
+from pyddd.application.abstractions import (
     ICondition,
     ICommandHandler,
     ResolvedHandlerT,
     IRetryStrategy,
 )
-from domain import (
+from pyddd.domain import (
     DomainEvent,
     DomainCommand,
 )
-from domain.event import IEvent
-from domain.message import IMessage
+from pyddd.domain.event import IEvent
+from pyddd.domain.message import IMessage
 
 
-class TestEvent(DomainEvent, domain='test'):
+class ExampleEvent(DomainEvent, domain='test'):
     ...
 
 
-class TestCommand(DomainCommand, domain='test'):
+class ExampleCommand(DomainCommand, domain='test'):
     ...
 
 
@@ -51,22 +51,22 @@ class FakeCommandHandler(ICommandHandler):
 class TestEventHandler:
     def test_handle(self):
         mock = Mock()
-        handler = EventHandler(FakeCommandHandler(TestCommand, mock))
-        handler.resolve(TestEvent())(callback=mock)
+        handler = EventHandler(FakeCommandHandler(ExampleCommand, mock))
+        handler.resolve(ExampleEvent())(callback=mock)
         assert mock.called
 
     def test_with_defaults(self):
         mock = Mock()
-        handler = EventHandler(FakeCommandHandler(TestCommand, mock))
+        handler = EventHandler(FakeCommandHandler(ExampleCommand, mock))
         handler.set_defaults(dict(callback=mock))
-        handler.resolve(TestEvent())()
+        handler.resolve(ExampleEvent())()
         assert mock.called
 
     def test_with_default_override(self):
         mock = Mock()
-        handler = EventHandler(FakeCommandHandler(TestCommand, mock))
+        handler = EventHandler(FakeCommandHandler(ExampleCommand, mock))
         handler.set_defaults(dict(callback=Mock()))
-        handler.resolve(TestEvent())(callback=mock)
+        handler.resolve(ExampleEvent())(callback=mock)
         assert mock.called
 
     def test_must_returns_result(self):
@@ -83,8 +83,8 @@ class TestEventHandler:
 
     def test_must_resolve_event(self):
         callback = Mock(return_value='123')
-        handler = EventHandler(FakeCommandHandler(TestCommand, callback))
-        func = handler.resolve(TestEvent())
+        handler = EventHandler(FakeCommandHandler(ExampleCommand, callback))
+        func = handler.resolve(ExampleEvent())
         assert func() == '123'
 
     def test_must_resolve_with_converter(self):
@@ -107,15 +107,15 @@ class TestEventHandler:
                 return False
 
         mock = Mock()
-        handler = EventHandler(FakeCommandHandler(TestCommand, mock))
+        handler = EventHandler(FakeCommandHandler(ExampleCommand, mock))
         handler.set_condition(FailCondition())
         with pytest.raises(FailedHandlerCondition, match='Failed check condition FailCondition'):
-            handler.resolve(TestEvent())
+            handler.resolve(ExampleEvent())
 
     def test_always_call_retry_strategy(self):
         mock = Mock()
         retry_mock = Mock(spec=IRetryStrategy)
-        handler = EventHandler(FakeCommandHandler(TestCommand, mock))
+        handler = EventHandler(FakeCommandHandler(ExampleCommand, mock))
         handler.set_retry_strategy(retry_mock)
-        handler.resolve(TestEvent())
+        handler.resolve(ExampleEvent())
         assert retry_mock.called

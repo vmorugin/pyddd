@@ -1,19 +1,17 @@
 from unittest.mock import Mock
 
-from application.executor import (
+from pyddd.application.executor import (
+    AsyncExecutor,
     SyncExecutor,
 )
-from application.executor import (
-    AsyncExecutor,
-)
-from application.abstractions import IExecutor
-from domain import (
+from pyddd.application.abstractions import IExecutor
+from pyddd.domain import (
     DomainCommand,
     DomainEvent,
 )
 
 
-class TestCommand(DomainCommand, domain='test'):
+class ExampleCommand(DomainCommand, domain='test'):
     ...
 
 

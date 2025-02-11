@@ -11,7 +11,13 @@ from uuid import (
     UUID,
 )
 
-from pydantic.v1.main import ModelMetaclass, BaseModel, PrivateAttr
+
+try:
+    # import from pydantic 2.x.x with backward compatibility
+    from pydantic.v1.main import ModelMetaclass, BaseModel, PrivateAttr
+except ImportError:
+    # import from pydantic 1.x.x
+    from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr
 
 
 class MessageType(str, Enum):

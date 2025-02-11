@@ -1,11 +1,11 @@
 import uuid
 
-from domain.entity import (
+from pyddd.domain.entity import (
     Entity,
     RootEntity,
     EntityUid,
 )
-from domain import DomainEvent
+from pyddd.domain import DomainEvent
 
 
 class TestEntity:

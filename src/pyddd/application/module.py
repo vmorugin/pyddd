@@ -1,25 +1,25 @@
 import logging
 from collections import defaultdict
 
-from application.condition import (
+from pyddd.application.condition import (
     none_condition,
 )
-from application.abstractions import (
+from pyddd.application.abstractions import (
     ICondition,
     IExecutor,
     IPayloadConverter,
     IRetryStrategy,
 )
-from application.exceptions import FailedHandlerCondition
-from application.executor import (
+from pyddd.application.exceptions import FailedHandlerCondition
+from pyddd.application.executor import (
     SyncExecutor,
 )
-from application.handler import (
+from pyddd.application.handler import (
     EventHandler,
     CommandHandler,
 )
-from application.retry import none_retry
-from domain.message import IMessage
+from pyddd.application.retry import none_retry
+from pyddd.domain.message import IMessage
 
 
 class Module:

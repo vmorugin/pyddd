@@ -1,5 +1,5 @@
 import abc
-from domain.message import (
+from pyddd.domain.message import (
     IMessage,
     MessageType,
     BaseDomainMessage,
