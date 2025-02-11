@@ -7,15 +7,22 @@ from pyddd.application import (
     Module,
     Application,
     AsyncExecutor,
+    get_application,
+    set_application,
 )
 from pyddd.domain import (
     DomainCommand,
+    DomainEvent,
 )
 from pyddd.domain.entity import (
     RootEntity,
 )
 
 product_domain = 'product'
+
+
+class ProductCreated(DomainEvent, domain=product_domain):
+    reference: str
 
 
 class Product(RootEntity):
@@ -25,8 +32,9 @@ class Product(RootEntity):
         self.stock = stock
 
     @classmethod
-    def create(cls, sku: str, price: int):
-        product = Product(sku, price=price, stock=0)
+    def create(cls, sku: str):
+        product = Product(sku, price=0, stock=0)
+        product.register_event(ProductCreated(reference=str(product.reference)))
         return product
 
     def renew_price(self, price: int):
@@ -38,7 +46,6 @@ class Product(RootEntity):
 
 class CreateProduct(DomainCommand, domain=product_domain):
     sku: str
-    price: int
 
 
 class ActualizeProduct(DomainCommand, domain=product_domain):
@@ -64,7 +71,7 @@ class IProductRepository(IRepository, abc.ABC):
 
 @module.register
 async def create_product(cmd: CreateProduct, repository: IProductRepository):
-    product = Product.create(cmd.sku, cmd.price)
+    product = Product.create(cmd.sku)
     await repository.save(product)
     return product.reference
 
@@ -85,6 +92,9 @@ class ImMemoryProductRepository(IProductRepository):
 
     async def save(self, entity: Product):
         self._memory[str(entity.reference)] = entity
+        app = get_application()
+        for event in entity.collect_events():
+            app.handle(event)
 
     async def get(self, entity_id: str) -> Product:
         return self._memory[entity_id]
@@ -95,7 +105,7 @@ class PriceAdapter(IProductStorageAdapter):
         print(f"Price requested for {sku=} at {dt.datetime.now()}...")
         await asyncio.sleep(0.5)
         print(f"Got price response at {dt.datetime.now()}")
-        return random.randint(0, 100)
+        return random.randint(1, 100)
 
     async def get_stock(self, sku: str) -> int:
         print(f"Stock requested for {sku=} at {dt.datetime.now()}...")
@@ -104,8 +114,9 @@ class PriceAdapter(IProductStorageAdapter):
         return random.randint(1, 5)
 
 
+@module.subscribe('product.ProductCreated', converter=lambda x: {'product_id': str(x['reference'])})
 @module.register
-async def refresh_price_product(
+async def actualize_product(
         cmd: ActualizeProduct,
         repository: IProductRepository,
         price_adapter: IProductStorageAdapter,
@@ -125,12 +136,17 @@ async def main():
     app.include(module)
     repository = ImMemoryProductRepository({})
     app.set_defaults(product_domain, repository=repository, price_adapter=PriceAdapter())
+    set_application(app)
 
-    product_id = await app.handle(CreateProduct(sku='AB123CD', price=129))
-    await app.handle(ActualizeProduct(product_id=str(product_id)))
+    product_id = await app.handle(CreateProduct(sku='AB123CD'))
 
     product = await repository.get(str(product_id))
-    assert product.price != 129
+    assert product.price == 0
+    assert product.stock == 0
+
+    await asyncio.sleep(1)
+
+    assert product.price != 0
     assert product.stock != 0
 
 
