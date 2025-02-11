@@ -7,9 +7,9 @@ from typing import (
     TypeVar,
 )
 
-from domain import DomainCommand
-from domain.event import IEvent
-from domain.message import IMessage
+from pyddd.domain import DomainCommand
+from pyddd.domain.event import IEvent
+from pyddd.domain.message import IMessage
 
 P = ParamSpec('P')
 R = TypeVar('R')

@@ -1,10 +1,10 @@
 import pytest
 
-from application.abstractions import (
+from pyddd.application.retry import (
     IRetryStrategy,
     ResolvedHandlerT,
+    NoneRetryStrategy
 )
-from application.retry import NoneRetryStrategy
 
 
 class TestNoneRetryStrategy:

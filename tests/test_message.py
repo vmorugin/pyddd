@@ -2,11 +2,11 @@ import datetime as dt
 
 import pytest
 
-from domain.message import (
+from pyddd.domain.message import (
     Message,
     MessageType,
 )
-from domain import (
+from pyddd.domain import (
     DomainCommand,
     DomainEvent,
 )
@@ -29,24 +29,24 @@ class TestMessage:
 
 class TestDomainEvent:
     def test_event(self):
-        class TestEvent(DomainEvent, domain='test'):
+        class ExampleEvent(DomainEvent, domain='test'):
             some_attr: str
 
-        event = TestEvent(some_attr='123')
+        event = ExampleEvent(some_attr='123')
 
         assert event.type == MessageType.EVENT
         assert event.to_dict() == {'some_attr': '123'}
         assert event.domain == 'test'
-        assert event.message_name == 'TestEvent'
-        assert event.topic == 'test.TestEvent'
+        assert event.message_name == 'ExampleEvent'
+        assert event.topic == 'test.ExampleEvent'
 
     def test_attrs_from_cls(self):
-        class TestEvent(DomainEvent, domain='test'):
+        class ExampleEvent(DomainEvent, domain='test'):
             some_attr: str
 
-        assert TestEvent.__message_name__ == 'TestEvent'
-        assert TestEvent.__domain__ == 'test'
-        assert TestEvent.__topic__ == 'test.TestEvent'
+        assert ExampleEvent.__message_name__ == 'ExampleEvent'
+        assert ExampleEvent.__domain__ == 'test'
+        assert ExampleEvent.__topic__ == 'test.ExampleEvent'
 
     def test_event_without_domain(self):
         with pytest.raises(ValueError):
@@ -55,27 +55,27 @@ class TestDomainEvent:
 
 class TestDomainCommand:
     def test_command(self):
-        class TestCommand(DomainCommand, domain='test'):
+        class ExampleCommand(DomainCommand, domain='test'):
             ...
 
-        command = TestCommand()
+        command = ExampleCommand()
         assert command.type == MessageType.COMMAND
         assert command.domain == 'test'
-        assert command.message_name == 'TestCommand'
-        assert command.topic == 'test.TestCommand'
+        assert command.message_name == 'ExampleCommand'
+        assert command.topic == 'test.ExampleCommand'
         assert command.to_dict() == {}
         assert isinstance(command.occurred_on, dt.datetime)
         assert isinstance(command.message_id, str)
 
     def test_attrs_from_cls(self):
-        class TestCommand(DomainCommand, domain='test'):
+        class ExampleCommand(DomainCommand, domain='test'):
             some_attr: str
 
-        assert TestCommand.__message_name__ == 'TestCommand'
-        assert TestCommand.__domain__ == 'test'
-        assert TestCommand.__topic__ == 'test.TestCommand'
+        assert ExampleCommand.__message_name__ == 'ExampleCommand'
+        assert ExampleCommand.__domain__ == 'test'
+        assert ExampleCommand.__topic__ == 'test.ExampleCommand'
 
     def test_command_without_domain(self):
         with pytest.raises(ValueError):
-            class TestCommand(DomainCommand):
+            class ExampleCommand(DomainCommand):
                 ...

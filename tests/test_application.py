@@ -1,23 +1,23 @@
 import pytest
 
-from application import Application
-from application import Module
-from application.application import (
+from pyddd.application import Application
+from pyddd.application import Module
+from pyddd.application import (
     set_application,
     get_application,
 )
 
-from domain import (
+from pyddd.domain import (
     DomainCommand,
     DomainEvent,
 )
 
 
-class TestCommand(DomainCommand, domain='test'):
+class ExampleCommand(DomainCommand, domain='test'):
     ...
 
 
-class TestEvent(DomainEvent, domain='test'):
+class ExampleEvent(DomainEvent, domain='test'):
     ...
 
 
@@ -29,23 +29,23 @@ class TestApplication:
             app.include(Module('test'))
 
     def test_handle_command(self):
-        def foo(cmd: TestCommand):
+        def foo(cmd: ExampleCommand):
             return True
 
         app = Application()
         module = Module('test')
         module.register(foo)
         app.include(module)
-        result = app.handle(TestCommand())
+        result = app.handle(ExampleCommand())
         assert result is True
 
     def test_handle_event(self):
-        def foo(cmd: TestCommand):
+        def foo(cmd: ExampleCommand):
             return 1
 
         app = Application()
         module = Module('test')
-        event = TestEvent()
+        event = ExampleEvent()
         module.subscribe(event.topic)(foo)
         app.include(module)
         result = app.handle(event)
@@ -53,15 +53,15 @@ class TestApplication:
 
     def test_handle_unresolved_event(self):
         app = Application()
-        app.handle(TestEvent())
+        app.handle(ExampleEvent())
 
     def test_handle_unresolved_command(self):
         app = Application()
         with pytest.raises(ValueError, match='Unregistered module for domain'):
-            app.handle(TestCommand())
+            app.handle(ExampleCommand())
 
     def test_handle_with_defaults(self):
-        def foo(cmd: TestCommand, atr: str):
+        def foo(cmd: ExampleCommand, atr: str):
             return atr
 
         app = Application()
@@ -69,11 +69,11 @@ class TestApplication:
         module = Module('test')
         module.register(foo)
         app.include(module)
-        result = app.handle(TestCommand())
+        result = app.handle(ExampleCommand())
         assert result == 'success'
 
     def test_handle_with_overwrite_defaults(self):
-        def foo(cmd: TestCommand, atr: str):
+        def foo(cmd: ExampleCommand, atr: str):
             return atr
 
         app = Application()
@@ -81,23 +81,23 @@ class TestApplication:
         module = Module('test')
         module.register(foo)
         app.include(module)
-        result = app.handle(TestCommand(), atr='success')
+        result = app.handle(ExampleCommand(), atr='success')
         assert result == 'success'
 
     def test_must_return_exceptions_when_handle_event(self):
         module = Module(domain='test')
 
-        @module.subscribe(TestEvent.__topic__)
-        def foo(command: TestCommand):
+        @module.subscribe(ExampleEvent.__topic__)
+        def foo(command: ExampleCommand):
             raise Exception()
 
-        @module.subscribe(TestEvent.__topic__)
-        def bzz(command: TestCommand):
+        @module.subscribe(ExampleEvent.__topic__)
+        def bzz(command: ExampleCommand):
             return True
 
         application = Application()
         application.include(module)
-        result = application.handle(TestEvent())
+        result = application.handle(ExampleEvent())
         assert isinstance(result[0], Exception)
         assert result[1] is True
 

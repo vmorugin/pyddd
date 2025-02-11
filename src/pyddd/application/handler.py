@@ -4,10 +4,10 @@ from typing import (
     Callable,
 )
 
-from application.condition import (
+from pyddd.application.condition import (
     none_condition,
 )
-from application.abstractions import (
+from pyddd.application.abstractions import (
     ICondition,
     IHandler,
     ICommandHandler,
@@ -15,13 +15,13 @@ from application.abstractions import (
     ResolvedHandlerT,
     IRetryStrategy,
 )
-from application.exceptions import FailedHandlerCondition
-from application.retry import none_retry
-from domain.message import (
+from pyddd.application.exceptions import FailedHandlerCondition
+from pyddd.application.retry import none_retry
+from pyddd.domain.message import (
     IMessage,
     IMessageMeta,
 )
-from domain import DomainCommand
+from pyddd.domain.command import DomainCommand
 
 
 class EventHandler(IHandler):

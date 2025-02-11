@@ -8,9 +8,7 @@ workflow:
   rules:
     - if: $FORCE_PIPELINE == "True"
     - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_COMMIT_BRANCH == "dev"
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
     - if: $CI_PIPELINE_SOURCE == "schedule"
@@ -37,10 +35,13 @@ Unit Tests:
     - python -m pytest $CI_PROJECT_DIR/tests
 
 Publish:
- image: mwalbeck/python-poetry:1.2-3.11
- stage: publish
- before_script:
-   - poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
-   - poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
- script:
-   - poetry publish --build --repository pgs
+  image: mwalbeck/python-poetry:1.8.5-3.11
+  stage: publish
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  before_script:
+    - poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
+    - poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
+  script:
+    - poetry publish --build --repository pgs

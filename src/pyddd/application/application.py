@@ -1,10 +1,10 @@
 import logging
 from collections import defaultdict
 
-from application.executor import SyncExecutor
-from application.abstractions import IExecutor
-from application.module import Module
-from domain.message import (
+from pyddd.application.executor import SyncExecutor
+from pyddd.application.abstractions import IExecutor
+from pyddd.application.module import Module
+from pyddd.domain.message import (
     IMessage,
     MessageType,
 )

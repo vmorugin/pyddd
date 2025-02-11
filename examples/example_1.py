@@ -3,11 +3,11 @@ import logging
 import uuid
 from uuid import NAMESPACE_URL
 
-from application import (
+from pyddd.application import (
     Module,
     Application,
 )
-from application.application import (
+from pyddd.application import (
     get_application,
     set_application,
 )
@@ -16,7 +16,7 @@ from domain import (
     DomainCommand,
     DomainEvent,
 )
-from domain.entity import RootEntity
+from pyddd.domain.entity import RootEntity
 
 
 class CreatePet(DomainCommand, domain='pet'):

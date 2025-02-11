@@ -3,7 +3,7 @@ import typing as t
 import uuid
 from uuid import UUID
 
-from domain.event import DomainEvent
+from pyddd.domain.event import DomainEvent
 
 
 class ValueObject:
@@ -13,7 +13,7 @@ class ValueObject:
 class EntityUid(ValueObject, UUID):
     ...
 
-IdType = t.TypeVar('IdType', bound=EntityUid)
+IdType = t.TypeVar('IdType')
 
 
 class IEntity(t.Generic[IdType], abc.ABC):

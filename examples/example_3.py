@@ -3,11 +3,11 @@ import dataclasses
 import datetime as dt
 import uuid
 
-from application import (
+from pyddd.application import (
     Module,
     Application,
 )
-from application.condition import (
+from pyddd.application import (
     Equal,
     Not,
 )
@@ -15,7 +15,7 @@ from domain import (
     DomainCommand,
     DomainEvent,
 )
-from domain.entity import (
+from pyddd.domain.entity import (
     RootEntity,
     IRootEntity,
 )
