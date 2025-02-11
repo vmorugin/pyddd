@@ -10,7 +10,7 @@ from pyddd.domain import (
 class ExampleCommand(DomainCommand, domain='test'):
     ...
 
-class TestEvent(DomainEvent, domain='test'):
+class ExampleEvent(DomainEvent, domain='test'):
     ...
 
 
@@ -50,7 +50,7 @@ class TestCommandHandler:
         mock = Mock()
         handler = CommandHandler(foo)
         handler.set_defaults(dict(callback=mock))
-        handler.resolve(TestEvent())()
+        handler.resolve(ExampleEvent())()
         assert mock.called
 
     def test_with_default_override(self):

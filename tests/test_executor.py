@@ -15,7 +15,7 @@ class ExampleCommand(DomainCommand, domain='test'):
     ...
 
 
-class TestEvent(DomainEvent, domain='test'):
+class ExampleEvent(DomainEvent, domain='test'):
     ...
 
 

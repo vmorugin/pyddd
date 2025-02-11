@@ -116,26 +116,26 @@ class TestModule:
         assert mock.call_count == 2
 
     def test_could_subscribe_with_two_events_to_one_command(self):
-        class TestEvent1(DomainEvent, domain='test'):
+        class ExampleEvent1(DomainEvent, domain='test'):
             ...
 
-        class TestEvent2(DomainEvent, domain='test'):
+        class ExampleEvent2(DomainEvent, domain='test'):
             ...
 
         module = Module(domain='test')
 
-        @module.subscribe(TestEvent1.__topic__)
-        @module.subscribe(TestEvent2.__topic__)
+        @module.subscribe(ExampleEvent1.__topic__)
+        @module.subscribe(ExampleEvent2.__topic__)
         @module.register
         def bzz(command: ExampleCommand):
             return 1
 
-        event_1 = TestEvent1()
+        event_1 = ExampleEvent1()
         handlers = module.get_event_handlers(event_1)
         assert len(handlers) == 1
         assert handlers[0]() == 1
 
-        event_2 = TestEvent2()
+        event_2 = ExampleEvent2()
         handlers = module.get_event_handlers(event_2)
         assert len(handlers) == 1
         assert handlers[0]() == 1
@@ -166,7 +166,7 @@ class TestModule:
         class ExampleCommandWithParam(DomainCommand, domain='test'):
             reference: str
 
-        class TestEventWithParam(DomainEvent, domain='test'):
+        class ExampleEventWithParam(DomainEvent, domain='test'):
             param_id: str
 
         def foo(command: ExampleCommandWithParam, callback):
@@ -177,7 +177,7 @@ class TestModule:
         mock = Mock()
         module.set_defaults(dict(callback=mock))
         module.register(foo)
-        event = TestEventWithParam(param_id='123')
+        event = ExampleEventWithParam(param_id='123')
         module.subscribe(event.topic, converter=lambda x: {'reference': x['param_id']})(foo)
         handlers = module.get_event_handlers(event)
         assert len(handlers) == 1
@@ -188,29 +188,29 @@ class TestModule:
         class ExampleCommandWithReferenceParam(DomainCommand, domain='test'):
             reference: str
 
-        class TestEventWithFooParam(DomainEvent, domain='test'):
+        class ExampleEventWithFooParam(DomainEvent, domain='test'):
             foo: str
 
-        class TestEventWithBarParam(DomainEvent, domain='test'):
+        class ExampleEventWithBarParam(DomainEvent, domain='test'):
             bar: str
 
         module = Module(domain='test')
 
-        @module.subscribe(TestEventWithFooParam.__topic__, converter=lambda x: {'reference': x['foo']})
-        @module.subscribe(TestEventWithBarParam.__topic__, converter=lambda x: {'reference': x['bar']})
+        @module.subscribe(ExampleEventWithFooParam.__topic__, converter=lambda x: {'reference': x['foo']})
+        @module.subscribe(ExampleEventWithBarParam.__topic__, converter=lambda x: {'reference': x['bar']})
         @module.register
         def foo(command: ExampleCommandWithReferenceParam, callback):
             assert isinstance(command, ExampleCommandWithReferenceParam)
             callback(reference=command.reference)
 
         mock = Mock()
-        foo_event = TestEventWithFooParam(foo=str(uuid.uuid4()))
+        foo_event = ExampleEventWithFooParam(foo=str(uuid.uuid4()))
         handlers = module.get_event_handlers(foo_event)
         assert len(handlers) == 1
         handlers[0](callback=mock)
         mock.assert_called_with(reference=foo_event.foo)
 
-        bar_event = TestEventWithBarParam(bar=str(uuid.uuid4()))
+        bar_event = ExampleEventWithBarParam(bar=str(uuid.uuid4()))
         handlers = module.get_event_handlers(bar_event)
         assert len(handlers) == 1
         handlers[0](callback=mock)

@@ -50,7 +50,7 @@ class TestDomainEvent:
 
     def test_event_without_domain(self):
         with pytest.raises(ValueError):
-            class TestEvent(DomainEvent):
+            class ExampleEvent(DomainEvent):
                 ...
 
 class TestDomainCommand:

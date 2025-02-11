@@ -45,11 +45,11 @@ class TestRootEntity:
         class SomeRootEntity(RootEntity[int]):
             ...
 
-        class TestEvent(DomainEvent, domain='test'):
+        class ExampleEvent(DomainEvent, domain='test'):
             ...
 
         entity = SomeRootEntity(reference=123)
-        event = TestEvent()
+        event = ExampleEvent()
         entity.register_event(event)
         assert entity.collect_events() == [event]
         assert entity.collect_events() == []
