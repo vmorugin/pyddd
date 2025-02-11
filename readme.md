@@ -12,10 +12,16 @@
 
 ## Установка
 
-На данный момент `pyddd` не опубликован в PyPI. Вы можете установить его из исходного кода:
+Доступна из внутреннего pypi-репозитория. Пример установки через poetry:
 
+Если не добавлен локальный pypi источник - нужно выполнить команду
 ```bash
-pip install git+https://github.com/vmorugin/pyddd.git
+poetry source add local-pypi https://git.nctresource.team/api/v4/projects/368/packages/pypi/simple
+```
+Следом работаем с пакетом как с обычной зависимостью
+```bash
+poetry add pyddd
+poetry install
 ```
 
 ## Быстрый старт
@@ -67,10 +73,6 @@ def create_pet(cmd: CreatePet, repository: IPetRepository):
 ### Запуск приложения
 
 ```python
-from pyddd.application import get_application,
-    set_application
-
-
 class InMemoryPetRepo(IPetRepository):
     def __init__(self):
         self.memory = {}
