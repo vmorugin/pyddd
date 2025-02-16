@@ -12,7 +12,7 @@ from pyddd.application.abstractions import (
     IHandler,
     ICommandHandler,
     IPayloadConverter,
-    ResolvedHandlerT,
+    AnyCallable,
     IRetryStrategy,
 )
 from pyddd.application.exceptions import FailedHandlerCondition
@@ -36,7 +36,7 @@ class EventHandler(IHandler):
     def set_defaults(self, defaults: dict):
         self._handler.set_defaults(defaults)
 
-    def resolve(self, message: IMessage) -> ResolvedHandlerT:
+    def resolve(self, message: IMessage) -> AnyCallable:
         if not self._condition.check(message):
             raise FailedHandlerCondition(
                 f'Failed check condition {self._condition.__class__.__name__} '
@@ -71,7 +71,7 @@ class CommandHandler(ICommandHandler):
     def get_command_type(self) -> type[DomainCommand]:
         return self._command_param.annotation
 
-    def resolve(self, message: IMessage) -> ResolvedHandlerT:
+    def resolve(self, message: IMessage) -> AnyCallable:
         depends = {
             self._command_param.name: self._command_param.annotation(**message.to_dict()),
         }

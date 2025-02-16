@@ -6,6 +6,7 @@ from pyddd.application import (
     set_application,
     get_application,
 )
+from pyddd.application.abstractions import IApplication
 
 from pyddd.domain import (
     DomainCommand,
@@ -22,6 +23,10 @@ class ExampleEvent(DomainEvent, domain='test'):
 
 
 class TestApplication:
+    def test_must_implement_interface(self):
+        app = Application()
+        assert isinstance(app, IApplication)
+
     def test_include_twice(self):
         app = Application()
         app.include(Module('test'))
@@ -48,7 +53,7 @@ class TestApplication:
         event = ExampleEvent()
         module.subscribe(event.topic)(foo)
         app.include(module)
-        result = app.handle(event)
+        result = list(app.handle(event))
         assert result == [1]
 
     def test_handle_unresolved_event(self):
@@ -97,7 +102,7 @@ class TestApplication:
 
         application = Application()
         application.include(module)
-        result = application.handle(ExampleEvent())
+        result = list(application.handle(ExampleEvent()))
         assert isinstance(result[0], Exception)
         assert result[1] is True
 
@@ -105,6 +110,11 @@ class TestApplication:
         app = Application()
         with pytest.raises(RuntimeError):
             app.handle(...)
+
+    def test_app_must_run(self):
+        app = Application()
+        app.run()
+        assert app.is_running is True
 
 
 def test_set_and_get_application():

@@ -2,7 +2,10 @@ import logging
 from collections import defaultdict
 
 from pyddd.application.executor import SyncExecutor
-from pyddd.application.abstractions import IExecutor
+from pyddd.application.abstractions import (
+    IExecutor,
+    IApplication,
+)
 from pyddd.application.module import Module
 from pyddd.domain.message import (
     IMessage,
@@ -10,7 +13,7 @@ from pyddd.domain.message import (
 )
 
 
-class Application:
+class Application(IApplication):
     def __init__(
             self,
             logger_name: str = 'pyddd.application',
@@ -20,6 +23,7 @@ class Application:
         self._defaults: dict[str, dict] = defaultdict(dict)
         self._logger = logging.getLogger(logger_name)
         self._executor = executor or SyncExecutor()
+        self._is_running = False
 
     def set_defaults(self, domain: str, **kwargs):
         self._defaults[domain].update(kwargs)
@@ -32,6 +36,13 @@ class Application:
 
         module.set_defaults(self._defaults[module.domain])
         self._modules[module.domain] = module
+
+    def run(self):
+        self._is_running = True
+
+    @property
+    def is_running(self):
+        return self._is_running
 
     def handle(self, message: IMessage, **depends):
         if not isinstance(message, IMessage):

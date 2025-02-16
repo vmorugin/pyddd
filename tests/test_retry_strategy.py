@@ -4,7 +4,7 @@ import pytest
 
 from pyddd.application.retry import (
     IRetryStrategy,
-    ResolvedHandlerT,
+    AnyCallable,
     NoneRetryStrategy
 )
 
@@ -42,7 +42,7 @@ class TestTenacityRetryExample:
                 self._stop = stop
                 self._wait = wait
 
-            def __call__(self, func: ResolvedHandlerT) -> ResolvedHandlerT:
+            def __call__(self, func: AnyCallable) -> AnyCallable:
                 return tc.Retrying(retry=self._retry, stop=self._stop, wait=self._wait).wraps(func)
 
         tc_retry = TenacitySyncRetry
@@ -79,7 +79,7 @@ class TestTenacityRetryExample:
                 self._stop = stop
                 self._wait = wait
 
-            def __call__(self, func: ResolvedHandlerT) -> ResolvedHandlerT:
+            def __call__(self, func: AnyCallable) -> AnyCallable:
                 return tc.AsyncRetrying(retry=self._retry, stop=self._stop, wait=self._wait).wraps(func)
 
         tc_retry = TenacityAsyncRetry
