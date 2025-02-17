@@ -10,7 +10,8 @@ from pyddd.application import (
 from pyddd.application.abstractions import (
     ICondition,
     IRetryStrategy,
-    ResolvedHandlerT,
+    AnyCallable,
+    IModule,
 )
 from pyddd.domain import (
     DomainCommand,
@@ -28,6 +29,10 @@ class ExampleEvent(DomainEvent, domain='test'):
 
 
 class TestModule:
+    def test_must_implement_interface(self):
+        module = Module('')
+        assert isinstance(module, IModule)
+
     def test_register_as_decorator(self):
         module = Module('test')
 
@@ -270,7 +275,7 @@ class TestModule:
             def __init__(self, retry_count: int):
                 self._count = retry_count
 
-            def __call__(self, func: ResolvedHandlerT) -> ResolvedHandlerT:
+            def __call__(self, func: AnyCallable) -> AnyCallable:
                 count = self._count
                 def wrapper(*args, **kwargs):
                     nonlocal count

@@ -9,6 +9,7 @@ from pyddd.application.abstractions import (
     IExecutor,
     IPayloadConverter,
     IRetryStrategy,
+    IModule,
 )
 from pyddd.application.exceptions import FailedHandlerCondition
 from pyddd.application.executor import (
@@ -22,7 +23,7 @@ from pyddd.application.retry import none_retry
 from pyddd.domain.message import IMessage
 
 
-class Module:
+class Module(IModule):
     def __init__(
             self,
             domain: str,

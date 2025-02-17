@@ -10,7 +10,7 @@ from pyddd.application.handler import (
 from pyddd.application.abstractions import (
     ICondition,
     ICommandHandler,
-    ResolvedHandlerT,
+    AnyCallable,
     IRetryStrategy,
 )
 from pyddd.domain import (
@@ -38,7 +38,7 @@ class FakeCommandHandler(ICommandHandler):
     def get_command_type(self) -> type[DomainCommand]:
         return self._command_type
 
-    def resolve(self, message: IMessage, **kwargs) -> ResolvedHandlerT:
+    def resolve(self, message: IMessage, **kwargs) -> AnyCallable:
         return partial(self.handle, message, **kwargs)
 
     def handle(self, message: IMessage, **kwargs):
