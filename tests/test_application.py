@@ -139,6 +139,18 @@ class TestApplication:
         app.stop()
         assert app.is_running is False
 
+    def test_can_not_stop_before_run(self):
+        app = Application()
+        with pytest.raises(RuntimeError, match='Can not stop not running application'):
+            app.stop()
+
+    def test_can_not_run_after_stop(self):
+        app = Application()
+        app.run()
+        app.stop()
+        with pytest.raises(RuntimeError):
+            app.run()
+
     def test_must_run_before_run_and_after_run_if_run(self):
         app = Application()
         mock = Mock()
@@ -152,6 +164,7 @@ class TestApplication:
         mock = Mock()
         app.subscribe(ApplicationSignal.BEFORE_STOP, mock)
         app.subscribe(ApplicationSignal.AFTER_STOP, mock)
+        app.run()
         app.stop()
         assert mock.call_count == 2
 
