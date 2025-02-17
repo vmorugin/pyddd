@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyddd"
-version = "0.2.1"
+version = "0.2.2"
 description = "pyddd - это DDD (Domain-Driven Design) фреймворк для Python, предоставляющий встроенный менеджер зависимостей и шину сообщений. Он упрощает построение сложных доменных моделей и событийное программирование."
 authors = ["v.morugin <vamorugin@gmail.com>"]
 packages = [

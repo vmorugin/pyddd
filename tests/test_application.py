@@ -1,8 +1,15 @@
-from unittest.mock import Mock
+from unittest.mock import (
+    Mock,
+    AsyncMock,
+)
 
 import pytest
 
-from pyddd.application import Application
+from pyddd.application import (
+    Application,
+    AsyncExecutor,
+    SyncExecutor,
+)
 from pyddd.application import Module
 from pyddd.application import (
     set_application,
@@ -119,10 +126,21 @@ class TestApplication:
         app.run()
         assert app.is_running is True
 
+    async def test_app_must_arun(self):
+        app = Application()
+        await app.run_async()
+        assert app.is_running is True
+
     def test_app_must_stop(self):
         app = Application()
         app.run()
         app.stop()
+        assert app.is_stopped is True
+
+    async def test_app_must_astop(self):
+        app = Application()
+        await app.run_async()
+        await app.stop_async()
         assert app.is_stopped is True
 
     def test_app_must_not_be_running_by_default(self):
@@ -144,6 +162,11 @@ class TestApplication:
         with pytest.raises(RuntimeError, match='Can not stop not running application'):
             app.stop()
 
+    async def test_can_not_astop_before_run(self):
+        app = Application()
+        with pytest.raises(RuntimeError, match='Can not stop not running application'):
+            await app.stop_async()
+
     def test_can_not_run_after_stop(self):
         app = Application()
         app.run()
@@ -151,12 +174,27 @@ class TestApplication:
         with pytest.raises(RuntimeError):
             app.run()
 
-    def test_must_run_before_run_and_after_run_if_run(self):
+    async def test_can_not_arun_after_astop(self):
+        app = Application()
+        await app.run_async()
+        await app.stop_async()
+        with pytest.raises(RuntimeError):
+            await app.run_async()
+
+    def test_must_call_before_run_and_after_run_if_run(self):
         app = Application()
         mock = Mock()
         app.subscribe(ApplicationSignal.BEFORE_RUN, mock)
         app.subscribe(ApplicationSignal.AFTER_RUN, mock)
         app.run()
+        assert mock.call_count == 2
+
+    async def test_must_call_before_run_and_after_run_if_arun(self):
+        app = Application()
+        mock = AsyncMock()
+        app.subscribe(ApplicationSignal.BEFORE_RUN, mock)
+        app.subscribe(ApplicationSignal.AFTER_RUN, mock)
+        await app.run_async()
         assert mock.call_count == 2
 
     def test_must_run_before_stop_and_after_stop_if_stop(self):
@@ -168,10 +206,29 @@ class TestApplication:
         app.stop()
         assert mock.call_count == 2
 
+    async def test_must_run_before_stop_and_after_stop_if_stop_async(self):
+        app = Application()
+        mock = AsyncMock()
+        app.subscribe(ApplicationSignal.BEFORE_STOP, mock)
+        app.subscribe(ApplicationSignal.AFTER_STOP, mock)
+        await app.run_async()
+        await app.stop_async()
+        assert mock.call_count == 2
+
     def test_can_not_handle_not_running_error(self):
         app = Application()
         with pytest.raises(RuntimeError, match='Can not handle test.ExampleEvent. App is not running!'):
             app.handle(ExampleEvent())
+
+    async def test_must_set_async_executor_if_run_async(self):
+        app = Application()
+        await app.run_async()
+        assert isinstance(app._executor, AsyncExecutor)
+
+    def test_must_set_sync_executor_if_run(self):
+        app = Application()
+        app.run()
+        assert isinstance(app._executor, SyncExecutor)
 
 
 def test_set_and_get_application():

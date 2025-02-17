@@ -108,7 +108,15 @@ class IApplication(abc.ABC):
         ...
 
     @abc.abstractmethod
+    async def run_async(self):
+        ...
+
+    @abc.abstractmethod
     def stop(self):
+        ...
+
+    @abc.abstractmethod
+    async def stop_async(self):
         ...
 
     @abc.abstractmethod
@@ -141,4 +149,8 @@ class ISignalManager(abc.ABC):
 
     @abc.abstractmethod
     def notify(self, signal: ApplicationSignal, application: IApplication):
+        ...
+
+    @abc.abstractmethod
+    async def notify_async(self, signal: ApplicationSignal, application: IApplication):
         ...

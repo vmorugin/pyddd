@@ -23,3 +23,7 @@ class SignalManager(ISignalManager):
     def notify(self, signal: ApplicationSignal, application: IApplication):
         for listener in self._listeners.get(signal, []):
             listener(signal, application)
+
+    async def notify_async(self, signal: ApplicationSignal, application: IApplication):
+        for listener in self._listeners.get(signal, []):
+            await listener(signal, application)
