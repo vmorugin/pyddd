@@ -5,8 +5,11 @@ from pyddd.application.executor import SyncExecutor
 from pyddd.application.abstractions import (
     IExecutor,
     IApplication,
+    ApplicationSignal,
+    SignalListener,
 )
 from pyddd.application.module import Module
+from pyddd.application.signal_manager import SignalManager
 from pyddd.domain.message import (
     IMessage,
     MessageType,
@@ -14,6 +17,7 @@ from pyddd.domain.message import (
 
 
 class Application(IApplication):
+
     def __init__(
             self,
             logger_name: str = 'pyddd.application',
@@ -24,6 +28,8 @@ class Application(IApplication):
         self._logger = logging.getLogger(logger_name)
         self._executor = executor or SyncExecutor()
         self._is_running = False
+        self._is_stopped = False
+        self._signal_manager = SignalManager()
 
     def set_defaults(self, domain: str, **kwargs):
         self._defaults[domain].update(kwargs)
@@ -38,13 +44,37 @@ class Application(IApplication):
         self._modules[module.domain] = module
 
     def run(self):
+        self._signal_manager.notify(ApplicationSignal.BEFORE_RUN, self)
+
         self._is_running = True
+
+        self._signal_manager.notify(ApplicationSignal.AFTER_RUN, self)
+
+    def stop(self):
+        self._signal_manager.notify(ApplicationSignal.BEFORE_STOP, self)
+
+        self._is_running = False
+        self._is_stopped = True
+
+        self._signal_manager.notify(ApplicationSignal.AFTER_STOP, self)
+
+    def subscribe(self, signal: ApplicationSignal, listener: SignalListener):
+        self._signal_manager.subscribe(signal, listener)
+
+    def unsubscribe(self, signal: ApplicationSignal, listener: SignalListener):
+        self._signal_manager.unsubscribe(signal, listener)
 
     @property
     def is_running(self):
         return self._is_running
 
+    @property
+    def is_stopped(self):
+        return self._is_stopped
+
     def handle(self, message: IMessage, **depends):
+        if not self._is_running:
+            raise RuntimeError(f'Can not handle {message.topic}. App is not running!')
         if not isinstance(message, IMessage):
             raise RuntimeError(f'Unexpected message type {message}')
         if message.type == MessageType.COMMAND:

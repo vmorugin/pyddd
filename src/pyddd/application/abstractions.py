@@ -1,20 +1,15 @@
+from __future__ import annotations
 import abc
-from typing import (
-    ParamSpec,
-    Callable,
-    Protocol,
-    Mapping,
-    TypeVar,
-    Sequence,
-)
+import typing as t
+from enum import StrEnum
 
 from pyddd.domain import DomainCommand
 from pyddd.domain.event import IEvent
 from pyddd.domain.message import IMessage
 
-P = ParamSpec('P')
-R = TypeVar('R')
-AnyCallable = Callable[..., R]
+P = t.ParamSpec('P')
+R = t.TypeVar('R')
+AnyCallable = t.Callable[..., R]
 
 
 class IHandler(abc.ABC):
@@ -50,8 +45,8 @@ class ICondition(abc.ABC):
         ...
 
 
-class IPayloadConverter(Protocol):
-    def __call__(self, payload: Mapping) -> Mapping:
+class IPayloadConverter(t.Protocol):
+    def __call__(self, payload: t.Mapping) -> t.Mapping:
         ...
 
 
@@ -91,7 +86,7 @@ class IModule(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_event_handlers(self, event: IMessage) -> Sequence[AnyCallable]:
+    def get_event_handlers(self, event: IMessage) -> t.Sequence[AnyCallable]:
         ...
 
 
@@ -110,4 +105,40 @@ class IApplication(abc.ABC):
 
     @abc.abstractmethod
     def run(self):
+        ...
+
+    @abc.abstractmethod
+    def stop(self):
+        ...
+
+    @abc.abstractmethod
+    def subscribe(self, signal: ApplicationSignal, listener: SignalListener):
+        ...
+
+    @abc.abstractmethod
+    def unsubscribe(self, signal: ApplicationSignal, listener: SignalListener):
+        ...
+
+
+class ApplicationSignal(StrEnum):
+    BEFORE_RUN = 'before_run'
+    AFTER_RUN = 'after_run'
+    BEFORE_STOP = 'before_stop'
+    AFTER_STOP = 'after_stop'
+
+
+SignalListener = t.Callable[[ApplicationSignal, IApplication], t.Any]
+
+
+class ISignalManager(abc.ABC):
+    @abc.abstractmethod
+    def subscribe(self, signal: ApplicationSignal, listener: SignalListener):
+        ...
+
+    @abc.abstractmethod
+    def unsubscribe(self, signal: ApplicationSignal, listener: SignalListener):
+        ...
+
+    @abc.abstractmethod
+    def notify(self, signal: ApplicationSignal, application: IApplication):
         ...
