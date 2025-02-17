@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 
-from pyddd.application.executor import SyncExecutor
+from pyddd.application.executor import SyncExecutor, AsyncExecutor
 from pyddd.application.abstractions import (
     IExecutor,
     IApplication,
@@ -26,7 +26,7 @@ class Application(IApplication):
         self._modules: dict[str, Module] = {}
         self._defaults: dict[str, dict] = defaultdict(dict)
         self._logger = logging.getLogger(logger_name)
-        self._executor = executor or SyncExecutor()
+        self._executor = executor
         self._is_running = False
         self._is_stopped = False
         self._signal_manager = SignalManager()
@@ -43,9 +43,36 @@ class Application(IApplication):
         module.set_defaults(self._defaults[module.domain])
         self._modules[module.domain] = module
 
+    async def run_async(self):
+        if self._is_stopped:
+            raise RuntimeError("Can not run. Application was stopped.")
+
+        if self._executor is None:
+            self._executor = AsyncExecutor()
+
+        await self._signal_manager.notify_async(ApplicationSignal.BEFORE_RUN, self)
+
+        self._is_running = True
+
+        await self._signal_manager.notify_async(ApplicationSignal.AFTER_RUN, self)
+
+    async def stop_async(self):
+        if not self._is_running:
+            raise RuntimeError("Can not stop not running application")
+
+        await self._signal_manager.notify_async(ApplicationSignal.BEFORE_STOP, self)
+
+        self._is_running = False
+        self._is_stopped = True
+
+        await self._signal_manager.notify_async(ApplicationSignal.AFTER_STOP, self)
+
     def run(self):
         if self._is_stopped:
             raise RuntimeError("Can not run. Application was stopped.")
+
+        if self._executor is None:
+            self._executor = SyncExecutor()
 
         self._signal_manager.notify(ApplicationSignal.BEFORE_RUN, self)
 
@@ -109,7 +136,7 @@ class Application(IApplication):
 __context = None
 
 
-def set_application(app: Application):
+def set_application(app: IApplication):
     global __context
     __context = app
 
