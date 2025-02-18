@@ -22,7 +22,7 @@ stages:
 variables:
   VENV_DIR: "$CI_PROJECT_DIR/.venv"
 
-Unit Tests Pydantic 1.x.x:
+Unit Tests Pydantic 2.x.x:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   rules:
@@ -34,7 +34,7 @@ Unit Tests Pydantic 1.x.x:
   script:
     - python -m pytest $CI_PROJECT_DIR/tests
 
-Unit Tests Pydantic 2.x.x:
+Unit Tests Pydantic 1.x.x:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   rules:
