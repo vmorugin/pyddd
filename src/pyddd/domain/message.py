@@ -10,14 +10,17 @@ from uuid import (
     uuid4,
     UUID,
 )
+from importlib.metadata import version
 
+pydantic_version = version('pydantic')
 
-try:
-    # import from pydantic 2.x.x with backward compatibility
-    from pydantic.v1.main import ModelMetaclass, BaseModel, PrivateAttr
-except ImportError:
-    # import from pydantic 1.x.x
+if pydantic_version.startswith('2'):
+    from pydantic import BaseModel, PrivateAttr
+    from pydantic._internal._model_construction import ModelMetaclass
+elif pydantic_version.startswith('1'):
     from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr
+else:
+    raise ImportError('Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x')
 
 
 class MessageType(str, Enum):

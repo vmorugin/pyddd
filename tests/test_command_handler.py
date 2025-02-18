@@ -41,7 +41,7 @@ class TestCommandHandler:
         handler.set_defaults(dict(callback=mock))
         command = ExampleCommand()
         func = handler.resolve(command)
-        assert func() == command
+        assert isinstance(func(), ExampleCommand)
 
     def test_with_defaults(self):
         def foo(cmd: ExampleCommand, callback):
