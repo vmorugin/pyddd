@@ -173,7 +173,7 @@ class ImMemoryProductRepository(IProductRepository):
         self._publisher.publish(*entity.collect_events())
 
 
-def main():
+def test():
     app = Application()
     app.include(module)
 
@@ -190,6 +190,8 @@ def main():
     repository_memory = {}
     app.set_defaults(product_domain, repository=ImMemoryProductRepository(repository_memory, publisher=publisher))
 
+    app.run()
+
     product_1 = app.handle(CreateProduct(sku='123', price=123))
     product_2 = app.handle(CreateProduct(sku='123', price=0))  # will not be printed because of zero price
 
@@ -197,6 +199,3 @@ def main():
 
     assert isinstance(repository_memory[product_1], Product)
     assert isinstance(repository_memory[product_2], Product)
-
-
-main()

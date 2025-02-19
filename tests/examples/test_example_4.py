@@ -6,7 +6,6 @@ import datetime as dt
 from pyddd.application import (
     Module,
     Application,
-    AsyncExecutor,
     get_application,
     set_application,
 )
@@ -103,13 +102,13 @@ class ImMemoryProductRepository(IProductRepository):
 class PriceAdapter(IProductStorageAdapter):
     async def get_price(self, sku: str) -> int:
         print(f"Price requested for {sku=} at {dt.datetime.now()}...")
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.01)
         print(f"Got price response at {dt.datetime.now()}")
         return random.randint(1, 100)
 
     async def get_stock(self, sku: str) -> int:
         print(f"Stock requested for {sku=} at {dt.datetime.now()}...")
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.01)
         print(f"Got stock response at {dt.datetime.now()}")
         return random.randint(1, 5)
 
@@ -131,12 +130,13 @@ async def actualize_product(
     await repository.save(product)
 
 
-async def main():
-    app = Application(executor=AsyncExecutor())
+async def test():
+    app = Application()
     app.include(module)
     repository = ImMemoryProductRepository({})
     app.set_defaults(product_domain, repository=repository, price_adapter=PriceAdapter())
     set_application(app)
+    await app.run_async()
 
     product_id = await app.handle(CreateProduct(sku='AB123CD'))
 
@@ -144,11 +144,8 @@ async def main():
     assert product.price == 0
     assert product.stock == 0
 
-    await asyncio.sleep(1)
+    await asyncio.sleep(0.02)
 
     assert product.price != 0
     assert product.stock != 0
-
-
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+    await app.stop_async()

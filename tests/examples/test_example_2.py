@@ -155,7 +155,8 @@ class InMemoryGreetRepo(BaseRepository, IPetGreetRepo):
 
 
 # prepare app
-async def main():
+async def test():
+    logging.basicConfig()
     app = Application(executor=AsyncExecutor())
     app.include(greet_module)
     app.include(pet_module)
@@ -165,6 +166,8 @@ async def main():
     # set app_globally
     set_application(app)
 
+    await app.run_async()
+
     fluff_id = await app.handle(CreatePet(name='Fluff'))
     max_id = await app.handle(CreatePet(name='Max'))
     greet_fluff = await app.handle(SayGreetCommand(pet_id=fluff_id))
@@ -172,8 +175,3 @@ async def main():
 
     greet_max = await app.handle(SayGreetCommand(pet_id=max_id))
     assert greet_max == 'Hi, Max!'
-
-
-logging.basicConfig()
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())

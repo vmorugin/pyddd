@@ -1,5 +1,6 @@
 import abc
 import logging
+import time
 import uuid
 from uuid import NAMESPACE_URL
 
@@ -151,23 +152,29 @@ class InMemoryGreetRepo(BaseRepository, IPetGreetRepo):
         self.memory[greet.reference] = greet
 
 
-logging.basicConfig()
+def test():
+    logging.basicConfig()
 
-# prepare app
-app = Application()
-app.include(greet_module)
-app.include(pet_module)
-app.set_defaults('pet', repository=InMemoryPetRepo({}))
-app.set_defaults('greet', repository=InMemoryGreetRepo({}))
+    # prepare app
+    app = Application()
+    app.include(greet_module)
+    app.include(pet_module)
+    app.set_defaults('pet', repository=InMemoryPetRepo({}))
+    app.set_defaults('greet', repository=InMemoryGreetRepo({}))
 
-# set app_globally
-set_application(app)
+    # set app_globally
+    set_application(app)
 
-fluff_id = app.handle(CreatePet(name='Fluff'))
-max_id = app.handle(CreatePet(name='Max'))
+    app.run()
 
-greet_fluff = app.handle(SayGreetCommand(pet_id=str(fluff_id)))
-assert greet_fluff == 'Hi, Fluff!'
+    fluff_id = app.handle(CreatePet(name='Fluff'))
+    max_id = app.handle(CreatePet(name='Max'))
 
-greet_max = app.handle(SayGreetCommand(pet_id=str(max_id)))
-assert greet_max == 'Hi, Max!'
+    # wait till event executed
+    time.sleep(0.01)
+
+    greet_fluff = app.handle(SayGreetCommand(pet_id=str(fluff_id)))
+    assert greet_fluff == 'Hi, Fluff!'
+
+    greet_max = app.handle(SayGreetCommand(pet_id=str(max_id)))
+    assert greet_max == 'Hi, Max!'
