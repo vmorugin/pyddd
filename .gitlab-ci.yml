@@ -53,7 +53,7 @@ Publish:
   image: mwalbeck/python-poetry:1.8.5-3.11
   stage: publish
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "RNDIN-1068.update_from_main"
       when: on_success
   before_script:
     - poetry config repositories.pgs ${CI_API_V4_URL}/projects/3276/packages/pypi
