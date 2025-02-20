@@ -56,7 +56,6 @@ Publish:
     - if: $CI_COMMIT_BRANCH == "RNDIN-1068.update_from_main"
       when: on_success
   before_script:
-    - echo ${CI_API_V4_URL}
     - poetry config repositories.pgs ${CI_API_V4_URL}/projects/3162/packages/pypi
     - poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
   script:
