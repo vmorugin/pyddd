@@ -21,10 +21,13 @@ stages:
 
 variables:
   VENV_DIR: "$CI_PROJECT_DIR/.venv"
+  PYTHON_IMAGE_NAME: "pgs-python"
+  PYTHON_IMAGE_TAG: "3.11"
+
 
 Unit Tests Pydantic 2.x.x:
   stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
@@ -36,7 +39,7 @@ Unit Tests Pydantic 2.x.x:
 
 Unit Tests Pydantic 1.x.x:
   stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
@@ -53,7 +56,7 @@ Publish:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
   before_script:
-    - poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
+    - poetry config repositories.pgs ${CI_API_V4_URL}/projects/3276/packages/pypi
     - poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
   script:
     - poetry publish --build --repository pgs
