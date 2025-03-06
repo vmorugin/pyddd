@@ -67,7 +67,7 @@ class TestApplication:
 
         module = Module('test')
         event = ExampleEvent()
-        module.subscribe(event.topic)(foo)
+        module.subscribe(event.__topic__)(foo)
         application.include(module)
         result = list(application.handle(event))
         assert result == [1]

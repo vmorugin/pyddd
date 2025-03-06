@@ -19,7 +19,7 @@ class _DomainEventMeta(BaseDomainMessageMeta):
 
 class IEvent(IMessage, abc.ABC):
     @property
-    def type(self) -> MessageType:
+    def __type__(self) -> MessageType:
         return MessageType.EVENT
 
 

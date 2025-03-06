@@ -1,5 +1,4 @@
 import abc
-import asyncio
 import logging
 import uuid
 from uuid import NAMESPACE_URL
@@ -38,7 +37,7 @@ class Pet(RootEntity):
     @classmethod
     def create(cls, name: str):
         pet = cls(name)
-        pet.register_event(PetCreated(name=name, reference=pet.reference))
+        pet.register_event(PetCreated(name=name, reference=pet.__reference__))
         return pet
 
     def rename(self, name: str):
@@ -65,7 +64,7 @@ pet_module = Module('pet')
 async def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     await repository.save(pet)
-    return pet.reference
+    return pet.__reference__
 
 
 class CreateGreetLogCommand(DomainCommand, domain='greet'):
@@ -111,7 +110,7 @@ async def register_pet(cmd: CreateGreetLogCommand, repository: IPetGreetRepo):
     if journal is None:
         journal = PerGreetJournal(pet_id=cmd.pet_id, pet_name=cmd.name)
         await repository.save(journal)
-    return journal.reference
+    return journal.__reference__
 
 
 @greet_module.register
@@ -151,7 +150,7 @@ class InMemoryGreetRepo(BaseRepository, IPetGreetRepo):
         return self.memory.get(GreetReference.generate(pet_id))
 
     async def _insert(self, greet: PerGreetJournal):
-        self.memory[greet.reference] = greet
+        self.memory[greet.__reference__] = greet
 
 
 # prepare app
