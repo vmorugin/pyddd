@@ -1,5 +1,3 @@
-import uuid
-
 from pyddd.domain.entity import (
     Entity,
     RootEntity,
@@ -13,15 +11,15 @@ class TestEntity:
         class SomeEntity(Entity[str]):
             ...
 
-        entity = SomeEntity(reference='123')
+        entity = SomeEntity(__reference__='123')
         assert entity.__reference__ == '123'
-        assert entity == SomeEntity(reference='123')
+        assert entity == SomeEntity(__reference__='123')
 
     def test_entity_neq(self):
         class SomeEntity(Entity[str]):
             ...
 
-        assert SomeEntity(reference=str(uuid.uuid4())) != SomeEntity(reference=str(uuid.uuid4()))
+        assert SomeEntity() != SomeEntity()
 
     def test_can_init_with_custom_attributes(self):
         class SomeEntity(Entity):
@@ -47,8 +45,8 @@ class TestRootEntity:
         class ExampleEvent(DomainEvent, domain='test'):
             ...
 
-        entity = SomeRootEntity(reference=123)
-        assert entity == SomeRootEntity(reference=123)
+        entity = SomeRootEntity(__reference__=123)
+        assert entity == SomeRootEntity(__reference__=123)
         assert entity.__reference__ == 123
 
         event = ExampleEvent()
@@ -60,7 +58,7 @@ class TestRootEntity:
         class SomeEntity(RootEntity[str]):
             ...
 
-        assert SomeEntity(reference=str(uuid.uuid4())) != SomeEntity(reference=str(uuid.uuid4()))
+        assert SomeEntity() != SomeEntity()
 
     def test_can_init_with_default_reference(self):
         class SomeEntity(RootEntity):
