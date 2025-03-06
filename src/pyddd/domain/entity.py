@@ -35,10 +35,10 @@ class IRootEntity(IEntity[IdType], abc.ABC):
 
 
 class _EntityMeta(abc.ABCMeta):
-    def __call__(cls, *args, reference: IdType = None, **kwargs):
+    def __call__(cls, *args, __reference__: IdType = None, **kwargs):
         instance = super().__call__(*args, **kwargs)
         if not hasattr(instance, '_reference'):
-            instance._reference = reference or EntityUid(str(uuid.uuid4()))
+            instance._reference = __reference__ or EntityUid(str(uuid.uuid4()))
         return instance
 
 
@@ -55,10 +55,10 @@ class Entity(IEntity[IdType], metaclass=_EntityMeta):
 
 class _RootEntityMeta(abc.ABCMeta):
 
-    def __call__(cls, *args, reference: IdType = None, **kwargs):
+    def __call__(cls, *args, __reference__: IdType = None, **kwargs):
         instance = super().__call__(*args, **kwargs)
         if not hasattr(instance, '_reference'):
-            instance._reference = reference or EntityUid(str(uuid.uuid4()))
+            instance._reference = __reference__ or EntityUid(str(uuid.uuid4()))
         instance._events = []
         return instance
 
