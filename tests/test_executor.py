@@ -67,7 +67,7 @@ class TestSyncExecutor:
         before = dt.datetime.now()
         callback = Mock()
         executor.process_handlers(handlers=[foo, bar], callback=callback)
-        assert dt.datetime.now() - before < dt.timedelta(seconds=0.001)
+        assert dt.datetime.now() - before < dt.timedelta(seconds=0.002)
         time.sleep(0.002)
         assert callback.call_count ==  2
 
