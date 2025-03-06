@@ -40,7 +40,7 @@ class Pet(RootEntity):
     @classmethod
     def create(cls, name: str):
         pet = cls(name)
-        pet.register_event(PetCreated(name=name, pet_id=pet.reference))
+        pet.register_event(PetCreated(name=name, pet_id=pet.__reference__))
         return pet
 ```
 
@@ -51,14 +51,15 @@ class IPetRepository(abc.ABC):
     @abc.abstractmethod
     def save(self, entity: RootEntity):
         ...
-    
+
     @abc.abstractmethod
     def get(self, name: str) -> Pet:
         ...
 
+
 class CreatePet(DomainCommand, domain='pet'):
     name: str
-    
+
 
 pet_module = Module('pet')
 
@@ -67,7 +68,7 @@ pet_module = Module('pet')
 def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     repository.save(pet)
-    return pet.reference
+    return pet.__reference__
 ```
 
 ### Запуск приложения

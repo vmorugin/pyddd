@@ -40,7 +40,7 @@ class EventHandler(IHandler):
         if not self._condition.check(message):
             raise FailedHandlerCondition(
                 f'Failed check condition {self._condition.__class__.__name__} '
-                f'with message {message.topic}:{message.to_json()}'
+                f'with message {message.__topic__}:{message.to_json()}'
             )
         command_type = self._handler.get_command_type()
         message = command_type(**self._converter(message.to_dict()))

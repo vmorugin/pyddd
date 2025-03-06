@@ -183,7 +183,7 @@ class TestModule:
         module.set_defaults(dict(callback=mock))
         module.register(foo)
         event = ExampleEventWithParam(param_id='123')
-        module.subscribe(event.topic, converter=lambda x: {'reference': x['param_id']})(foo)
+        module.subscribe(event.__topic__, converter=lambda x: {'reference': x['param_id']})(foo)
         handlers = module.get_event_handlers(event)
         assert len(handlers) == 1
         handlers[0](callback=mock)

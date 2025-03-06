@@ -33,7 +33,7 @@ class Product(RootEntity):
     @classmethod
     def create(cls, sku: str):
         product = Product(sku, price=0, stock=0)
-        product.register_event(ProductCreated(reference=str(product.reference)))
+        product.register_event(ProductCreated(reference=str(product.__reference__)))
         return product
 
     def renew_price(self, price: int):
@@ -72,7 +72,7 @@ class IProductRepository(IRepository, abc.ABC):
 async def create_product(cmd: CreateProduct, repository: IProductRepository):
     product = Product.create(cmd.sku)
     await repository.save(product)
-    return product.reference
+    return product.__reference__
 
 
 class IProductStorageAdapter(abc.ABC):
@@ -90,7 +90,7 @@ class ImMemoryProductRepository(IProductRepository):
         self._memory = memory
 
     async def save(self, entity: Product):
-        self._memory[str(entity.reference)] = entity
+        self._memory[str(entity.__reference__)] = entity
         app = get_application()
         for event in entity.collect_events():
             app.handle(event)

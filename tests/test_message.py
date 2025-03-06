@@ -20,9 +20,9 @@ class TestMessage:
             message_id='123',
             payload=dict(reference='123'),
         )
-        assert message.type == 'EVENT'
-        assert message.message_name == 'UserCreated'
-        assert message.domain == 'users.sub'
+        assert message.__type__ == 'EVENT'
+        assert message.__message_name__ == 'UserCreated'
+        assert message.__domain__ == 'users.sub'
         assert message.to_dict() == {'reference': '123'}
         assert message.to_json() == '{"reference": "123"}'
         assert isinstance(message.occurred_on, dt.datetime)
@@ -34,11 +34,11 @@ class TestDomainEvent:
 
         event = ExampleEvent(some_attr='123')
 
-        assert event.type == MessageType.EVENT
+        assert event.__type__ == MessageType.EVENT
         assert event.to_dict() == {'some_attr': '123'}
-        assert event.domain == 'test'
-        assert event.message_name == 'ExampleEvent'
-        assert event.topic == 'test.ExampleEvent'
+        assert event.__domain__ == 'test'
+        assert event.__message_name__ == 'ExampleEvent'
+        assert event.__topic__ == 'test.ExampleEvent'
 
     def test_attrs_from_cls(self):
         class ExampleEvent(DomainEvent, domain='test'):
@@ -59,13 +59,13 @@ class TestDomainCommand:
             ...
 
         command = ExampleCommand()
-        assert command.type == MessageType.COMMAND
-        assert command.domain == 'test'
-        assert command.message_name == 'ExampleCommand'
-        assert command.topic == 'test.ExampleCommand'
+        assert command.__type__ == MessageType.COMMAND
+        assert command.__domain__ == 'test'
+        assert command.__message_name__ == 'ExampleCommand'
+        assert command.__topic__ == 'test.ExampleCommand'
         assert command.to_dict() == {}
         assert isinstance(command.occurred_on, dt.datetime)
-        assert isinstance(command.message_id, str)
+        assert isinstance(command.__message_id__, str)
 
     def test_attrs_from_cls(self):
         class ExampleCommand(DomainCommand, domain='test'):

@@ -32,7 +32,7 @@ class Product(RootEntity):
     @classmethod
     def create(cls, sku: str, price: int):
         product = Product(sku, price=price)
-        product.register_event(ProductCreated(reference=str(product.reference), price=price))
+        product.register_event(ProductCreated(reference=str(product.__reference__), price=price))
         return product
 
 
@@ -72,7 +72,7 @@ class IProductRepository(IRepository, abc.ABC):
 def create_product(cmd: CreateProduct, repository: IProductRepository):
     product = Product.create(cmd.sku, cmd.price)
     repository.save(product)
-    return product.reference
+    return product.__reference__
 
 
 @module.subscribe(ProductCreated.__topic__, condition=Equal(price=0))
@@ -148,7 +148,7 @@ class EventStoreListener(IEventSubscriber):
         stored_event = StoredEvent(
             id=str(uuid.uuid4()),
             occurred_on=event.occurred_on,
-            event_name=event.topic,
+            event_name=event.__topic__,
             payload=event.to_json(),
         )
         self._event_store.insert(stored_event)
@@ -169,7 +169,7 @@ class ImMemoryProductRepository(IProductRepository):
         self._publisher = publisher
 
     def save(self, entity: IRootEntity):
-        self._memory[entity.reference] = entity
+        self._memory[entity.__reference__] = entity
         self._publisher.publish(*entity.collect_events())
 
 

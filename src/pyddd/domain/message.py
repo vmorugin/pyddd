@@ -50,27 +50,27 @@ class IMessage(abc.ABC, metaclass=IMessageMeta):
 
     @property
     @abc.abstractmethod
-    def domain(self) -> str:
+    def __domain__(self) -> str:
         ...
 
     @property
     @abc.abstractmethod
-    def message_name(self) -> str:
+    def __message_name__(self) -> str:
         ...
 
     @property
     @abc.abstractmethod
-    def topic(self) -> str:
+    def __topic__(self) -> str:
         ...
 
     @property
     @abc.abstractmethod
-    def message_id(self) -> str:
+    def __message_id__(self) -> str:
         ...
 
     @property
     @abc.abstractmethod
-    def type(self) -> MessageType:
+    def __type__(self) -> MessageType:
         ...
 
     @abc.abstractmethod
@@ -103,11 +103,11 @@ class Message(IMessage):
         self._occurred_on = occurred_on or dt.datetime.now(dt.UTC)
 
     @property
-    def message_id(self) -> str:
+    def __message_id__(self) -> str:
         return self._message_id
 
     @property
-    def type(self) -> MessageType:
+    def __type__(self) -> MessageType:
         return self._type
 
     @property
@@ -115,15 +115,15 @@ class Message(IMessage):
         return self._occurred_on
 
     @property
-    def domain(self) -> str:
+    def __domain__(self) -> str:
         return self._domain
 
     @property
-    def message_name(self) -> str:
+    def __message_name__(self) -> str:
         return self._name
 
     @property
-    def topic(self) -> str:
+    def __topic__(self) -> str:
         return f'{self._domain}.{self._name}'
 
     def to_dict(self) -> dict:
@@ -168,19 +168,19 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
         frozen = True
 
     @property
-    def domain(self) -> str:
+    def __domain__(self) -> str:
         return self.__class__.__domain__
 
     @property
-    def message_name(self) -> str:
+    def __message_name__(self) -> str:
         return self.__class__.__message_name__
 
     @property
-    def topic(self) -> str:
+    def __topic__(self) -> str:
         return self.__class__.__topic__
 
     @property
-    def message_id(self) -> str:
+    def __message_id__(self) -> str:
         return str(self._reference)
 
     def to_dict(self) -> dict:

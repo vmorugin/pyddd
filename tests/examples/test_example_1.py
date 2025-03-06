@@ -36,7 +36,7 @@ class Pet(RootEntity):
     @classmethod
     def create(cls, name: str):
         pet = cls(name)
-        pet.register_event(PetCreated(name=name, pet_id=str(pet.reference)))
+        pet.register_event(PetCreated(name=name, pet_id=str(pet.__reference__)))
         return pet
 
     def rename(self, name: str):
@@ -63,7 +63,7 @@ pet_module = Module('pet')
 def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     repository.save(pet)
-    return pet.reference
+    return pet.__reference__
 
 
 class InsertGreetLogCommand(DomainCommand, domain='greet'):
@@ -109,7 +109,7 @@ def register_pet(cmd: InsertGreetLogCommand, repository: IPetGreetRepo):
     if journal is None:
         journal = PerGreetJournal(pet_id=cmd.pet_id, pet_name=cmd.name)
         repository.save(journal)
-    return journal.reference
+    return journal.__reference__
 
 
 @greet_module.register
@@ -149,7 +149,7 @@ class InMemoryGreetRepo(BaseRepository, IPetGreetRepo):
         return self.memory.get(GreetReference.generate(pet_id))
 
     def _insert(self, greet: PerGreetJournal):
-        self.memory[greet.reference] = greet
+        self.memory[greet.__reference__] = greet
 
 
 def test():
