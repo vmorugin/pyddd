@@ -2,11 +2,11 @@ import datetime as dt
 
 import pytest
 
-from domain.message import (
+from pyddd.domain.message import (
     Message,
     MessageType,
 )
-from domain import (
+from pyddd.domain import (
     DomainCommand,
     DomainEvent,
 )
@@ -20,62 +20,62 @@ class TestMessage:
             message_id='123',
             payload=dict(reference='123'),
         )
-        assert message.type == 'EVENT'
-        assert message.message_name == 'UserCreated'
-        assert message.domain == 'users.sub'
+        assert message.__type__ == 'EVENT'
+        assert message.__message_name__ == 'UserCreated'
+        assert message.__domain__ == 'users.sub'
         assert message.to_dict() == {'reference': '123'}
         assert message.to_json() == '{"reference": "123"}'
         assert isinstance(message.occurred_on, dt.datetime)
 
 class TestDomainEvent:
     def test_event(self):
-        class TestEvent(DomainEvent, domain='test'):
+        class ExampleEvent(DomainEvent, domain='test'):
             some_attr: str
 
-        event = TestEvent(some_attr='123')
+        event = ExampleEvent(some_attr='123')
 
-        assert event.type == MessageType.EVENT
+        assert event.__type__ == MessageType.EVENT
         assert event.to_dict() == {'some_attr': '123'}
-        assert event.domain == 'test'
-        assert event.message_name == 'TestEvent'
-        assert event.topic == 'test.TestEvent'
+        assert event.__domain__ == 'test'
+        assert event.__message_name__ == 'ExampleEvent'
+        assert event.__topic__ == 'test.ExampleEvent'
 
     def test_attrs_from_cls(self):
-        class TestEvent(DomainEvent, domain='test'):
+        class ExampleEvent(DomainEvent, domain='test'):
             some_attr: str
 
-        assert TestEvent.__message_name__ == 'TestEvent'
-        assert TestEvent.__domain__ == 'test'
-        assert TestEvent.__topic__ == 'test.TestEvent'
+        assert ExampleEvent.__message_name__ == 'ExampleEvent'
+        assert ExampleEvent.__domain__ == 'test'
+        assert ExampleEvent.__topic__ == 'test.ExampleEvent'
 
     def test_event_without_domain(self):
         with pytest.raises(ValueError):
-            class TestEvent(DomainEvent):
+            class ExampleEvent(DomainEvent):
                 ...
 
 class TestDomainCommand:
     def test_command(self):
-        class TestCommand(DomainCommand, domain='test'):
+        class ExampleCommand(DomainCommand, domain='test'):
             ...
 
-        command = TestCommand()
-        assert command.type == MessageType.COMMAND
-        assert command.domain == 'test'
-        assert command.message_name == 'TestCommand'
-        assert command.topic == 'test.TestCommand'
+        command = ExampleCommand()
+        assert command.__type__ == MessageType.COMMAND
+        assert command.__domain__ == 'test'
+        assert command.__message_name__ == 'ExampleCommand'
+        assert command.__topic__ == 'test.ExampleCommand'
         assert command.to_dict() == {}
         assert isinstance(command.occurred_on, dt.datetime)
-        assert isinstance(command.message_id, str)
+        assert isinstance(command.__message_id__, str)
 
     def test_attrs_from_cls(self):
-        class TestCommand(DomainCommand, domain='test'):
+        class ExampleCommand(DomainCommand, domain='test'):
             some_attr: str
 
-        assert TestCommand.__message_name__ == 'TestCommand'
-        assert TestCommand.__domain__ == 'test'
-        assert TestCommand.__topic__ == 'test.TestCommand'
+        assert ExampleCommand.__message_name__ == 'ExampleCommand'
+        assert ExampleCommand.__domain__ == 'test'
+        assert ExampleCommand.__topic__ == 'test.ExampleCommand'
 
     def test_command_without_domain(self):
         with pytest.raises(ValueError):
-            class TestCommand(DomainCommand):
+            class ExampleCommand(DomainCommand):
                 ...

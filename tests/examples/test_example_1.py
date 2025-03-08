@@ -1,22 +1,23 @@
 import abc
 import logging
+import time
 import uuid
 from uuid import NAMESPACE_URL
 
-from application import (
+from pyddd.application import (
     Module,
     Application,
 )
-from application.application import (
+from pyddd.application import (
     get_application,
     set_application,
 )
-from domain import (
+from pyddd.domain import (
     IRootEntity,
     DomainCommand,
     DomainEvent,
 )
-from domain.entity import RootEntity
+from pyddd.domain.entity import RootEntity
 
 
 class CreatePet(DomainCommand, domain='pet'):
@@ -35,7 +36,7 @@ class Pet(RootEntity):
     @classmethod
     def create(cls, name: str):
         pet = cls(name)
-        pet.register_event(PetCreated(name=name, pet_id=str(pet.reference)))
+        pet.register_event(PetCreated(name=name, pet_id=str(pet.__reference__)))
         return pet
 
     def rename(self, name: str):
@@ -62,7 +63,7 @@ pet_module = Module('pet')
 def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     repository.save(pet)
-    return pet.reference
+    return pet.__reference__
 
 
 class InsertGreetLogCommand(DomainCommand, domain='greet'):
@@ -108,7 +109,7 @@ def register_pet(cmd: InsertGreetLogCommand, repository: IPetGreetRepo):
     if journal is None:
         journal = PerGreetJournal(pet_id=cmd.pet_id, pet_name=cmd.name)
         repository.save(journal)
-    return journal.reference
+    return journal.__reference__
 
 
 @greet_module.register
@@ -148,26 +149,32 @@ class InMemoryGreetRepo(BaseRepository, IPetGreetRepo):
         return self.memory.get(GreetReference.generate(pet_id))
 
     def _insert(self, greet: PerGreetJournal):
-        self.memory[greet.reference] = greet
+        self.memory[greet.__reference__] = greet
 
 
-logging.basicConfig()
+def test():
+    logging.basicConfig()
 
-# prepare app
-app = Application()
-app.include(greet_module)
-app.include(pet_module)
-app.set_defaults('pet', repository=InMemoryPetRepo({}))
-app.set_defaults('greet', repository=InMemoryGreetRepo({}))
+    # prepare app
+    app = Application()
+    app.include(greet_module)
+    app.include(pet_module)
+    app.set_defaults('pet', repository=InMemoryPetRepo({}))
+    app.set_defaults('greet', repository=InMemoryGreetRepo({}))
 
-# set app_globally
-set_application(app)
+    # set app_globally
+    set_application(app)
 
-fluff_id = app.handle(CreatePet(name='Fluff'))
-max_id = app.handle(CreatePet(name='Max'))
+    app.run()
 
-greet_fluff = app.handle(SayGreetCommand(pet_id=str(fluff_id)))
-assert greet_fluff == 'Hi, Fluff!'
+    fluff_id = app.handle(CreatePet(name='Fluff'))
+    max_id = app.handle(CreatePet(name='Max'))
 
-greet_max = app.handle(SayGreetCommand(pet_id=str(max_id)))
-assert greet_max == 'Hi, Max!'
+    # wait till event executed
+    time.sleep(0.01)
+
+    greet_fluff = app.handle(SayGreetCommand(pet_id=str(fluff_id)))
+    assert greet_fluff == 'Hi, Fluff!'
+
+    greet_max = app.handle(SayGreetCommand(pet_id=str(max_id)))
+    assert greet_max == 'Hi, Max!'

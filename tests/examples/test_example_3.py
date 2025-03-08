@@ -3,23 +3,23 @@ import dataclasses
 import datetime as dt
 import uuid
 
-from application import (
+from pyddd.application import (
     Module,
     Application,
 )
-from application.condition import (
+from pyddd.application import (
     Equal,
     Not,
 )
-from domain import (
+from pyddd.domain import (
     DomainCommand,
     DomainEvent,
 )
-from domain.entity import (
+from pyddd.domain.entity import (
     RootEntity,
     IRootEntity,
 )
-from domain.event import IEvent
+from pyddd.domain.event import IEvent
 
 product_domain = 'product'
 
@@ -32,7 +32,7 @@ class Product(RootEntity):
     @classmethod
     def create(cls, sku: str, price: int):
         product = Product(sku, price=price)
-        product.register_event(ProductCreated(reference=str(product.reference), price=price))
+        product.register_event(ProductCreated(reference=str(product.__reference__), price=price))
         return product
 
 
@@ -72,7 +72,7 @@ class IProductRepository(IRepository, abc.ABC):
 def create_product(cmd: CreateProduct, repository: IProductRepository):
     product = Product.create(cmd.sku, cmd.price)
     repository.save(product)
-    return product.reference
+    return product.__reference__
 
 
 @module.subscribe(ProductCreated.__topic__, condition=Equal(price=0))
@@ -148,7 +148,7 @@ class EventStoreListener(IEventSubscriber):
         stored_event = StoredEvent(
             id=str(uuid.uuid4()),
             occurred_on=event.occurred_on,
-            event_name=event.topic,
+            event_name=event.__topic__,
             payload=event.to_json(),
         )
         self._event_store.insert(stored_event)
@@ -169,11 +169,11 @@ class ImMemoryProductRepository(IProductRepository):
         self._publisher = publisher
 
     def save(self, entity: IRootEntity):
-        self._memory[entity.reference] = entity
+        self._memory[entity.__reference__] = entity
         self._publisher.publish(*entity.collect_events())
 
 
-def main():
+def test():
     app = Application()
     app.include(module)
 
@@ -190,6 +190,8 @@ def main():
     repository_memory = {}
     app.set_defaults(product_domain, repository=ImMemoryProductRepository(repository_memory, publisher=publisher))
 
+    app.run()
+
     product_1 = app.handle(CreateProduct(sku='123', price=123))
     product_2 = app.handle(CreateProduct(sku='123', price=0))  # will not be printed because of zero price
 
@@ -197,6 +199,3 @@ def main():
 
     assert isinstance(repository_memory[product_1], Product)
     assert isinstance(repository_memory[product_2], Product)
-
-
-main()

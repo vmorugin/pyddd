@@ -4,24 +4,24 @@ from typing import (
     Callable,
 )
 
-from application.condition import (
+from pyddd.application.condition import (
     none_condition,
 )
-from application.abstractions import (
+from pyddd.application.abstractions import (
     ICondition,
     IHandler,
     ICommandHandler,
     IPayloadConverter,
-    ResolvedHandlerT,
+    AnyCallable,
     IRetryStrategy,
 )
-from application.exceptions import FailedHandlerCondition
-from application.retry import none_retry
-from domain.message import (
+from pyddd.application.exceptions import FailedHandlerCondition
+from pyddd.application.retry import none_retry
+from pyddd.domain.message import (
     IMessage,
     IMessageMeta,
 )
-from domain import DomainCommand
+from pyddd.domain.command import DomainCommand
 
 
 class EventHandler(IHandler):
@@ -36,11 +36,11 @@ class EventHandler(IHandler):
     def set_defaults(self, defaults: dict):
         self._handler.set_defaults(defaults)
 
-    def resolve(self, message: IMessage) -> ResolvedHandlerT:
+    def resolve(self, message: IMessage) -> AnyCallable:
         if not self._condition.check(message):
             raise FailedHandlerCondition(
                 f'Failed check condition {self._condition.__class__.__name__} '
-                f'with message {message.topic}:{message.to_json()}'
+                f'with message {message.__topic__}:{message.to_json()}'
             )
         command_type = self._handler.get_command_type()
         message = command_type(**self._converter(message.to_dict()))
@@ -71,7 +71,7 @@ class CommandHandler(ICommandHandler):
     def get_command_type(self) -> type[DomainCommand]:
         return self._command_param.annotation
 
-    def resolve(self, message: IMessage) -> ResolvedHandlerT:
+    def resolve(self, message: IMessage) -> AnyCallable:
         depends = {
             self._command_param.name: self._command_param.annotation(**message.to_dict()),
         }

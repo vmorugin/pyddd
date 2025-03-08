@@ -2,9 +2,9 @@ import asyncio
 import logging
 from functools import partial
 
-from application.abstractions import (
+from pyddd.application.abstractions import (
     IExecutor,
-    ResolvedHandlerT,
+    AnyCallable,
 )
 from concurrent.futures import (
     ThreadPoolExecutor,
@@ -15,15 +15,18 @@ class SyncExecutor(IExecutor):
     def __init__(self, logger_name: str = 'pyddd.executor'):
         self._logger = logging.getLogger(logger_name)
 
-    def process_handler(self, handler: ResolvedHandlerT, **kwargs):
+    def process_handler(self, handler: AnyCallable, **kwargs):
         return handler(**kwargs)
 
-    def process_handlers(self, handlers: list[ResolvedHandlerT], **kwargs):
-        with ThreadPoolExecutor() as pool:
-            func = partial(self._process_handler, **kwargs)
-            return list(pool.map(func, handlers))
+    def process_handlers(self, handlers: list[AnyCallable], **kwargs):
+        tasks = []
+        executor = ThreadPoolExecutor()
+        for handler in handlers:
+            task = executor.submit(self._process_handler, handler, **kwargs)
+            tasks.append(task)
+        return (task.result() for task in tasks)
 
-    def _process_handler(self, handler: ResolvedHandlerT, **kwargs):
+    def _process_handler(self, handler: AnyCallable, **kwargs):
         try:
             return handler(**kwargs)
         except Exception as exc:
@@ -33,13 +36,13 @@ class SyncExecutor(IExecutor):
 
 class AsyncExecutor(IExecutor):
 
-    def process_handler(self, handler: ResolvedHandlerT, **kwargs):
+    def process_handler(self, handler: AnyCallable, **kwargs):
         future = asyncio.Future()
         task = asyncio.create_task(handler(**kwargs))
         task.add_done_callback(partial(self._set_task_result, future=future))
         return future
 
-    def process_handlers(self, handlers: list[ResolvedHandlerT], **kwargs):
+    def process_handlers(self, handlers: list[AnyCallable], **kwargs):
         future = asyncio.Future()
         tasks = []
         for handler in handlers:

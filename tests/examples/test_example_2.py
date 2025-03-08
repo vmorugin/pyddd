@@ -1,24 +1,23 @@
 import abc
-import asyncio
 import logging
 import uuid
 from uuid import NAMESPACE_URL
 
-from application import (
+from pyddd.application import (
     Module,
     Application,
 )
-from application.application import (
+from pyddd.application import (
     get_application,
     set_application,
 )
-from application.executor import AsyncExecutor
-from domain import (
+from pyddd.application import AsyncExecutor
+from pyddd.domain import (
     IRootEntity,
     DomainCommand,
     DomainEvent,
 )
-from domain.entity import RootEntity
+from pyddd.domain.entity import RootEntity
 
 
 class CreatePet(DomainCommand, domain='pet'):
@@ -38,7 +37,7 @@ class Pet(RootEntity):
     @classmethod
     def create(cls, name: str):
         pet = cls(name)
-        pet.register_event(PetCreated(name=name, reference=pet.reference))
+        pet.register_event(PetCreated(name=name, reference=pet.__reference__))
         return pet
 
     def rename(self, name: str):
@@ -65,7 +64,7 @@ pet_module = Module('pet')
 async def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     await repository.save(pet)
-    return pet.reference
+    return pet.__reference__
 
 
 class CreateGreetLogCommand(DomainCommand, domain='greet'):
@@ -111,7 +110,7 @@ async def register_pet(cmd: CreateGreetLogCommand, repository: IPetGreetRepo):
     if journal is None:
         journal = PerGreetJournal(pet_id=cmd.pet_id, pet_name=cmd.name)
         await repository.save(journal)
-    return journal.reference
+    return journal.__reference__
 
 
 @greet_module.register
@@ -151,11 +150,12 @@ class InMemoryGreetRepo(BaseRepository, IPetGreetRepo):
         return self.memory.get(GreetReference.generate(pet_id))
 
     async def _insert(self, greet: PerGreetJournal):
-        self.memory[greet.reference] = greet
+        self.memory[greet.__reference__] = greet
 
 
 # prepare app
-async def main():
+async def test():
+    logging.basicConfig()
     app = Application(executor=AsyncExecutor())
     app.include(greet_module)
     app.include(pet_module)
@@ -165,6 +165,8 @@ async def main():
     # set app_globally
     set_application(app)
 
+    await app.run_async()
+
     fluff_id = await app.handle(CreatePet(name='Fluff'))
     max_id = await app.handle(CreatePet(name='Max'))
     greet_fluff = await app.handle(SayGreetCommand(pet_id=fluff_id))
@@ -172,8 +174,3 @@ async def main():
 
     greet_max = await app.handle(SayGreetCommand(pet_id=max_id))
     assert greet_max == 'Hi, Max!'
-
-
-logging.basicConfig()
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())

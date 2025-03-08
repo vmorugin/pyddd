@@ -12,10 +12,16 @@
 
 ## Установка
 
-На данный момент `pyddd` не опубликован в PyPI. Вы можете установить его из исходного кода:
+Доступна из внутреннего pypi-репозитория. Пример установки через poetry:
 
+Если не добавлен локальный pypi источник - нужно выполнить команду
 ```bash
-pip install git+https://github.com/vmorugin/pyddd.git
+poetry source add local-pypi https://git.nctresource.team/api/v4/projects/368/packages/pypi/simple
+```
+Следом работаем с пакетом как с обычной зависимостью
+```bash
+poetry add pyddd
+poetry install
 ```
 
 ## Быстрый старт
@@ -34,7 +40,7 @@ class Pet(RootEntity):
     @classmethod
     def create(cls, name: str):
         pet = cls(name)
-        pet.register_event(PetCreated(name=name, pet_id=pet.reference))
+        pet.register_event(PetCreated(name=name, pet_id=pet.__reference__))
         return pet
 ```
 
@@ -45,14 +51,15 @@ class IPetRepository(abc.ABC):
     @abc.abstractmethod
     def save(self, entity: RootEntity):
         ...
-    
+
     @abc.abstractmethod
     def get(self, name: str) -> Pet:
         ...
 
+
 class CreatePet(DomainCommand, domain='pet'):
     name: str
-    
+
 
 pet_module = Module('pet')
 
@@ -61,23 +68,22 @@ pet_module = Module('pet')
 def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     repository.save(pet)
-    return pet.reference
+    return pet.__reference__
 ```
 
 ### Запуск приложения
 
 ```python
-from application.application import get_application, set_application
-
 class InMemoryPetRepo(IPetRepository):
     def __init__(self):
         self.memory = {}
-    
+
     def get(self, name: str) -> Pet:
         return self.memory.get(name)
-    
+
     def save(self, entity: Pet):
         self.memory[entity.name] = entity
+
 
 # Настройка приложения
 app = Application()

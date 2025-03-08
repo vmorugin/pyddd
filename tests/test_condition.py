@@ -1,6 +1,6 @@
 import pytest
 
-from application.condition import (
+from pyddd.application.condition import (
     NoneCondition,
     HasAttrs,
     And,
@@ -9,20 +9,20 @@ from application.condition import (
     Equal,
     none_condition,
 )
-from domain import DomainEvent
-from domain.message import (
+from pyddd.domain.event import DomainEvent
+from pyddd.domain.message import (
     Message,
     MessageType,
 )
 
 
-class TestEvent(DomainEvent, domain='test'):
+class ExampleEvent(DomainEvent, domain='test'):
     ...
 
 
 def test_always_true_to_none_condition():
     condition = NoneCondition()
-    assert condition.check(TestEvent()) is True
+    assert condition.check(ExampleEvent()) is True
 
 
 @pytest.mark.parametrize(
@@ -43,7 +43,7 @@ def test_has_attribute_condition(attrs, payload, expected):
 
 def test_and_condition():
     event = Message(
-        "test.TestEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
+        "test.ExampleEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
     )
 
     condition = And(HasAttrs("key1"), HasAttrs("key2", "key3"))
@@ -55,7 +55,7 @@ def test_and_condition():
 
 def test_or_condition():
     event = Message(
-        "test.TestEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
+        "test.ExampleEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
     )
 
     condition = Or(HasAttrs("key1"), HasAttrs("key2", "key3"))
@@ -76,7 +76,7 @@ def test_fail_use_not_condition_class_in_or_condition(value):
 
 def test_not_condition():
     event = Message(
-        "test.TestEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
+        "test.ExampleEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
     )
 
     condition = Not(HasAttrs("key1"))
@@ -94,7 +94,7 @@ def test_fail_use_not_condition_class_in_not_condition(value):
 
 def test_equal_condition():
     event = Message(
-        "test.TestEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
+        "test.ExampleEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
     )
 
     condition = Equal(key1=123, key2="xyz", key3=True)
@@ -115,8 +115,8 @@ def test_equal_condition():
 
 def test_null_condition():
     event = Message(
-        "test.TestEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
+        "test.ExampleEvent", "EVENT", payload=dict(key1=123, key2="xyz", key3=True)
     )
     assert none_condition.check(event) is True
-    event = Message("test.TestEvent", "EVENT", payload={})
+    event = Message("test.ExampleEvent", "EVENT", payload={})
     assert none_condition.check(event) is True

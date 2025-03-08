@@ -1,10 +1,12 @@
+import asyncio
+
 import pytest
 
-from application.abstractions import (
+from pyddd.application.retry import (
     IRetryStrategy,
-    ResolvedHandlerT,
+    AnyCallable,
+    NoneRetryStrategy
 )
-from application.retry import NoneRetryStrategy
 
 
 class TestNoneRetryStrategy:
@@ -22,7 +24,7 @@ class TestNoneRetryStrategy:
 
 
 class TestTenacityRetryExample:
-    def test_can_implement_with_tenacity(self):
+    def test_can_implement_with_sync_tenacity(self):
         pytest.importorskip("tenacity")
 
         import tenacity as tc
@@ -40,7 +42,7 @@ class TestTenacityRetryExample:
                 self._stop = stop
                 self._wait = wait
 
-            def __call__(self, func: ResolvedHandlerT) -> ResolvedHandlerT:
+            def __call__(self, func: AnyCallable) -> AnyCallable:
                 return tc.Retrying(retry=self._retry, stop=self._stop, wait=self._wait).wraps(func)
 
         tc_retry = TenacitySyncRetry
@@ -58,3 +60,42 @@ class TestTenacityRetryExample:
 
         count = 3
         assert example_func() is True
+
+    async def test_can_implement_with_async_tenacity(self):
+        pytest.importorskip("tenacity")
+
+        import tenacity as tc
+        from tenacity.stop import stop_base
+        from tenacity.wait import wait_base
+
+        class TenacityAsyncRetry(IRetryStrategy):
+            def __init__(
+                    self,
+                    retry: tc.retry_base = tc.retry_never,
+                    stop: stop_base = tc.stop_after_attempt(1),
+                    wait: wait_base = tc.wait_none(),
+            ):
+                self._retry = retry
+                self._stop = stop
+                self._wait = wait
+
+            def __call__(self, func: AnyCallable) -> AnyCallable:
+                return tc.AsyncRetrying(retry=self._retry, stop=self._stop, wait=self._wait).wraps(func)
+
+        tc_retry = TenacityAsyncRetry
+
+        @tc_retry(
+            retry=tc.retry_if_exception_type(Exception),
+            stop=tc.stop_after_attempt(3),
+        )
+        async def example_func():
+            nonlocal count
+            await asyncio.sleep(0.01)
+            count -= 1
+            if count > 0:
+                raise ValueError()
+            return True
+
+        count = 3
+        assert await example_func() is True
+
