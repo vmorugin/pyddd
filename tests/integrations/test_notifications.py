@@ -32,7 +32,7 @@ from pyddd.infrastructure.transport.asyncio.redis import (
 
 @pytest.fixture
 def redis():
-    return Redis(host=os.getenv('REDIS_HOST', None))
+    return Redis(host=os.getenv('REDIS_HOST'))
 
 
 @pytest.fixture
@@ -131,6 +131,7 @@ class TestConsumer:
         await asyncio.sleep(0.1)
 
         assert callback.call_count == 10
+        await app.stop_async()
 
 
 class TestWithPubSub:
@@ -177,3 +178,4 @@ class TestWithPubSub:
 
         await asyncio.sleep(0.01)
         assert callback.call_count == 15
+        await app.stop_async()
