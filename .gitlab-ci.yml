@@ -31,7 +31,7 @@ Tests Pydantic 2.x.x:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m pip install poetry==1.8.5 && python -m poetry install && python -m pip install "pydantic>=2.0.0"
+    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install poetry==1.8.5 && poetry install && pip install "pydantic>=2.0.0"
     - cd src
   script:
     - python -m pytest $CI_PROJECT_DIR/tests
