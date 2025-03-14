@@ -22,31 +22,7 @@ stages:
 variables:
   VENV_DIR: "$CI_PROJECT_DIR/.venv"
 
-Unit Tests Pydantic 2.x.x:
-  stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
-  rules:
-    - if: '$CI_PIPELINE_SOURCE != "schedule"'
-      when: on_success
-  before_script:
-    - python -m pip install poetry==1.8.5 && poetry install && python -m pip install "pydantic>=2.0.0"
-    - cd src
-  script:
-    - python -m pytest $CI_PROJECT_DIR/tests/unit
-
-Unit Tests Pydantic 1.x.x:
-  stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
-  rules:
-    - if: '$CI_PIPELINE_SOURCE != "schedule"'
-      when: on_success
-  before_script:
-    - python -m pip install poetry==1.8.5 && poetry install && python -m pip install pydantic==1.10.4
-    - cd src
-  script:
-    - python -m pytest $CI_PROJECT_DIR/tests/unit
-
-Integration Tests Pydantic 1.x.x:
+Tests Pydantic 2.x.x:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
@@ -55,12 +31,12 @@ Integration Tests Pydantic 1.x.x:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m pip install poetry==1.8.5 && poetry install && python -m pip install pydantic==1.10.4
+    - python -m pip install poetry==1.8.5 && python -m poetry install && python -m pip install "pydantic>=2.0.0"
     - cd src
   script:
-    - python -m pytest $CI_PROJECT_DIR/tests/integrations
+    - python -m pytest $CI_PROJECT_DIR/tests
 
-Integration Tests Pydantic 2.x.x:
+Tests Pydantic 1.x.x:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
@@ -69,10 +45,10 @@ Integration Tests Pydantic 2.x.x:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m pip install poetry==1.8.5 && poetry install && python -m pip install "pydantic>=2.0.0"
+    - python -m pip install poetry==1.8.5 && python -m poetry install && python -m pip install pydantic==1.10.4
     - cd src
   script:
-    - python -m pytest $CI_PROJECT_DIR/tests/integrations
+    - python -m pytest $CI_PROJECT_DIR/tests
 
 Publish:
   image: mwalbeck/python-poetry:1.8.5-3.11
