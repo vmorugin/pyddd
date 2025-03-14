@@ -51,8 +51,6 @@ Integration Tests Pydantic 1.x.x:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
     - name: redis:6.2.10
-      ports:
-        - "6379:6379"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
@@ -67,8 +65,6 @@ Integration Tests Pydantic 2.x.x:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
     - name: redis:6.2.10
-      ports:
-        - "6379:6379"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
