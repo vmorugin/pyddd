@@ -1,4 +1,5 @@
 import asyncio
+import os
 import uuid
 from unittest.mock import (
     Mock,
@@ -31,7 +32,7 @@ from pyddd.infrastructure.transport.asyncio.redis import (
 
 @pytest.fixture
 def redis():
-    return Redis()
+    return Redis(host=os.getenv('REDIS_HOST', None))
 
 
 @pytest.fixture

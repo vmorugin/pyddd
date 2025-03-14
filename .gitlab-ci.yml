@@ -42,7 +42,7 @@ Tests Pydantic 1.x.x:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
-    - name: redis:6.2.10
+    - redis:6.2.10
   variables:
     REDIS_HOST: redis
   rules:
