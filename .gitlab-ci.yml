@@ -29,10 +29,10 @@ Unit Tests Pydantic 2.x.x:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install pytest pytest-aio "pydantic>=2.0.0"
+    - pip install poetry==1.8.5 && poetry install && pip install "pydantic>=2.0.0"
     - cd src
   script:
-    - python -m pytest $CI_PROJECT_DIR/tests
+    - python -m pytest $CI_PROJECT_DIR/tests/unit
 
 Unit Tests Pydantic 1.x.x:
   stage: test
@@ -41,10 +41,44 @@ Unit Tests Pydantic 1.x.x:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install pytest pytest-aio pydantic==1.10.4
+    - pip install poetry==1.8.5 && poetry install && pip install pydantic==1.10.4
     - cd src
   script:
-    - python -m pytest $CI_PROJECT_DIR/tests
+    - python -m pytest $CI_PROJECT_DIR/tests/unit
+
+Integration Tests Pydantic 1.x.x:
+  stage: test
+  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  services:
+    redis:
+      image: "redis:6.2.10"
+      ports:
+        - "6379:6379"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+      when: on_success
+  before_script:
+    - pip install poetry==1.8.5 && poetry install && pip install pydantic==1.10.4
+    - cd src
+  script:
+    - python -m pytest $CI_PROJECT_DIR/tests/integrations
+
+Integration Tests Pydantic 2.x.x:
+  stage: test
+  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  services:
+    redis:
+      image: "redis:6.2.10"
+      ports:
+        - "6379:6379"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+      when: on_success
+  before_script:
+    - pip install poetry==1.8.5 && poetry install && pip install "pydantic>=2.0.0"
+    - cd src
+  script:
+    - python -m pytest $CI_PROJECT_DIR/tests/integrations
 
 Publish:
   image: mwalbeck/python-poetry:1.8.5-3.11

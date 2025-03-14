@@ -87,6 +87,7 @@ class InMemoryPetRepo(IPetRepository):
 
 # Настройка приложения
 app = Application()
+app.run()
 app.include(pet_module)
 app.set_defaults('pet', repository=InMemoryPetRepo())
 set_application(app)
@@ -95,6 +96,16 @@ set_application(app)
 fluff_id = app.handle(CreatePet(name='Fluff'))
 print(f'Создан питомец с ID: {fluff_id}')
 ```
+
+### Запуск интеграционных тестов:
+```shell
+# Поднимаем внешние сервисы
+docker-compose up -d
+
+# Запуск тестов
+pytest tests
+```
+
 
 ## Лицензия
 
