@@ -50,8 +50,7 @@ Integration Tests Pydantic 1.x.x:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
-    - redis:
-      image: "redis:6.2.10"
+    - name: redis:6.2.10
       ports:
         - "6379:6379"
   rules:
@@ -67,8 +66,7 @@ Integration Tests Pydantic 2.x.x:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
-    - redis:
-      image: "redis:6.2.10"
+    - name: redis:6.2.10
       ports:
         - "6379:6379"
   rules:
