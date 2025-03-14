@@ -147,7 +147,7 @@ class EventStoreListener(IEventSubscriber):
     def notify(self, event: IEvent):
         stored_event = StoredEvent(
             id=str(uuid.uuid4()),
-            occurred_on=event.occurred_on,
+            occurred_on=event.__timestamp__,
             event_name=event.__topic__,
             payload=event.to_json(),
         )

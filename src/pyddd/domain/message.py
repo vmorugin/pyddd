@@ -73,17 +73,17 @@ class IMessage(abc.ABC, metaclass=IMessageMeta):
     def __type__(self) -> MessageType:
         ...
 
+    @property
+    @abc.abstractmethod
+    def __timestamp__(self) -> dt.datetime:
+        ...
+
     @abc.abstractmethod
     def to_dict(self) -> dict:
         ...
 
     @abc.abstractmethod
     def to_json(self) -> str:
-        ...
-
-    @property
-    @abc.abstractmethod
-    def occurred_on(self) -> dt.datetime:
         ...
 
 
@@ -111,7 +111,7 @@ class Message(IMessage):
         return self._type
 
     @property
-    def occurred_on(self) -> dt.datetime:
+    def __timestamp__(self) -> dt.datetime:
         return self._occurred_on
 
     @property
@@ -149,15 +149,24 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
 
     @property
     def __domain__(cls) -> str:
-        return cls._domain_name
+        return cls._get_domain_name()
 
     @property
     def __message_name__(cls) -> str:
-        return cls._message_name
+        return cls._get_message_name()
 
     @property
     def __topic__(cls) -> str:
+        return cls._get_topic()
+
+    def _get_topic(cls):
         return f"{cls._domain_name}.{cls._message_name}"
+
+    def _get_message_name(cls):
+        return cls._message_name
+
+    def _get_domain_name(cls):
+        return cls._domain_name
 
 
 class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessageMeta):
@@ -167,28 +176,31 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
     class Config:
         frozen = True
 
+    @classmethod
     @property
-    def __domain__(self) -> str:
-        return self.__class__.__domain__
+    def __domain__(cls) -> str:
+        return cls._get_domain_name()
 
+    @classmethod
     @property
-    def __message_name__(self) -> str:
-        return self.__class__.__message_name__
+    def __message_name__(cls) -> str:
+        return cls._get_message_name()
 
+    @classmethod
     @property
-    def __topic__(self) -> str:
-        return self.__class__.__topic__
+    def __topic__(cls) -> str:
+        return cls._get_topic()
 
     @property
     def __message_id__(self) -> str:
         return str(self._reference)
+
+    @property
+    def __timestamp__(self) -> dt.datetime:
+        return self._occurred_on
 
     def to_dict(self) -> dict:
         return self.dict()
 
     def to_json(self) -> str:
         return self.json()
-
-    @property
-    def occurred_on(self) -> dt.datetime:
-        return self._occurred_on

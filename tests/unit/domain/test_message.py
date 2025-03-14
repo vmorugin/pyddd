@@ -25,7 +25,16 @@ class TestMessage:
         assert message.__domain__ == 'users.sub'
         assert message.to_dict() == {'reference': '123'}
         assert message.to_json() == '{"reference": "123"}'
-        assert isinstance(message.occurred_on, dt.datetime)
+        assert isinstance(message.__timestamp__, dt.datetime)
+
+    def test_eq(self):
+        message = Message(
+            full_name='users.sub.UserCreated',
+            message_type=MessageType.EVENT,
+            message_id='123',
+            payload=dict(reference='123'),
+        )
+        assert message == message
 
 class TestDomainEvent:
     def test_event(self):
@@ -64,7 +73,7 @@ class TestDomainCommand:
         assert command.__message_name__ == 'ExampleCommand'
         assert command.__topic__ == 'test.ExampleCommand'
         assert command.to_dict() == {}
-        assert isinstance(command.occurred_on, dt.datetime)
+        assert isinstance(command.__timestamp__, dt.datetime)
         assert isinstance(command.__message_id__, str)
 
     def test_attrs_from_cls(self):
