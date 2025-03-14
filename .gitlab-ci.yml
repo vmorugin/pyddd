@@ -27,6 +27,8 @@ Tests Pydantic 2.x.x:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
     - name: redis:6.2.10
+  variables:
+    REDIS_HOST: redis
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
@@ -41,11 +43,13 @@ Tests Pydantic 1.x.x:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
     - name: redis:6.2.10
+  variables:
+    REDIS_HOST: redis
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m pip install poetry==1.8.5 && python -m poetry install && python -m pip install pydantic==1.10.4
+    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install poetry==1.8.5 && poetry install && pip install pydantic==1.10.4
     - cd src
   script:
     - python -m pytest $CI_PROJECT_DIR/tests
