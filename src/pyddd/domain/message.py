@@ -100,7 +100,7 @@ class Message(IMessage):
         self._type = MessageType(message_type)
         self._payload = json.dumps(payload)
         self._message_id = message_id or str(uuid4())
-        self._occurred_on = occurred_on or dt.datetime.now(dt.UTC)
+        self._occurred_on = occurred_on or dt.datetime.utcnow()
 
     @property
     def __message_id__(self) -> str:
@@ -170,7 +170,7 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
 
 
 class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessageMeta):
-    _occurred_on: dt.datetime = PrivateAttr(default_factory=lambda: dt.datetime.now(dt.UTC))
+    _occurred_on: dt.datetime = PrivateAttr(default_factory=lambda: dt.datetime.utcnow())
     _reference: UUID = PrivateAttr(default_factory=uuid4)
 
     class Config:

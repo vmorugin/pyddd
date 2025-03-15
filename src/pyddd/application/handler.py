@@ -82,7 +82,7 @@ class CommandHandler(ICommandHandler):
 
     @staticmethod
     def _get_signature(func) -> inspect.Signature:
-        return inspect.signature(func, locals=locals(), globals=globals())
+        return inspect.signature(func)
 
     @staticmethod
     def _get_command_param(func, signature: inspect.Signature):

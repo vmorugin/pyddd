@@ -50,6 +50,7 @@ class PrintCreatedZeroPriceInfo(DomainCommand, domain=product_domain):
     reference: str
     price: int
 
+
 class PrintCreatedProductInfo(DomainCommand, domain=product_domain):
     reference: str
     price: int
@@ -77,17 +78,17 @@ def create_product(cmd: CreateProduct, repository: IProductRepository):
 
 @module.subscribe(ProductCreated.__topic__, condition=Equal(price=0))
 @module.register
-def create_product_without_price(cmd: PrintCreatedZeroPriceInfo):
+def create_product_witho_price(cmd: PrintCreatedZeroPriceInfo):
     print(f"Product {cmd.reference} was created with zero price!")
 
 
 @module.subscribe(ProductCreated.__topic__, condition=Not(Equal(price=0)))
 @module.register
-def create_product_without_price(cmd: PrintCreatedProductInfo):
+def create_product_with_price(cmd: PrintCreatedProductInfo):
     print(f"Product {cmd.reference} was created.")
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class StoredEvent:
     id: str
     occurred_on: dt.datetime

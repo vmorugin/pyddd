@@ -277,6 +277,7 @@ class TestModule:
 
             def __call__(self, func: AnyCallable) -> AnyCallable:
                 count = self._count
+
                 def wrapper(*args, **kwargs):
                     nonlocal count
                     while count > 0:
@@ -285,8 +286,8 @@ class TestModule:
                         except Exception:
                             count -= 1
                     return func(*args, **kwargs)
-                return wrapper
 
+                return wrapper
 
         module = Module('test')
 
