@@ -18,15 +18,15 @@ jobs:
         python-version: [ "3.9", "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v4
+      - name: Install poetry
+        run: pipx install poetry==1.8.5
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
       - name: Install dependencies
-        run: |
-          python -m pip --upgrade pip
-          pip install poetry==1.8.5 
-          poetry install --all-extras
+        run: poetry install
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
