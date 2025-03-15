@@ -1,4 +1,5 @@
 import logging
+import typing as t
 from collections import defaultdict
 
 from pyddd.application.condition import (
@@ -32,7 +33,7 @@ class Module(IModule):
     ):
         self._domain = domain
         self._executor = executor or SyncExecutor()
-        self._defaults = {}
+        self._defaults: dict[str, t.Any] = {}
         self._event_handlers: dict[str, list[EventHandler]] = defaultdict(list)
         self._command_handlers: dict[str, CommandHandler] = {}
         self._logger = logging.getLogger(logger_name)

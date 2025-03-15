@@ -18,7 +18,7 @@ class NotificationQueue(INotificationQueue):
             logger_name: str = 'notification.queue'
     ):
         self._handler = message_handler
-        self._topics = set()
+        self._topics: set[str] = set()
         self._running = False
         self._tasks: list[asyncio.Task] = []
         self._batch_size = batch_size

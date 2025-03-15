@@ -7,8 +7,9 @@ from pyddd.application.abstractions import (
     IApplication,
     ApplicationSignal,
     SignalListener,
+    IModule,
+    AnyCallable,
 )
-from pyddd.application.module import Module
 from pyddd.application.signal_manager import SignalManager
 from pyddd.domain.message import (
     IMessage,
@@ -23,7 +24,7 @@ class Application(IApplication):
             logger_name: str = 'pyddd.application',
             executor: IExecutor = None,
     ):
-        self._modules: dict[str, Module] = {}
+        self._modules: dict[str, IModule] = {}
         self._defaults: dict[str, dict] = defaultdict(dict)
         self._logger = logging.getLogger(logger_name)
         self._executor = executor
@@ -36,7 +37,7 @@ class Application(IApplication):
         if module := self._modules.get(domain):
             module.set_defaults(kwargs)
 
-    def include(self, module: Module):
+    def include(self, module: IModule):
         if module.domain in self._modules:
             raise ValueError("Already registered domain 'test'")
 
@@ -119,15 +120,15 @@ class Application(IApplication):
     def _handle_command(self, command: IMessage, **depends):
         module = self._get_module_by_domain(command.__domain__)
         handler = module.get_command_handler(command)
-        return self._executor.process_handler(handler, **depends)
+        return self._executor.process_handler(handler, **depends)  # type: ignore[union-attr]
 
     def _handle_event(self, event: IMessage, **depends):
-        handlers = []
+        handlers: list[AnyCallable] = []
         for module in self._modules.values():
             handlers.extend(module.get_event_handlers(event))
-        return self._executor.process_handlers(handlers, **depends)
+        return self._executor.process_handlers(handlers, **depends)  # type: ignore[union-attr]
 
-    def _get_module_by_domain(self, domain: str) -> Module:
+    def _get_module_by_domain(self, domain: str) -> IModule:
         if module := self._modules.get(domain):
             return module
         raise ValueError(f'Unregistered module for domain {domain}')

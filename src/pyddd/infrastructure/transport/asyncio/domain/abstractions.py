@@ -2,7 +2,7 @@ import abc
 import dataclasses
 import typing as t
 
-from pyddd.application import Application
+from pyddd.application.abstractions import IApplication
 from pyddd.domain.message import Message
 
 
@@ -33,7 +33,7 @@ class INotification(abc.ABC):
 
 class IMessageHandler(abc.ABC):
     @abc.abstractmethod
-    async def read(self, topic: str, limit: int = None) -> list[INotification]:
+    async def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]:
         ...
 
     @abc.abstractmethod
@@ -49,7 +49,7 @@ class IEventFactory(abc.ABC):
 
 class IAskPolicy(abc.ABC):
     @abc.abstractmethod
-    async def process(self, notification: INotification, event_factory: IEventFactory, application: Application):
+    async def process(self, notification: INotification, event_factory: IEventFactory, application: IApplication):
         ...
 
 
@@ -94,7 +94,7 @@ class IMessageConsumer(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def set_application(self, application: Application):
+    def set_application(self, application: IApplication):
         ...
 
 

@@ -1,8 +1,6 @@
 import inspect
 from functools import partial
-from typing import (
-    Callable,
-)
+import typing as t
 
 from pyddd.application.condition import (
     none_condition,
@@ -29,9 +27,9 @@ class EventHandler(IHandler):
     def __init__(self, handler: ICommandHandler):
         self._handler = handler
         self._converter: IPayloadConverter = lambda x: x
-        self._condition = none_condition
-        self._retry_strategy = none_retry
-        self._defaults = {}
+        self._condition: ICondition = none_condition
+        self._retry_strategy: IRetryStrategy = none_retry
+        self._defaults: dict[str, t.Any] = {}
 
     def set_defaults(self, defaults: dict):
         self._handler.set_defaults(defaults)
@@ -57,13 +55,13 @@ class EventHandler(IHandler):
 
 
 class CommandHandler(ICommandHandler):
-    def __init__(self, func: Callable):
+    def __init__(self, func: t.Callable):
         signature = self._get_signature(func)
         command_param = self._get_command_param(func, signature)
         self._func = func
         self._signature = signature
         self._command_param = command_param
-        self._defaults = {}
+        self._defaults: dict[str, t.Any] = {}
 
     def set_defaults(self, defaults: dict):
         self._defaults = defaults
