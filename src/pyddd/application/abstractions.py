@@ -3,8 +3,7 @@ import abc
 import typing as t
 from enum import Enum
 
-from pyddd.domain import DomainCommand
-from pyddd.domain.event import IEvent
+from pyddd.domain.command import DomainCommand
 from pyddd.domain.message import IMessage
 
 R = t.TypeVar('R')
@@ -40,7 +39,7 @@ class IExecutor(abc.ABC):
 
 class ICondition(abc.ABC):
     @abc.abstractmethod
-    def check(self, event: IEvent) -> bool:
+    def check(self, event: IMessage) -> bool:
         ...
 
 

@@ -18,7 +18,7 @@ if pydantic_version.startswith('2'):
     from pydantic import BaseModel, PrivateAttr
     from pydantic._internal._model_construction import ModelMetaclass
 elif pydantic_version.startswith('1'):
-    from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr
+    from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr  # type: ignore[no-redef]
 else:
     raise ImportError('Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x')
 
@@ -140,7 +140,7 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     def __new__(mcs, name, bases, namespace, domain: Optional[str] = None):
         cls = super().__new__(mcs, name, bases, namespace)
         if domain is not None:
-            cls._domain_name = domain
+            cls._domain_name = domain  # type: ignore[attr-defined]
         return cls
 
     def __init__(cls, name, bases, namespace, *, domain: Optional[str] = None):
@@ -176,17 +176,17 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
     class Config:
         frozen = True
 
-    @classmethod
+    @classmethod  # type: ignore[misc]
     @property
     def __domain__(cls) -> str:
         return cls._get_domain_name()
 
-    @classmethod
+    @classmethod  # type: ignore[misc]
     @property
     def __message_name__(cls) -> str:
         return cls._get_message_name()
 
-    @classmethod
+    @classmethod  # type: ignore[misc]
     @property
     def __topic__(cls) -> str:
         return cls._get_topic()

@@ -3,7 +3,7 @@ import dataclasses
 from pyddd.infrastructure.transport.asyncio.domain import (
     INotificationTrackerStrategy,
 )
-from pyddd.infrastructure.transport.asyncio.domain import Notification, NotificationTrackerState
+from pyddd.infrastructure.transport.asyncio.domain import INotification, NotificationTrackerState
 
 
 class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
@@ -11,7 +11,7 @@ class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
         tracker = NotificationTrackerState(track_key=track_key, last_recent_notification_id='0')
         return tracker
 
-    def track_most_recent_message(self, tracker: NotificationTrackerState, *messages: Notification):
+    def track_most_recent_message(self, tracker: NotificationTrackerState, *messages: INotification) -> 'NotificationTrackerState':
         if not messages:
             last_notification_id = '>'
         else:

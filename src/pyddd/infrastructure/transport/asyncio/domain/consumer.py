@@ -1,5 +1,5 @@
 import asyncio
-
+import typing as t
 from pyddd.application.abstractions import (
     IApplication,
     ApplicationSignal,
@@ -23,8 +23,8 @@ class MessageConsumer(IMessageConsumer):
     ):
         self._queue = queue
         self._ask_policy = ask_policy
-        self._application = None
-        self._subscriptions = set()
+        self._application: t.Optional[IApplication] = None
+        self._subscriptions: set[str] = set()
         self._event_factory = event_factory
         self._tasks: set[asyncio.Future] = set()
 
