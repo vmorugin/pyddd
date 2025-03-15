@@ -41,7 +41,7 @@ Tests dev:
       source $VENV_DIR/bin/activate 
       pip install poetry==1.8.5 
       poetry install 
-      pip install "pydantic${PROVIDER}"
+      pip install "pydantic${PROVIDER}" --force
       cd src
   script:
     - python -m pytest $CI_PROJECT_DIR/tests
