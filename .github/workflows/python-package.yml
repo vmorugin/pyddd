@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m venv venv
-          source $VENV_DIR/bin/activate 
+          source venv/bin/activate 
           pip install poetry==1.8.5 
           poetry install
       - name: Lint with flake8
