@@ -1,13 +1,12 @@
 from __future__ import annotations
 import abc
 import typing as t
-from enum import StrEnum
+from enum import Enum
 
 from pyddd.domain import DomainCommand
 from pyddd.domain.event import IEvent
 from pyddd.domain.message import IMessage
 
-P = t.ParamSpec('P')
 R = t.TypeVar('R')
 AnyCallable = t.Callable[..., R]
 
@@ -128,7 +127,7 @@ class IApplication(abc.ABC):
         ...
 
 
-class ApplicationSignal(StrEnum):
+class ApplicationSignal(str, Enum):
     BEFORE_RUN = 'before_run'
     AFTER_RUN = 'after_run'
     BEFORE_STOP = 'before_stop'

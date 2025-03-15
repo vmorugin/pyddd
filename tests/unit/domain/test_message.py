@@ -36,6 +36,7 @@ class TestMessage:
         )
         assert message == message
 
+
 class TestDomainEvent:
     def test_event(self):
         class ExampleEvent(DomainEvent, domain='test'):
@@ -61,6 +62,7 @@ class TestDomainEvent:
         with pytest.raises(ValueError):
             class ExampleEvent(DomainEvent):
                 ...
+
 
 class TestDomainCommand:
     def test_command(self):

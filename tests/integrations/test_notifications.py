@@ -1,12 +1,10 @@
 import asyncio
-import os
 import uuid
 from unittest.mock import (
     Mock,
 )
 
 import pytest
-from redis.asyncio import Redis
 
 from pyddd.application import (
     Application,
@@ -21,39 +19,10 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     DomainEventFactory,
     Notification,
     NotificationQueue,
-    NotificationTrackerFactory,
 )
 from pyddd.infrastructure.transport.asyncio.redis import (
-    GroupStreamHandler,
     PubSubNotificationQueue,
-    RedisStreamTrackerStrategy,
 )
-
-
-@pytest.fixture
-def redis():
-    return Redis(host=os.getenv('REDIS_HOST', None))
-
-
-@pytest.fixture
-def group_name():
-    return str(uuid.uuid4())
-
-
-@pytest.fixture
-def consumer_name():
-    return str(uuid.uuid4())
-
-
-@pytest.fixture
-async def redis_stream_handler(redis, group_name, consumer_name):
-    return GroupStreamHandler(
-        group_name=group_name,
-        consumer_name=consumer_name,
-        client=redis,
-        block=None,
-        tracker_factory=NotificationTrackerFactory(strategy=RedisStreamTrackerStrategy())
-    )
 
 
 class TestStreamHandler:
@@ -131,6 +100,7 @@ class TestConsumer:
         await asyncio.sleep(0.1)
 
         assert callback.call_count == 10
+        await app.stop_async()
 
 
 class TestWithPubSub:
@@ -177,3 +147,4 @@ class TestWithPubSub:
 
         await asyncio.sleep(0.01)
         assert callback.call_count == 15
+        await app.stop_async()

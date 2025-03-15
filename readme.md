@@ -1,6 +1,7 @@
 # pyddd
 
-`pyddd` - это DDD (Domain-Driven Design) фреймворк для Python, предоставляющий встроенный менеджер зависимостей и шину сообщений. Он упрощает построение сложных доменных моделей и событийное программирование.
+`pyddd` - это DDD (Domain-Driven Design) фреймворк для Python, предоставляющий встроенный менеджер зависимостей и шину
+сообщений. Он упрощает построение сложных доменных моделей и событийное программирование.
 
 ## Возможности
 
@@ -32,6 +33,7 @@ poetry install
 class PetCreated(DomainEvent, domain='pet'):
     pet_id: str
     name: str
+
 
 class Pet(RootEntity):
     def __init__(self, name: str):
@@ -98,6 +100,7 @@ print(f'Создан питомец с ID: {fluff_id}')
 ```
 
 ### Запуск интеграционных тестов:
+
 ```shell
 # Поднимаем внешние сервисы
 docker-compose up -d
@@ -105,7 +108,6 @@ docker-compose up -d
 # Запуск тестов
 pytest tests
 ```
-
 
 ## Лицензия
 
