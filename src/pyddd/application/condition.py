@@ -1,12 +1,12 @@
 from pyddd.application.abstractions import ICondition
-from pyddd.domain.event import IEvent
+from pyddd.domain.message import IMessage
 
 
 class NoneCondition(ICondition):
     def __init__(self, *args, **kwargs):
         ...
 
-    def check(self, event: IEvent) -> bool:
+    def check(self, event: IMessage) -> bool:
         return True
 
 
@@ -17,7 +17,7 @@ class HasAttrs(ICondition):
     def __init__(self, *attrs: str):
         self._attrs = set(attrs)
 
-    def check(self, event: IEvent) -> bool:
+    def check(self, event: IMessage) -> bool:
         return self._attrs.issubset(set(event.to_dict().keys()))
 
 
@@ -40,7 +40,7 @@ class And(ICondition):
                 raise TypeError(f"{c!r} required be is instance of {ICondition!r}")
         self._conditions = conditions
 
-    def check(self, event: IEvent) -> bool:
+    def check(self, event: IMessage) -> bool:
         return all((condition.check(event) for condition in self._conditions))
 
 
@@ -63,7 +63,7 @@ class Or(ICondition):
                 raise TypeError(f"{c!r} required be is instance of {ICondition!r}")
         self._conditions = conditions
 
-    def check(self, event: IEvent) -> bool:
+    def check(self, event: IMessage) -> bool:
         return any((condition.check(event) for condition in self._conditions))
 
 
@@ -84,7 +84,7 @@ class Not(ICondition):
             raise TypeError(f"{condition!r} required be is instance of {ICondition!r}")
         self._condition = condition
 
-    def check(self, event: IEvent) -> bool:
+    def check(self, event: IMessage) -> bool:
         return not self._condition.check(event)
 
 
@@ -105,7 +105,7 @@ class Equal(ICondition):
     def __init__(self, **attrs):
         self._attrs = attrs
 
-    def check(self, event: IEvent) -> bool:
+    def check(self, event: IMessage) -> bool:
         return all(
             (
                 key in event.to_dict() and event.to_dict()[key] == value

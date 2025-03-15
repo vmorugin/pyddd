@@ -37,13 +37,13 @@ class SyncExecutor(IExecutor):
 class AsyncExecutor(IExecutor):
 
     def process_handler(self, handler: AnyCallable, **kwargs):
-        future = asyncio.Future()
+        future: asyncio.Future = asyncio.Future()
         task = asyncio.create_task(handler(**kwargs))
         task.add_done_callback(partial(self._set_task_result, future=future))
         return future
 
     def process_handlers(self, handlers: list[AnyCallable], **kwargs):
-        future = asyncio.Future()
+        future: asyncio.Future = asyncio.Future()
         tasks = []
         for handler in handlers:
             tasks.append(asyncio.create_task(handler(**kwargs)))
@@ -54,6 +54,6 @@ class AsyncExecutor(IExecutor):
     @staticmethod
     def _set_task_result(task: asyncio.Future, /, future: asyncio.Future):
         if task.exception() is not None:
-            future.set_exception(task.exception())
+            future.set_exception(task.exception())  # type: ignore
         else:
             future.set_result(task.result())
