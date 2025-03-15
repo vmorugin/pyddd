@@ -18,6 +18,7 @@ stages:
   - build
   - test
   - deploy
+  - scan
 
 variables:
   VENV_DIR: "$CI_PROJECT_DIR/.venv"
