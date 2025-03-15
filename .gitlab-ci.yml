@@ -22,7 +22,7 @@ stages:
 variables:
   VENV_DIR: "$CI_PROJECT_DIR/.venv"
 
-Tests Pydantic 2.x.x:
+Tests dev:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
@@ -32,25 +32,17 @@ Tests Pydantic 2.x.x:
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
+  parallel:
+    matrix:
+      - PYDANTIC-VERSION: [ ">=2.0.0", "==1.10.4" ]
   before_script:
-    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install poetry==1.8.5 && poetry install && pip install "pydantic>=2.0.0"
-    - cd src
-  script:
-    - python -m pytest $CI_PROJECT_DIR/tests
-
-Tests Pydantic 1.x.x:
-  stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
-  services:
-    - redis:6.2.10
-  variables:
-    REDIS_HOST: redis
-  rules:
-    - if: '$CI_PIPELINE_SOURCE != "schedule"'
-      when: on_success
-  before_script:
-    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install poetry==1.8.5 && poetry install && pip install pydantic==1.10.4
-    - cd src
+    - |
+      python -m venv $VENV_DIR 
+      source $VENV_DIR/bin/activate 
+      pip install poetry==1.8.5 
+      poetry install 
+      pip install "pydantic${PYDANTIC-VERSION}"
+      cd src
   script:
     - python -m pytest $CI_PROJECT_DIR/tests
 
