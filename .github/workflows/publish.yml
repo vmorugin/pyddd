@@ -15,10 +15,10 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Resetting git to master
-        run: git reset --hard master
+      - name: Resetting git to dev
+        run: git reset --hard dev
 
-      - name: Resetting git to master
+      - name: Resetting git to dev
         run: git fetch --tags || true
 
       - name: Install poetry
