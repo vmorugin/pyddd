@@ -7,7 +7,6 @@ from pyddd.domain import DomainCommand
 from pyddd.domain.event import IEvent
 from pyddd.domain.message import IMessage
 
-P = t.ParamSpec('P')
 R = t.TypeVar('R')
 AnyCallable = t.Callable[..., R]
 
