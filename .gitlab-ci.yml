@@ -15,16 +15,25 @@ workflow:
     - when: never
 
 stages:
+  - build
   - test
-  - publish
-  - scan
+  - deploy
 
 variables:
   VENV_DIR: "$CI_PROJECT_DIR/.venv"
 
+Build:
+  stage: build
+  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  script:
+    - |
+      python -m venv $VENV_DIR
+      source $VENV_DIR/bin/activate
+      pip install poetry==1.8.5
+      poetry install
+
 Tests dev:
   stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
     - name: redis:6.2.10
   variables:
@@ -37,23 +46,19 @@ Tests dev:
       - PROVIDER: [ '<=3.0.0', '>=1.10.4' ]
   before_script:
     - |
-      python -m venv $VENV_DIR 
-      source $VENV_DIR/bin/activate 
-      pip install poetry==1.8.5 
-      poetry install 
       pip install "pydantic${PROVIDER}" --force
       cd src
   script:
-    - python -m pytest $CI_PROJECT_DIR/tests
+    - pytest $CI_PROJECT_DIR/tests
 
 Publish:
-  image: mwalbeck/python-poetry:1.8.5-3.11
-  stage: publish
+  stage: deploy
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
   before_script:
-    - poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
-    - poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
+    - |
+      poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
+      poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
   script:
     - poetry publish --build --repository pgs
