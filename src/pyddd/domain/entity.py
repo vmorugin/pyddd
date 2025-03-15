@@ -13,6 +13,7 @@ class ValueObject:
 class EntityUid(ValueObject, UUID):
     ...
 
+
 IdType = t.TypeVar('IdType')
 
 

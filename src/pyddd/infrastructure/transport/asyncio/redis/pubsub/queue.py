@@ -45,5 +45,5 @@ class PubSubNotificationQueue(INotificationQueue):
                         )
                         await callback(notification)
             except Exception as exc:
-                self._logger.error(f"Unexpected error while pulling pubsub", exc_info=exc)
+                self._logger.error("Unexpected error while pulling pubsub", exc_info=exc)
             await asyncio.sleep(0.001)

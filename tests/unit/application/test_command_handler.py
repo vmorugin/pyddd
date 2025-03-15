@@ -7,8 +7,10 @@ from pyddd.domain import (
     DomainEvent,
 )
 
+
 class ExampleCommand(DomainCommand, domain='test'):
     ...
+
 
 class ExampleEvent(DomainEvent, domain='test'):
     ...
@@ -23,7 +25,6 @@ class TestCommandHandler:
         handler = CommandHandler(foo)
         func = handler.resolve(ExampleCommand())
         assert func(callback=mock) is mock
-
 
     def test_handler_must_store_command_type(self):
         def foo(cmd: ExampleCommand):

@@ -45,5 +45,3 @@ class TestNotificationTrackerEntity:
         tracker = NotificationTracker(track_key='123', track_strategy=strategy)
         tracker.track_messages([])
         assert tracker.last_recent_notification_id == '>'
-
-
