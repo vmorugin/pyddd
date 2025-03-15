@@ -1,7 +1,7 @@
 from __future__ import annotations
 import abc
 import typing as t
-from enum import StrEnum
+from enum import Enum
 
 from pyddd.domain import DomainCommand
 from pyddd.domain.event import IEvent
@@ -128,7 +128,7 @@ class IApplication(abc.ABC):
         ...
 
 
-class ApplicationSignal(StrEnum):
+class ApplicationSignal(str, Enum):
     BEFORE_RUN = 'before_run'
     AFTER_RUN = 'after_run'
     BEFORE_STOP = 'before_stop'
