@@ -19,7 +19,38 @@ stages:
   - deploy
   - scan
 
-Tests dev:
+variables:
+  POETRY_VERSION: "1.8.5"
+
+Lint with flake8:
+  stage: test
+  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+      when: on_success
+  before_script:
+    - |
+      python -m pip install poetry==$POETRY_VERSION
+      poetry install
+  script:
+    - |
+      poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --per-file-ignores="__init__.py:F401"
+
+
+Lint with mypy:
+  stage: test
+  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+      when: on_success
+  before_script:
+    - |
+      python -m pip install poetry==$POETRY_VERSION
+      poetry install
+  script:
+    - poetry run mypy src
+Run Tests:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
@@ -34,12 +65,12 @@ Tests dev:
       - PROVIDER: [ '<=3.0.0', '>=1.10.4' ]
   before_script:
     - |
-      python -m pip install poetry==1.8.5 
+      python -m pip install poetry==$POETRY_VERSION
       poetry install 
       python -m pip install "pydantic${PROVIDER}"
       cd src
   script:
-    - poetry run pytest $CI_PROJECT_DIR/tests
+    - poetry run pytest
 
 Publish:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
@@ -49,7 +80,7 @@ Publish:
       when: on_success
   before_script:
     - |
-      python -m pip install poetry==1.8.5  
+      python -m pip install poetry==$POETRY_VERSION
       poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
       poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
   script:
