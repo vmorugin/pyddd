@@ -34,7 +34,7 @@ Tests dev:
       when: on_success
   parallel:
     matrix:
-      - PYDANTIC-VERSION: [ ">=2.0.0", "==1.10.4" ]
+      - PYDANTIC-VERSION: [ '<=3.0.0', '>=1.10.4' ]
   before_script:
     - |
       python -m venv $VENV_DIR 
