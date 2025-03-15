@@ -2,7 +2,7 @@ name: publish
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ main ]
 
 jobs:
   sdist:
@@ -15,10 +15,10 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Resetting git to dev
-        run: git reset --hard dev
+      - name: Resetting git to main
+        run: git reset --hard main
 
-      - name: Resetting git to dev
+      - name: Resetting git to main
         run: git fetch --tags || true
 
       - name: Install poetry
