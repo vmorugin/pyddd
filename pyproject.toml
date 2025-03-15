@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pyd3"
+name = "pyddd"
 version = "0.5.1"
 description = "Domain-Driven Design for Python"
 authors = ["v.morugin <vamorugin@gmail.com>"]
@@ -12,15 +12,25 @@ readme = "readme.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 pydantic = ">=1.10.4,<3.0.0"
-tenacity = {version = ">=9.0.0", extras = ["tenacity"]}
-redis = {version = ">=5.0.0", extras = ["redis"]}
+tenacity = { version = ">=9.0.0", extras = ["tenacity"] }
+redis = { version = ">=5.0.0", extras = ["redis"] }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
 flake8 = "^7.1.2"
 pytest-asyncio = "^0.25.3"
+mypy = "^1.15.0"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+no_implicit_optional = false
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_test_loop_scope = "function"
+asyncio_default_fixture_loop_scope = "function"
