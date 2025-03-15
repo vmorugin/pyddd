@@ -9,7 +9,9 @@ class NoneCondition(ICondition):
     def check(self, event: IEvent) -> bool:
         return True
 
+
 none_condition = NoneCondition()
+
 
 class HasAttrs(ICondition):
     def __init__(self, *attrs: str):
@@ -40,6 +42,7 @@ class And(ICondition):
 
     def check(self, event: IEvent) -> bool:
         return all((condition.check(event) for condition in self._conditions))
+
 
 class Or(ICondition):
     """
@@ -89,7 +92,8 @@ class Equal(ICondition):
     """
     Class representing an 'Equal' condition.
 
-    This class implements the 'ICondition' interface and provides a way to check if certain attributes in an event's payload are equal to specified values.
+    This class implements the 'ICondition' interface and provides a way to check if certain attributes in an event's
+    payload are equal to specified values.
 
     Args:
         **attrs: A containing the attributes and values to check.

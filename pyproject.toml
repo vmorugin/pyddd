@@ -18,6 +18,7 @@ redis = {version = ">=5.0.0", extras = ["redis"]}
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
 pytest-aio = "^1.9.0"
+flake8 = "^7.1.2"
 
 
 [build-system]

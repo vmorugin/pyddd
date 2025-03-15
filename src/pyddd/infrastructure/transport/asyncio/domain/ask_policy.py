@@ -13,6 +13,6 @@ class DefaultAskPolicy(IAskPolicy):
             event = event_factory.build_event(notification)
             await application.handle(event)
             await notification.ack()
-        except Exception as exc:
+        except Exception:
             # todo: log it!
             ...

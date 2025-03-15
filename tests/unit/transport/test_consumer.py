@@ -20,6 +20,7 @@ class TestConsumer:
         )
         consumer.subscribe('example-stream:test')
         assert consumer.subscriptions == {'example-stream:test'}
+
     async def test_should_set_application(self):
         app = Mock(spec=IApplication)
         consumer = MessageConsumer(

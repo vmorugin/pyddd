@@ -13,6 +13,7 @@ from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
     INotification,
 )
 
+
 class MessageConsumer(IMessageConsumer):
     def __init__(
             self,
