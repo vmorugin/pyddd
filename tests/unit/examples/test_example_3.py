@@ -88,7 +88,7 @@ def create_product_with_price(cmd: PrintCreatedProductInfo):
     print(f"Product {cmd.reference} was created.")
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class StoredEvent:
     id: str
     occurred_on: dt.datetime
