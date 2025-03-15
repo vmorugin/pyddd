@@ -32,7 +32,7 @@ class TestSyncExecutor:
 
         executor = SyncExecutor()
         result = executor.process_handler(handler=foo, value='123')
-        assert result is '123'
+        assert result == '123'
 
     def test_process_event(self):
         def foo(callback):
@@ -69,7 +69,7 @@ class TestSyncExecutor:
         executor.process_handlers(handlers=[foo, bar], callback=callback)
         assert dt.datetime.now() - before < dt.timedelta(seconds=0.002)
         time.sleep(0.002)
-        assert callback.call_count ==  2
+        assert callback.call_count == 2
 
     def test_must_execute_events_with_errors(self):
         def foo():
