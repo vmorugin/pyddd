@@ -1,3 +1,4 @@
+import typing as t
 import asyncio
 import json
 import logging
@@ -16,7 +17,7 @@ class PubSubNotificationQueue(INotificationQueue):
     def __init__(self, pubsub: PubSub, logger_name: str = 'notification.queue'):
         self._pubsub = pubsub
         self._running = False
-        self._pooling_task = None
+        self._pooling_task: t.Optional[asyncio.Task] = None
         self._logger = logging.getLogger(logger_name)
 
     async def bind(self, topic: str):

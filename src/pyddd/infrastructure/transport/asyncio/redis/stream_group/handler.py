@@ -8,6 +8,7 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     IMessageHandler,
     INotificationTrackerFactory,
     INotificationTracker,
+    INotification,
 )
 from pyddd.infrastructure.transport.asyncio.domain import Notification
 
@@ -28,7 +29,7 @@ class GroupStreamHandler(IMessageHandler):
         self._tracker_factory = tracker_factory
         self._trackers: dict[str, INotificationTracker] = {}
 
-    async def read(self, topic: str, limit: int = None) -> list[Notification]:
+    async def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]:
         messages = []
         tracker = self._trackers[topic]
         response = await self._read_message(topic, tracker.last_recent_notification_id, limit)
@@ -56,7 +57,7 @@ class GroupStreamHandler(IMessageHandler):
                 mkstream=True
             )
 
-    async def _read_message(self, topic: str, last_message_id: str, limit: int = None):
+    async def _read_message(self, topic: str, last_message_id: str, limit: int = None) -> list:
         return await self._client.xreadgroup(
             self._group_name,
             self._consumer_name,
