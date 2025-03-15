@@ -1,9 +1,3 @@
-include:
-  - project: 'pythagoras/ci-templates'
-    file:
-      - '/jobs/dependency-track.yml'
-      - '/jobs/defect-dojo.yml'
-
 workflow:
   rules:
     - if: $FORCE_PIPELINE == "True"
@@ -13,12 +7,6 @@ workflow:
       when: never
     - if: $CI_PIPELINE_SOURCE == "schedule"
     - when: never
-
-stages:
-  - build
-  - test
-  - deploy
-  - scan
 
 variables:
   VENV_DIR: "$CI_PROJECT_DIR/.venv"
@@ -44,10 +32,10 @@ Tests dev:
       when: on_success
   parallel:
     matrix:
-      - PROVIDER: [ '<=3.0.0', '>=1.10.4' ]
+      - PYDANTIC_VERSION: [ '<=3.0.0', 'pydantic>=1.10.4' ]
   before_script:
     - |
-      pip install "pydantic${PROVIDER}" --force
+      pip install "pydantic${PYDANTIC_VERSION}" --force
       cd src
   script:
     - pytest $CI_PROJECT_DIR/tests
