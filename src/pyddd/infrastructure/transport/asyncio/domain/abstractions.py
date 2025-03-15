@@ -108,7 +108,7 @@ class RejectProtocol(t.Protocol):
         ...
 
 
-@dataclasses.dataclass(kw_only=True, frozen=True)
+@dataclasses.dataclass(frozen=True)
 class NotificationTrackerState:
     track_key: str
     last_recent_notification_id: t.Optional[str]

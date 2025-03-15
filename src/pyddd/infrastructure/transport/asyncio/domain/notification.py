@@ -4,6 +4,7 @@ from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
     RejectProtocol,
 )
 
+
 async def _mock_ask(*args, **kwargs):
     return
 
@@ -16,7 +17,7 @@ class Notification(INotification):
             payload: dict,
             ask_func: AskProtocol = _mock_ask,
             reject_func: RejectProtocol = _mock_ask,
-            ):
+    ):
         self._reference = message_id
         self._name = name
         self._payload = payload
