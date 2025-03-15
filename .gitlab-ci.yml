@@ -68,7 +68,6 @@ Run Tests:
       python -m pip install poetry==$POETRY_VERSION
       poetry install 
       python -m pip install "pydantic${PROVIDER}"
-      cd src
   script:
     - poetry run pytest
 
