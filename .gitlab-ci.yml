@@ -1,3 +1,9 @@
+include:
+  - project: 'pythagoras/ci-templates'
+    file:
+      - '/jobs/dependency-track.yml'
+      - '/jobs/defect-dojo.yml'
+
 workflow:
   rules:
     - if: $FORCE_PIPELINE == "True"
@@ -8,21 +14,14 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "schedule"
     - when: never
 
-variables:
-  VENV_DIR: "$CI_PROJECT_DIR/.venv"
-
-Build:
-  stage: build
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
-  script:
-    - |
-      python -m venv $VENV_DIR
-      source $VENV_DIR/bin/activate
-      pip install poetry==1.8.5
-      poetry install
+stages:
+  - test
+  - deploy
+  - scan
 
 Tests dev:
   stage: test
+  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   services:
     - name: redis:6.2.10
   variables:
@@ -32,21 +31,25 @@ Tests dev:
       when: on_success
   parallel:
     matrix:
-      - PYDANTIC_VERSION: [ '<=3.0.0', 'pydantic>=1.10.4' ]
+      - PROVIDER: [ '<=3.0.0', '>=1.10.4' ]
   before_script:
     - |
-      pip install "pydantic${PYDANTIC_VERSION}" --force
+      python -m pip install poetry==1.8.5 
+      poetry install 
+      python -m pip install "pydantic${PROVIDER}"
       cd src
   script:
-    - pytest $CI_PROJECT_DIR/tests
+    - poetry run pytest $CI_PROJECT_DIR/tests
 
 Publish:
+  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   stage: deploy
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
   before_script:
     - |
+      python -m pip install poetry==1.8.5  
       poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
       poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
   script:
