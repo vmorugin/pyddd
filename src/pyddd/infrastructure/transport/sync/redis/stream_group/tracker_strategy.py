@@ -16,7 +16,7 @@ class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
             self,
             tracker: NotificationTrackerState,
             *messages: INotification
-            ) -> NotificationTrackerState:
+            ) -> 'NotificationTrackerState':
         if not messages:
             last_notification_id = '>'
         else:
