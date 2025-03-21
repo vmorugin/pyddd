@@ -1,18 +1,17 @@
 from unittest.mock import (
     Mock,
-    AsyncMock,
 )
 
 import pytest
 from pyddd.domain import DomainEvent
-
-from pyddd.infrastructure.transport.asyncio.domain import (
-    DefaultAskPolicy,
-    IAskPolicy,
-)
 from pyddd.infrastructure.transport.core.abstractions import (
     INotification,
     IEventFactory,
+)
+
+from pyddd.infrastructure.transport.sync.domain import (
+    DefaultAskPolicy,
+    IAskPolicy,
 )
 
 
@@ -27,7 +26,7 @@ class TestDefaultAskPolicy:
 
     @pytest.fixture
     def app(self):
-        return AsyncMock()
+        return Mock()
 
     @pytest.fixture
     def domain_event(self):
@@ -42,20 +41,20 @@ class TestDefaultAskPolicy:
     def test_must_implement_interface(self, policy):
         assert isinstance(policy, IAskPolicy)
 
-    async def test_must_call_app_handle(self, policy, notification, app, event_factory, domain_event):
-        await policy.process(notification, event_factory=event_factory, application=app)
+    def test_must_call_app_handle(self, policy, notification, app, event_factory, domain_event):
+        policy.process(notification, event_factory=event_factory, application=app)
         app.handle.assert_called_with(domain_event)
 
-    async def test_must_ack_if_success(self, policy, notification, app, event_factory):
-        await policy.process(notification, event_factory=event_factory, application=app)
+    def test_must_ack_if_success(self, policy, notification, app, event_factory):
+        policy.process(notification, event_factory=event_factory, application=app)
         assert notification.ack.called
 
-    async def test_must_not_ask_if_error_build_message(self, policy, notification, app, event_factory):
+    def test_must_not_ask_if_error_build_message(self, policy, notification, app, event_factory):
         event_factory.build_event.side_effect = Exception()
-        await policy.process(notification, event_factory=event_factory, application=app)
+        policy.process(notification, event_factory=event_factory, application=app)
         assert not notification.ack.called
 
-    async def test_must_not_ask_if_handling_message(self, policy, notification, app, event_factory):
+    def test_must_not_ask_if_handling_message(self, policy, notification, app, event_factory):
         app.handle.side_effect = Exception()
-        await policy.process(notification, event_factory=event_factory, application=app)
+        policy.process(notification, event_factory=event_factory, application=app)
         assert not notification.ack.called
