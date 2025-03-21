@@ -4,13 +4,11 @@ import uuid
 import pytest
 from redis.asyncio import Redis
 
-from pyddd.infrastructure.transport.asyncio.domain import (
-    NotificationTrackerFactory,
-)
 from pyddd.infrastructure.transport.asyncio.redis import (
     GroupStreamHandler,
     RedisStreamTrackerStrategy,
 )
+from pyddd.infrastructure.transport.core.tracker_factory import NotificationTrackerFactory
 
 
 @pytest.fixture
