@@ -53,7 +53,7 @@ class TestWithPubSub:
         [redis.publish("another:stream", '{"bar": "true"}') for _ in range(5)]
         [redis.publish("test:stream", '{"bar": "true"}') for _ in range(5)]
 
-        time.sleep(0.02)
+        time.sleep(0.1)
 
         app.stop()
 
