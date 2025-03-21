@@ -1,11 +1,9 @@
-from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
+from pyddd.infrastructure.transport.core.abstractions import (
     INotificationTrackerFactory,
-    INotificationTracker,
     INotificationTrackerStrategy,
+    INotificationTracker,
 )
-from pyddd.infrastructure.transport.asyncio.domain.tracker import (
-    NotificationTracker,
-)
+from pyddd.infrastructure.transport.core.tracker import NotificationTracker
 
 
 class NotificationTrackerFactory(INotificationTrackerFactory):

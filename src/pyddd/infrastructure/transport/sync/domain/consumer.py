@@ -1,17 +1,16 @@
-import asyncio
 import typing as t
 from pyddd.application.abstractions import (
     IApplication,
     ApplicationSignal,
 )
+from pyddd.infrastructure.transport.core.abstractions import IMessageConsumer
 
-from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
+from pyddd.infrastructure.transport.sync.domain.abstractions import (
     INotificationQueue,
     IAskPolicy,
     IEventFactory,
     INotification,
 )
-from pyddd.infrastructure.transport.core.abstractions import IMessageConsumer
 
 
 class MessageConsumer(IMessageConsumer):
@@ -26,7 +25,6 @@ class MessageConsumer(IMessageConsumer):
         self._application: t.Optional[IApplication] = None
         self._subscriptions: set[str] = set()
         self._event_factory = event_factory
-        self._tasks: set[asyncio.Future] = set()
 
     @property
     def subscriptions(self):
@@ -43,23 +41,22 @@ class MessageConsumer(IMessageConsumer):
 
         self._application = application
 
-    async def _before_run_handler(self, _signal: ApplicationSignal, _app: IApplication):
+    def _before_run_handler(self, _signal: ApplicationSignal, _app: IApplication):
         for topic in self._subscriptions:
-            await self._queue.bind(topic)
+            self._queue.bind(topic)
 
-    async def _after_run_handler(self, _signal: ApplicationSignal, _app: IApplication):
-        await self._queue.consume(self._ask_message)
+    def _after_run_handler(self, _signal: ApplicationSignal, _app: IApplication):
+        self._queue.consume(self._ask_message)
 
-    async def _before_stop_handler(self, _signal: ApplicationSignal, _app: IApplication):
-        await self._queue.stop_consume()
+    def _before_stop_handler(self, _signal: ApplicationSignal, _app: IApplication):
+        self._queue.stop_consume()
 
-    async def _after_stop_handler(self, _signal: ApplicationSignal, _app: IApplication):
-        for task in self._tasks:
-            task.cancel()
+    def _after_stop_handler(self, _signal: ApplicationSignal, _app: IApplication):
+        ...
 
-    async def _ask_message(self, message: INotification):
+    def _ask_message(self, message: INotification):
         if self._application:
-            await self._ask_policy.process(
+            self._ask_policy.process(
                 notification=message,
                 event_factory=self._event_factory,
                 application=self._application,
