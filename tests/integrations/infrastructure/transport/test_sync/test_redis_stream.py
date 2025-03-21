@@ -95,7 +95,7 @@ class TestConsumer:
         [redis.xadd("test:stream", {'foo': 'true'}) for _ in range(5)]
         [redis.xadd("test:stream", {'bar': 'true'}) for _ in range(5)]
 
-        time.sleep(0.1)
+        time.sleep(1)
 
         app.stop()
 
