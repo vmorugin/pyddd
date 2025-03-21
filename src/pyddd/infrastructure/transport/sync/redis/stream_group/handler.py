@@ -1,17 +1,16 @@
 import typing as t
 from contextlib import suppress
 
-from redis import ResponseError
-from redis.asyncio import Redis
+from redis import ResponseError, Redis
 
-from pyddd.infrastructure.transport.asyncio.domain import (
-    IMessageHandler,
-)
-from pyddd.infrastructure.transport.asyncio.domain import Notification
 from pyddd.infrastructure.transport.core.abstractions import (
     INotificationTrackerFactory,
     INotificationTracker,
     INotification,
+)
+from pyddd.infrastructure.transport.sync.domain import (
+    Notification,
+    IMessageHandler,
 )
 
 
@@ -31,10 +30,10 @@ class GroupStreamHandler(IMessageHandler):
         self._tracker_factory = tracker_factory
         self._trackers: dict[str, INotificationTracker] = {}
 
-    async def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]:
+    def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]:
         messages = []
         tracker = self._trackers[topic]
-        response = await self._read_message(topic, tracker.last_recent_notification_id, limit)
+        response = self._read_message(topic, tracker.last_recent_notification_id, limit)
         for items in response:
             _, streams = items
             for stream in streams:
@@ -50,17 +49,17 @@ class GroupStreamHandler(IMessageHandler):
         tracker.track_messages(messages)
         return messages
 
-    async def bind(self, topic: str):
+    def bind(self, topic: str):
         self._trackers[topic] = self._tracker_factory.create_tracker(topic)
         with suppress(ResponseError):
-            await self._client.xgroup_create(
+            self._client.xgroup_create(
                 topic,
                 self._group_name,
                 mkstream=True
             )
 
-    async def _read_message(self, topic: str, last_message_id: str, limit: int = None) -> list:
-        return await self._client.xreadgroup(
+    def _read_message(self, topic: str, last_message_id: str, limit: int = None) -> t.Union[list, t.Any]:
+        return self._client.xreadgroup(
             self._group_name,
             self._consumer_name,
             {topic: last_message_id},
@@ -70,8 +69,8 @@ class GroupStreamHandler(IMessageHandler):
 
     def _ask(self, topic: str, message_id: str):
 
-        async def _wrapper(requeue: bool = False):
+        def _wrapper(requeue: bool = False):
             if not requeue:
-                await self._client.xack(topic, self._group_name, message_id)
+                self._client.xack(topic, self._group_name, message_id)
 
         return _wrapper
