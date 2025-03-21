@@ -2,11 +2,13 @@ import dataclasses
 
 import pytest
 from pyddd.infrastructure.transport.asyncio.domain import (
+    Notification,
+)
+from pyddd.infrastructure.transport.core.abstractions import (
     NotificationTrackerState,
     INotificationTrackerStrategy,
-    Notification,
-    NotificationTracker,
 )
+from pyddd.infrastructure.transport.core.tracker import NotificationTracker
 
 
 class TestNotificationTracker:

@@ -1,7 +1,7 @@
 import dataclasses
 import typing as t
 
-from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
+from pyddd.infrastructure.transport.core.abstractions import (
     INotification,
     INotificationTracker,
     NotificationTrackerState,
