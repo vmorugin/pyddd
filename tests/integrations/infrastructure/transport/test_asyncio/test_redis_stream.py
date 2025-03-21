@@ -16,10 +16,10 @@ from pyddd.domain import DomainCommand
 from pyddd.infrastructure.transport.asyncio.domain import (
     DefaultAskPolicy,
     MessageConsumer,
-    DomainEventFactory,
     Notification,
     NotificationQueue,
 )
+from pyddd.infrastructure.transport.core.event_factory import DomainEventFactory
 
 
 class TestStreamHandler:

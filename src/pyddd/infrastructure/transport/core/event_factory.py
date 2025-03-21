@@ -3,7 +3,7 @@ from pyddd.domain.message import (
     MessageType,
 )
 
-from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
+from pyddd.infrastructure.transport.core.abstractions import (
     IEventFactory,
     INotification,
 )

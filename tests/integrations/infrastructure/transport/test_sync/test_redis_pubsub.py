@@ -6,7 +6,7 @@ from pyddd.application import (
     Module,
 )
 from pyddd.domain import DomainCommand
-from pyddd.infrastructure.transport.asyncio.domain import DomainEventFactory
+from pyddd.infrastructure.transport.core.event_factory import DomainEventFactory
 from pyddd.infrastructure.transport.sync.domain import (
     MessageConsumer,
     DefaultAskPolicy,

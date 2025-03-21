@@ -7,11 +7,11 @@ from pyddd.application import (
 )
 from pyddd.domain import DomainCommand
 from pyddd.infrastructure.transport.asyncio.domain import (
-    DomainEventFactory,
     MessageConsumer,
     DefaultAskPolicy,
 )
 from pyddd.infrastructure.transport.asyncio.redis import PubSubNotificationQueue
+from pyddd.infrastructure.transport.core.event_factory import DomainEventFactory
 
 
 class TestWithPubSub:
