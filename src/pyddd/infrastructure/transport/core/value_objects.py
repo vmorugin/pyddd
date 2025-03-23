@@ -3,6 +3,7 @@ import typing as t
 
 from pyddd.domain.entity import ValueObject
 
+
 @dataclasses.dataclass(frozen=True)
 class PublishedEvent(ValueObject):
     full_event_name: str
