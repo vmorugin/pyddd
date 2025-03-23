@@ -1,9 +1,12 @@
 import abc
-import dataclasses
 import typing as t
 
 from pyddd.application.abstractions import IApplication
-from pyddd.domain.message import Message
+from pyddd.domain.message import (
+    Message,
+    IMessage,
+)
+from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
 
 
 class INotification(abc.ABC):
@@ -64,12 +67,6 @@ class IMessageConsumer(abc.ABC):
         ...
 
 
-@dataclasses.dataclass(frozen=True)
-class NotificationTrackerState:
-    track_key: str
-    last_recent_notification_id: t.Optional[str]
-
-
 class INotificationTrackerStrategy(abc.ABC):
 
     @abc.abstractmethod
@@ -82,4 +79,9 @@ class INotificationTrackerStrategy(abc.ABC):
 
     @abc.abstractmethod
     def create_tracker(self, track_key: str) -> NotificationTrackerState:
+        ...
+
+
+class PublisherProtocol(t.Protocol):
+    def __call__(self, message: IMessage):
         ...

@@ -11,6 +11,8 @@ from pyddd.application.abstractions import (
     IPayloadConverter,
     IRetryStrategy,
     IModule,
+    ISubscribe,
+    IRegister,
 )
 from pyddd.application.exceptions import FailedHandlerCondition
 from pyddd.application.executor import (
@@ -24,7 +26,7 @@ from pyddd.application.retry import none_retry
 from pyddd.domain.message import IMessage
 
 
-class Module(IModule):
+class Module(IModule, ISubscribe, IRegister):
     def __init__(
             self,
             domain: str,
