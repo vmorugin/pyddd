@@ -1,4 +1,4 @@
-import asyncio
+import time
 from unittest.mock import Mock
 
 from pyddd.application import (
@@ -6,16 +6,16 @@ from pyddd.application import (
     Module,
 )
 from pyddd.domain import DomainCommand
-from pyddd.infrastructure.transport.asyncio.domain import (
+from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
+from pyddd.infrastructure.transport.sync.domain import (
     MessageConsumer,
     DefaultAskPolicy,
 )
-from pyddd.infrastructure.transport.asyncio.redis import PubSubNotificationQueue
-from pyddd.infrastructure.transport.core.event_factory import DomainEventFactory
+from pyddd.infrastructure.transport.sync.redis import PubSubNotificationQueue
 
 
 class TestWithPubSub:
-    async def test_with_pubsub(self, redis):
+    def test_with_pubsub(self, redis):
         module = Module('test')
 
         class ExampleCommand1(DomainCommand, domain='test'):
@@ -27,20 +27,18 @@ class TestWithPubSub:
         @module.subscribe('another.stream')
         @module.subscribe('test.stream')
         @module.register
-        async def callback_1(cmd: ExampleCommand1, callback):
+        def callback_1(cmd: ExampleCommand1, callback):
             return callback()
 
         @module.subscribe('test.stream')
         @module.register
-        async def callback_2(cmd: ExampleCommand2, callback):
+        def callback_2(cmd: ExampleCommand2, callback):
             return callback()
 
         callback = Mock()
-        event_factory = DomainEventFactory()
-        queue = PubSubNotificationQueue(pubsub=redis.pubsub())
         consumer = MessageConsumer(
-            queue=queue,
-            event_factory=event_factory,
+            queue=PubSubNotificationQueue(pubsub=redis.pubsub()),
+            event_factory=UniversalEventFactory(),
             ask_policy=DefaultAskPolicy()
         )
         app = Application()
@@ -49,13 +47,14 @@ class TestWithPubSub:
         consumer.set_application(app)
         consumer.subscribe('test:stream')
         consumer.subscribe('another:stream')
-        await app.run_async()
-        await asyncio.sleep(0.01)
+        app.run()
 
-        [await redis.publish("test:stream", '{"foo": "true"}') for _ in range(5)]
-        [await redis.publish("another:stream", '{"bar": "true"}') for _ in range(5)]
-        [await redis.publish("test:stream", '{"bar": "true"}') for _ in range(5)]
+        [redis.publish("test:stream", '{"foo": "true"}') for _ in range(5)]
+        [redis.publish("another:stream", '{"bar": "true"}') for _ in range(5)]
+        [redis.publish("test:stream", '{"bar": "true"}') for _ in range(5)]
 
-        await asyncio.sleep(0.01)
+        time.sleep(0.1)
+
+        app.stop()
+
         assert callback.call_count == 15
-        await app.stop_async()

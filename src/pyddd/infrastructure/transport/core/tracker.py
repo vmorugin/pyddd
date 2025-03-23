@@ -4,9 +4,9 @@ import typing as t
 from pyddd.infrastructure.transport.core.abstractions import (
     INotification,
     INotificationTracker,
-    NotificationTrackerState,
     INotificationTrackerStrategy,
 )
+from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
 
 
 class DefaultNotificationTrackerStrategy(INotificationTrackerStrategy):
