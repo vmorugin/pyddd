@@ -91,7 +91,7 @@ class TestConsumer:
             queue=NotificationQueue(message_handler=redis_stream_handler),
             ask_policy=DefaultAskPolicy(),
             event_factory=UniversalEventFactory()
-            )
+        )
         consumer.set_application(app)
         consumer.subscribe('test:stream')
         app.run()
@@ -104,6 +104,7 @@ class TestConsumer:
         app.stop()
 
         assert callback.call_count == 10
+
 
 class TestPublisher:
     async def test_publish_event(self, redis):

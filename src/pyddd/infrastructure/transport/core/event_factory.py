@@ -21,6 +21,7 @@ class UniversalEventFactory(IEventFactory):
             payload=message.payload,
         )
 
+
 class PublishedEventFactory(IEventFactory):
     def build_event(self, message: INotification) -> Message:
         published_event = PublishedEvent(**message.payload)
