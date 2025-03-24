@@ -19,7 +19,7 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     Notification,
     NotificationQueue,
 )
-from pyddd.infrastructure.transport.core.event_factory import DomainEventFactory
+from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 
 
 class TestStreamHandler:
@@ -86,7 +86,7 @@ class TestConsumer:
 
         ask_policy = DefaultAskPolicy()
         queue = NotificationQueue(message_handler=redis_stream_handler)
-        consumer = MessageConsumer(queue=queue, ask_policy=ask_policy, event_factory=DomainEventFactory())
+        consumer = MessageConsumer(queue=queue, ask_policy=ask_policy, event_factory=UniversalEventFactory())
         consumer.set_application(app)
         consumer.subscribe('test:stream')
         await app.run_async()

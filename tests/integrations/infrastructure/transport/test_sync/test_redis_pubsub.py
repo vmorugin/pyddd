@@ -6,7 +6,7 @@ from pyddd.application import (
     Module,
 )
 from pyddd.domain import DomainCommand
-from pyddd.infrastructure.transport.core.event_factory import DomainEventFactory
+from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 from pyddd.infrastructure.transport.sync.domain import (
     MessageConsumer,
     DefaultAskPolicy,
@@ -38,7 +38,7 @@ class TestWithPubSub:
         callback = Mock()
         consumer = MessageConsumer(
             queue=PubSubNotificationQueue(pubsub=redis.pubsub()),
-            event_factory=DomainEventFactory(),
+            event_factory=UniversalEventFactory(),
             ask_policy=DefaultAskPolicy()
         )
         app = Application()

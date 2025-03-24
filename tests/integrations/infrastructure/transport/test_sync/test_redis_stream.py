@@ -11,7 +11,7 @@ from pyddd.application import (
     Module,
 )
 from pyddd.domain import DomainCommand
-from pyddd.infrastructure.transport.core.event_factory import DomainEventFactory
+from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 from pyddd.infrastructure.transport.sync.domain import (
     DefaultAskPolicy,
     MessageConsumer,
@@ -85,7 +85,7 @@ class TestConsumer:
         consumer = MessageConsumer(
             queue=NotificationQueue(message_handler=redis_stream_handler),
             ask_policy=DefaultAskPolicy(),
-            event_factory=DomainEventFactory()
+            event_factory=UniversalEventFactory()
             )
         consumer.set_application(app)
         consumer.subscribe('test:stream')
