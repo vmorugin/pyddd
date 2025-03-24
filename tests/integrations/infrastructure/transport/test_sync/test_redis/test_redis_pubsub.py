@@ -1,3 +1,4 @@
+import json
 import time
 from unittest.mock import Mock
 
@@ -6,12 +7,17 @@ from pyddd.application import (
     Module,
 )
 from pyddd.domain import DomainCommand
+from pyddd.domain.message import (
+    Message,
+    MessageType,
+)
 from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 from pyddd.infrastructure.transport.sync.domain import (
     MessageConsumer,
     DefaultAskPolicy,
 )
 from pyddd.infrastructure.transport.sync.redis import PubSubNotificationQueue
+from pyddd.infrastructure.transport.sync.redis.pubsub.publisher import RedisPubSubPublisher
 
 
 class TestWithPubSub:
@@ -58,3 +64,34 @@ class TestWithPubSub:
         app.stop()
 
         assert callback.call_count == 15
+
+
+class TestPublisher:
+    def test_publish_event(self, redis):
+        event = Message(
+            message_type=MessageType.EVENT,
+            full_name='test.domain.FakeEvent',
+            payload={'test': True},
+        )
+        app = Application()
+        publisher = RedisPubSubPublisher(client=redis)
+        publisher.set_application(app)
+        publisher.register(event.__topic__)
+
+        pubsub = redis.pubsub()
+        pubsub.subscribe(event.__topic__)
+
+        app.run()
+        list(app.handle(event))
+
+        welcome_message = pubsub.get_message()
+        assert welcome_message is not None
+
+        message = pubsub.get_message(ignore_subscribe_messages=True)
+        data = json.loads(message['data'])
+        assert data == dict(
+            full_event_name=event.__topic__,
+            message_id=event.__message_id__,
+            payload=event.to_json(),
+            timestamp=str(event.__timestamp__.timestamp())
+        )
