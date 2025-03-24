@@ -1,4 +1,5 @@
 import typing as t
+import uuid
 from functools import partial
 
 from pyddd.application.abstractions import (
@@ -16,7 +17,7 @@ class EventPublisherModule(IModule):
 
     @property
     def domain(self) -> str:
-        return "__publisher__"
+        return "__publisher__" + uuid.uuid4().hex[:8]
 
     def set_defaults(self, defaults: dict):
         pass
