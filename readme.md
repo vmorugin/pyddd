@@ -12,6 +12,15 @@
 - **Встроенный менеджер зависимостей**
 - **Событийно-ориентированная архитектура**
 
+## Установка
+
+Доступна из внутреннего pypi-репозитория. Пример установки через poetry:
+
+Если не добавлен локальный pypi источник - нужно выполнить команду
+```bash
+poetry source add local-pypi https://git.nctresource.team/api/v4/projects/368/packages/pypi/simple
+```
+Следом работаем с пакетом как с обычной зависимостью
 ```bash
 poetry add pyddd
 poetry install

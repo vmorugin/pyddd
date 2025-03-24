@@ -5,9 +5,9 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     Notification,
 )
 from pyddd.infrastructure.transport.core.abstractions import (
-    NotificationTrackerState,
     INotificationTrackerStrategy,
 )
+from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
 from pyddd.infrastructure.transport.core.tracker import NotificationTracker
 
 

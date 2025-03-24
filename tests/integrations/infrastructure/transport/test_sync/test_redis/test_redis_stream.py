@@ -11,13 +11,18 @@ from pyddd.application import (
     Module,
 )
 from pyddd.domain import DomainCommand
-from pyddd.infrastructure.transport.core.event_factory import DomainEventFactory
+from pyddd.domain.message import (
+    Message,
+    MessageType,
+)
+from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 from pyddd.infrastructure.transport.sync.domain import (
     DefaultAskPolicy,
     MessageConsumer,
     Notification,
     NotificationQueue,
 )
+from pyddd.infrastructure.transport.sync.redis.stream_group.publisher import RedisStreamPublisher
 
 
 class TestStreamHandler:
@@ -85,8 +90,8 @@ class TestConsumer:
         consumer = MessageConsumer(
             queue=NotificationQueue(message_handler=redis_stream_handler),
             ask_policy=DefaultAskPolicy(),
-            event_factory=DomainEventFactory()
-            )
+            event_factory=UniversalEventFactory()
+        )
         consumer.set_application(app)
         consumer.subscribe('test:stream')
         app.run()
@@ -99,3 +104,35 @@ class TestConsumer:
         app.stop()
 
         assert callback.call_count == 10
+
+
+class TestPublisher:
+    async def test_publish_event(self, redis):
+        unique_name = str(uuid.uuid4())
+        event = Message(
+            message_type=MessageType.EVENT,
+            full_name='test.domain.FakeEvent',
+            payload={'test': True},
+        )
+        app = Application()
+        publisher = RedisStreamPublisher(client=redis)
+        publisher.set_application(app)
+        publisher.register(event.__topic__)
+
+        redis.xgroup_create(name=event.__topic__, groupname=unique_name, mkstream=True)
+        app.run()
+        app.handle(event)
+
+        messages = redis.xreadgroup(
+            groupname=unique_name,
+            consumername=unique_name,
+            streams={event.__topic__: '>'}
+        )
+        stream_name, streams = messages[0]
+        message_id, payload = streams[0]
+        assert {key.decode(): value.decode() for key, value in payload.items()} == dict(
+            full_event_name=event.__topic__,
+            message_id=event.__message_id__,
+            timestamp=str(event.__timestamp__.timestamp()),
+            payload=event.to_json()
+        )

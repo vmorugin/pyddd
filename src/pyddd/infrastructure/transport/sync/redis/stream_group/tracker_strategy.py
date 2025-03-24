@@ -2,9 +2,9 @@ import dataclasses
 
 from pyddd.infrastructure.transport.core.abstractions import (
     INotificationTrackerStrategy,
-    NotificationTrackerState,
     INotification,
 )
+from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
 
 
 class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
