@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "pyddd"
-version = "0.7.2"
+version = "0.7.6"
 description = "Domain-Driven Design for Python"
 authors = ["v.morugin <vamorugin@gmail.com>"]
 packages = [
     { include = "pyddd", from = "src" },
-    { include = "readme.md" },
 ]
 readme = "readme.md"
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
