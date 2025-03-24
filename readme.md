@@ -1,4 +1,5 @@
-[![Coverage Status](https://coveralls.io/repos/github/vmorugin/pyddd/badge.svg?branch=master)](https://coveralls.io/github/vmorugin/pyddd?branch=master) [![PyPI - License](https://img.shields.io/pypi/l/pyddd)](https://pypi.org/project/pyddd) [![PyPI](https://img.shields.io/pypi/v/pyddd)](https://pypi.org/project/pyddd) [![PyPI](https://img.shields.io/pypi/pyversions/pyddd)](https://pypi.org/project/pyddd) [![Mypy](http://www.mypy-lang.org/static/mypy_badge.svg)]()
+[![Coverage Status](https://coveralls.io/repos/github/vmorugin/ddd-python/badge.svg?branch=master)](https://coveralls.io/github/vmorugin/ddd-python?branch=master) [![PyPI - License](https://img.shields.io/pypi/l/ddd-python)](https://pypi.org/project/ddd-python) [![PyPI](https://img.shields.io/pypi/v/ddd-python)](https://pypi.org/project/ddd-python) [![PyPI](https://img.shields.io/pypi/pyversions/ddd-python)](https://pypi.org/project/ddd-python) [![Mypy](http://www.mypy-lang.org/static/mypy_badge.svg)]()
+
 # pyddd
 
 `pyddd` - это DDD (Domain-Driven Design) фреймворк для Python, предоставляющий встроенный менеджер зависимостей и шину
