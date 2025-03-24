@@ -54,20 +54,7 @@ class IRetryStrategy(abc.ABC):
         ...
 
 
-class IModule(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def domain(self) -> str:
-        ...
-
-    @abc.abstractmethod
-    def set_defaults(self, defaults: dict):
-        ...
-
-    @abc.abstractmethod
-    def register(self, func):
-        ...
-
+class ISubscribe(abc.ABC):
     @abc.abstractmethod
     def subscribe(
             self,
@@ -77,6 +64,23 @@ class IModule(abc.ABC):
             condition: ICondition,
             retry_strategy: IRetryStrategy,
     ):
+        ...
+
+
+class IRegister(abc.ABC):
+    @abc.abstractmethod
+    def register(self, func):
+        ...
+
+
+class IModule(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def domain(self) -> str:
+        ...
+
+    @abc.abstractmethod
+    def set_defaults(self, defaults: dict):
         ...
 
     @abc.abstractmethod
