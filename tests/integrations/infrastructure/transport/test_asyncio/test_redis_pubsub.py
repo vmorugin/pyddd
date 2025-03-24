@@ -11,7 +11,7 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     DefaultAskPolicy,
 )
 from pyddd.infrastructure.transport.asyncio.redis import PubSubNotificationQueue
-from pyddd.infrastructure.transport.core.event_factory import DomainEventFactory
+from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 
 
 class TestWithPubSub:
@@ -36,7 +36,7 @@ class TestWithPubSub:
             return callback()
 
         callback = Mock()
-        event_factory = DomainEventFactory()
+        event_factory = UniversalEventFactory()
         queue = PubSubNotificationQueue(pubsub=redis.pubsub())
         consumer = MessageConsumer(
             queue=queue,

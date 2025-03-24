@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pyddd"
+name = "ddd-python"
 version = "0.7.2"
 description = "Domain-Driven Design for Python"
 authors = ["v.morugin <vamorugin@gmail.com>"]
