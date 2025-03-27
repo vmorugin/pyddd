@@ -31,7 +31,7 @@ Lint with flake8:
   before_script:
     - |
       python -m pip install poetry==$POETRY_VERSION
-      poetry install
+      poetry install --all-extras
   script:
     - |
       poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -46,7 +46,7 @@ Lint with mypy:
   before_script:
     - |
       python -m pip install poetry==$POETRY_VERSION
-      poetry install
+      poetry install --all-extras
   script:
     - poetry run mypy src
 
@@ -66,8 +66,8 @@ Run Tests:
   before_script:
     - |
       python -m pip install poetry==$POETRY_VERSION
-      poetry install 
-      python -m pip install "pydantic${PROVIDER}"
+      poetry install --all-extras
+      poetry add pydantic${PROVIDER}
   script:
     - poetry run pytest
 

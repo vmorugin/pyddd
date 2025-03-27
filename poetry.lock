@@ -15,7 +15,7 @@ files = [
 name = "async-timeout"
 version = "5.0.1"
 description = "Timeout context manager for asyncio programs"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "async_timeout-5.0.1-py3-none-any.whl", hash = "sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c"},
@@ -373,7 +373,7 @@ testing = ["coverage (>=6.2)", "hypothesis (>=5.7.1)"]
 name = "redis"
 version = "5.2.1"
 description = "Python client for Redis database and key-value store"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "redis-5.2.1-py3-none-any.whl", hash = "sha256:ee7e1056b9aea0f04c6c2ed59452947f34c4940ee025f5dd83e6a6418b6989e4"},
@@ -391,7 +391,7 @@ ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==23.2.1)", "requests (>=2.31.0)"
 name = "tenacity"
 version = "9.0.0"
 description = "Retry code until it succeeds"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "tenacity-9.0.0-py3-none-any.whl", hash = "sha256:93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539"},
@@ -454,7 +454,11 @@ files = [
     {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
 
+[extras]
+redis = ["redis"]
+tenacity = ["tenacity"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "489dd235a7eab36bd7627566cdc91e9f271acdc34f81b971185322e488f07e68"
+content-hash = "9493b822da4cd45fabaed826a7ec33bd2c652b2d2f8a5dc73cd9d33d1e712fe6"
