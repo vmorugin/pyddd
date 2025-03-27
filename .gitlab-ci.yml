@@ -66,8 +66,8 @@ Run Tests:
   before_script:
     - |
       python -m pip install poetry==$POETRY_VERSION
-      poetry install 
-      python -m pip install "pydantic${PROVIDER}"
+      poetry install --all-extras
+      poetry add pydantic${PROVIDER}
   script:
     - poetry run pytest
 
