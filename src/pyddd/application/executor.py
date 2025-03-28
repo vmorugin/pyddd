@@ -14,15 +14,15 @@ from concurrent.futures import (
 class SyncExecutor(IExecutor):
     def __init__(self, logger_name: str = 'pyddd.executor'):
         self._logger = logging.getLogger(logger_name)
+        self._executor = ThreadPoolExecutor()
 
     def process_handler(self, handler: AnyCallable, **kwargs):
         return handler(**kwargs)
 
     def process_handlers(self, handlers: list[AnyCallable], **kwargs):
         tasks = []
-        executor = ThreadPoolExecutor()
         for handler in handlers:
-            task = executor.submit(self._process_handler, handler, **kwargs)
+            task = self._executor.submit(self._process_handler, handler, **kwargs)
             tasks.append(task)
         return (task.result() for task in tasks)
 
