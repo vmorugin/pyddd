@@ -21,10 +21,13 @@ stages:
 
 variables:
   POETRY_VERSION: "1.8.5"
+  DOCKER_AUTH_CONFIG: $HARBOR_AUTH_CONFIG
+  PYTHON_IMAGE_NAME: "pgs-python"
+  PYTHON_IMAGE_TAG: "3.11"
 
 Lint with flake8:
   stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
@@ -39,7 +42,7 @@ Lint with flake8:
 
 Lint with mypy:
   stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
@@ -52,7 +55,7 @@ Lint with mypy:
 
 Run Tests:
   stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   services:
     - name: redis:6.2.10
   variables:
@@ -72,7 +75,7 @@ Run Tests:
     - poetry run pytest
 
 Publish:
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   stage: deploy
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
