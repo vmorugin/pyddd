@@ -23,6 +23,7 @@ variables:
   VENV_DIR: "$CI_PROJECT_DIR/.venv"
   PYTHON_IMAGE_NAME: "pgs-python"
   PYTHON_IMAGE_TAG: "3.11"
+  POETRY_VERSION: 1.8.5
 
 
 Unit Tests Pydantic 2.x.x:
@@ -50,12 +51,13 @@ Unit Tests Pydantic 1.x.x:
     - python -m pytest $CI_PROJECT_DIR/tests
 
 Publish:
-  image: mwalbeck/python-poetry:1.8.5-3.11
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   stage: publish
   rules:
     - if: $CI_COMMIT_BRANCH == "RNDIN-1068.update_from_main"
       when: on_success
   before_script:
+    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install poetry==${POETRY_VERSION}
     - poetry config repositories.pgs ${CI_API_V4_URL}/projects/3162/packages/pypi
     - poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
   script:
