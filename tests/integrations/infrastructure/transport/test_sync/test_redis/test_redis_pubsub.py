@@ -11,12 +11,16 @@ from pyddd.domain.message import (
     Message,
     MessageType,
 )
+from pyddd.infrastructure.transport.core.abstractions import (
+    IMessageConsumer,
+)
 from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 from pyddd.infrastructure.transport.sync.domain import (
     MessageConsumer,
     DefaultAskPolicy,
 )
 from pyddd.infrastructure.transport.sync.redis import PubSubNotificationQueue
+from pyddd.infrastructure.transport.sync.redis.pubsub.consumer import RedisPubSubConsumer
 from pyddd.infrastructure.transport.sync.redis.pubsub.publisher import RedisPubSubPublisher
 
 
@@ -64,6 +68,43 @@ class TestWithPubSub:
         app.stop()
 
         assert callback.call_count == 15
+
+
+class TestRedisPubsubConsumer:
+    def test_facade(self, redis):
+        consumer = RedisPubSubConsumer(redis)
+        assert isinstance(consumer, IMessageConsumer)
+        assert isinstance(consumer.ask_policy, DefaultAskPolicy)
+        assert isinstance(consumer.event_factory, UniversalEventFactory)
+        assert isinstance(consumer.queue, PubSubNotificationQueue)
+
+    def test_could_publish_event(self, redis):
+        module = Module('test')
+
+        class ExampleCommand(DomainCommand, domain='test'):
+            bar: str
+
+        @module.subscribe('test.stream')
+        @module.register
+        def callback_1(cmd: ExampleCommand, callback):
+            return callback()
+
+        callback = Mock()
+        consumer = RedisPubSubConsumer(redis)
+        app = Application()
+        app.include(module)
+        app.set_defaults(module.domain, callback=callback)
+        consumer.set_application(app)
+        consumer.subscribe('test:stream')
+        app.run()
+
+        [redis.publish("test:stream", '{"bar": "true"}') for _ in range(5)]
+
+        time.sleep(0.1)
+
+        app.stop()
+
+        assert callback.call_count == 5
 
 
 class TestPublisher:
