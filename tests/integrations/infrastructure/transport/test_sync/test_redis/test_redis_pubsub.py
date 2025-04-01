@@ -14,13 +14,18 @@ from pyddd.domain.message import (
 from pyddd.infrastructure.transport.core.abstractions import (
     IMessageConsumer,
 )
-from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
+from pyddd.infrastructure.transport.core.event_factory import (
+    UniversalEventFactory,
+    PublishedEventFactory,
+)
 from pyddd.infrastructure.transport.sync.domain import (
     MessageConsumer,
     DefaultAskPolicy,
 )
-from pyddd.infrastructure.transport.sync.redis import PubSubNotificationQueue
-from pyddd.infrastructure.transport.sync.redis.pubsub.consumer import RedisPubSubConsumer
+from pyddd.infrastructure.transport.sync.redis.pubsub.consumer import (
+    RedisPubSubConsumer,
+    PubSubNotificationQueue,
+)
 from pyddd.infrastructure.transport.sync.redis.pubsub.publisher import RedisPubSubPublisher
 
 
@@ -75,7 +80,7 @@ class TestRedisPubsubConsumer:
         consumer = RedisPubSubConsumer(redis)
         assert isinstance(consumer, IMessageConsumer)
         assert isinstance(consumer.ask_policy, DefaultAskPolicy)
-        assert isinstance(consumer.event_factory, UniversalEventFactory)
+        assert isinstance(consumer.event_factory, PublishedEventFactory)
         assert isinstance(consumer.queue, PubSubNotificationQueue)
 
     def test_could_publish_event(self, redis):
@@ -90,7 +95,7 @@ class TestRedisPubsubConsumer:
             return callback()
 
         callback = Mock()
-        consumer = RedisPubSubConsumer(redis)
+        consumer = RedisPubSubConsumer(redis, event_factory=UniversalEventFactory())
         app = Application()
         app.include(module)
         app.set_defaults(module.domain, callback=callback)

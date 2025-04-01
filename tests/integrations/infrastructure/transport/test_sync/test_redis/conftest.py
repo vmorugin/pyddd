@@ -4,11 +4,11 @@ import uuid
 import pytest
 from redis import Redis
 
-from pyddd.infrastructure.transport.core.tracker_factory import NotificationTrackerFactory
-from pyddd.infrastructure.transport.sync.redis import (
+from pyddd.infrastructure.transport.sync.redis.stream_group.consumer import (
     GroupStreamHandler,
     RedisStreamTrackerStrategy,
 )
+from pyddd.infrastructure.transport.core.tracker_factory import NotificationTrackerFactory
 
 
 @pytest.fixture
