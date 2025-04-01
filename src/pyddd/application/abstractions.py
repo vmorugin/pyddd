@@ -1,13 +1,11 @@
 from __future__ import annotations
 import abc
 import typing as t
-from enum import StrEnum
+from enum import Enum
 
-from pyddd.domain import DomainCommand
-from pyddd.domain.event import IEvent
+from pyddd.domain.command import DomainCommand
 from pyddd.domain.message import IMessage
 
-P = t.ParamSpec('P')
 R = t.TypeVar('R')
 AnyCallable = t.Callable[..., R]
 
@@ -41,7 +39,7 @@ class IExecutor(abc.ABC):
 
 class ICondition(abc.ABC):
     @abc.abstractmethod
-    def check(self, event: IEvent) -> bool:
+    def check(self, event: IMessage) -> bool:
         ...
 
 
@@ -56,20 +54,7 @@ class IRetryStrategy(abc.ABC):
         ...
 
 
-class IModule(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def domain(self) -> str:
-        ...
-
-    @abc.abstractmethod
-    def set_defaults(self, defaults: dict):
-        ...
-
-    @abc.abstractmethod
-    def register(self, func):
-        ...
-
+class ISubscribe(abc.ABC):
     @abc.abstractmethod
     def subscribe(
             self,
@@ -79,6 +64,23 @@ class IModule(abc.ABC):
             condition: ICondition,
             retry_strategy: IRetryStrategy,
     ):
+        ...
+
+
+class IRegister(abc.ABC):
+    @abc.abstractmethod
+    def register(self, func):
+        ...
+
+
+class IModule(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def domain(self) -> str:
+        ...
+
+    @abc.abstractmethod
+    def set_defaults(self, defaults: dict):
         ...
 
     @abc.abstractmethod
@@ -128,7 +130,7 @@ class IApplication(abc.ABC):
         ...
 
 
-class ApplicationSignal(StrEnum):
+class ApplicationSignal(str, Enum):
     BEFORE_RUN = 'before_run'
     AFTER_RUN = 'after_run'
     BEFORE_STOP = 'before_stop'

@@ -1,6 +1,9 @@
+[![Coverage Status](https://coveralls.io/repos/github/vmorugin/ddd-python/badge.svg?branch=master)](https://coveralls.io/github/vmorugin/ddd-python?branch=master) [![PyPI - License](https://img.shields.io/pypi/l/ddd-python)](https://pypi.org/project/ddd-python) [![PyPI](https://img.shields.io/pypi/v/ddd-python)](https://pypi.org/project/ddd-python) [![PyPI](https://img.shields.io/pypi/pyversions/ddd-python)](https://pypi.org/project/ddd-python) [![Mypy](http://www.mypy-lang.org/static/mypy_badge.svg)]()
+
 # pyddd
 
-`pyddd` - это DDD (Domain-Driven Design) фреймворк для Python, предоставляющий встроенный менеджер зависимостей и шину сообщений. Он упрощает построение сложных доменных моделей и событийное программирование.
+`pyddd` - это DDD (Domain-Driven Design) фреймворк для Python, предоставляющий встроенный менеджер зависимостей и шину
+сообщений. Он упрощает построение сложных доменных моделей и событийное программирование.
 
 ## Возможности
 
@@ -10,7 +13,19 @@
 - **Встроенный менеджер зависимостей**
 - **Событийно-ориентированная архитектура**
 
-## Установка
+
+## Локальная установка зависимостей
+
+Нужно установить poetry и все зависимости.
+Запуск тестов через pytest
+```bash
+pip install poetry
+poetry install --all-extras
+
+pytest .
+```
+
+## Установка пакета как зависимость
 
 Доступна из внутреннего pypi-репозитория. Пример установки через poetry:
 
@@ -33,6 +48,7 @@ class PetCreated(DomainEvent, domain='pet'):
     pet_id: str
     name: str
 
+
 class Pet(RootEntity):
     def __init__(self, name: str):
         self.name = name
@@ -40,7 +56,7 @@ class Pet(RootEntity):
     @classmethod
     def create(cls, name: str):
         pet = cls(name)
-        pet.register_event(PetCreated(name=name, pet_id=pet.reference))
+        pet.register_event(PetCreated(name=name, pet_id=pet.__reference__))
         return pet
 ```
 
@@ -51,14 +67,15 @@ class IPetRepository(abc.ABC):
     @abc.abstractmethod
     def save(self, entity: RootEntity):
         ...
-    
+
     @abc.abstractmethod
     def get(self, name: str) -> Pet:
         ...
 
+
 class CreatePet(DomainCommand, domain='pet'):
     name: str
-    
+
 
 pet_module = Module('pet')
 
@@ -67,7 +84,7 @@ pet_module = Module('pet')
 def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     repository.save(pet)
-    return pet.reference
+    return pet.__reference__
 ```
 
 ### Запуск приложения
@@ -86,6 +103,7 @@ class InMemoryPetRepo(IPetRepository):
 
 # Настройка приложения
 app = Application()
+app.run()
 app.include(pet_module)
 app.set_defaults('pet', repository=InMemoryPetRepo())
 set_application(app)
@@ -93,6 +111,16 @@ set_application(app)
 # Использование
 fluff_id = app.handle(CreatePet(name='Fluff'))
 print(f'Создан питомец с ID: {fluff_id}')
+```
+
+### Запуск интеграционных тестов:
+
+```shell
+# Поднимаем внешние сервисы
+docker-compose up -d
+
+# Запуск тестов
+pytest tests
 ```
 
 ## Лицензия

@@ -1,4 +1,5 @@
 import logging
+import typing as t
 from collections import defaultdict
 
 from pyddd.application.condition import (
@@ -10,6 +11,8 @@ from pyddd.application.abstractions import (
     IPayloadConverter,
     IRetryStrategy,
     IModule,
+    ISubscribe,
+    IRegister,
 )
 from pyddd.application.exceptions import FailedHandlerCondition
 from pyddd.application.executor import (
@@ -23,7 +26,7 @@ from pyddd.application.retry import none_retry
 from pyddd.domain.message import IMessage
 
 
-class Module(IModule):
+class Module(IModule, ISubscribe, IRegister):
     def __init__(
             self,
             domain: str,
@@ -32,7 +35,7 @@ class Module(IModule):
     ):
         self._domain = domain
         self._executor = executor or SyncExecutor()
-        self._defaults = {}
+        self._defaults: dict[str, t.Any] = {}
         self._event_handlers: dict[str, list[EventHandler]] = defaultdict(list)
         self._command_handlers: dict[str, CommandHandler] = {}
         self._logger = logging.getLogger(logger_name)
@@ -73,13 +76,13 @@ class Module(IModule):
         return wrapper
 
     def get_command_handler(self, command: IMessage):
-        if command.topic not in self._command_handlers:
-            raise RuntimeError(f'Unregistered command {command.topic} in {self.__class__.__name__}:{self._domain}')
-        return self._command_handlers[command.topic].resolve(command)
+        if command.__topic__ not in self._command_handlers:
+            raise RuntimeError(f'Unregistered command {command.__topic__} in {self.__class__.__name__}:{self._domain}')
+        return self._command_handlers[command.__topic__].resolve(command)
 
     def get_event_handlers(self, event: IMessage):
         handlers = []
-        for handler in self._event_handlers.get(event.topic, []):
+        for handler in self._event_handlers.get(event.__topic__, []):
             try:
                 handlers.append(handler.resolve(event))
             except FailedHandlerCondition as exc:

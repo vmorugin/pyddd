@@ -16,43 +16,67 @@ workflow:
 
 stages:
   - test
-  - publish
+  - deploy
   - scan
 
 variables:
-  VENV_DIR: "$CI_PROJECT_DIR/.venv"
+  POETRY_VERSION: "1.8.5"
+  DOCKER_AUTH_CONFIG: $HARBOR_AUTH_CONFIG
   PYTHON_IMAGE_NAME: "pgs-python"
   PYTHON_IMAGE_TAG: "3.11"
-  POETRY_VERSION: 1.8.5
 
-
-Unit Tests Pydantic 2.x.x:
+Lint with flake8:
   stage: test
   image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install pytest pytest-aio "pydantic>=2.0.0"
-    - cd src
+    - |
+      python -m pip install poetry==$POETRY_VERSION
+      poetry install --all-extras
   script:
-    - python -m pytest $CI_PROJECT_DIR/tests
+    - |
+      poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --per-file-ignores="__init__.py:F401"
 
-Unit Tests Pydantic 1.x.x:
+Lint with mypy:
   stage: test
   image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install pytest pytest-aio pydantic==1.10.4
-    - cd src
+    - |
+      python -m pip install poetry==$POETRY_VERSION
+      poetry install --all-extras
   script:
-    - python -m pytest $CI_PROJECT_DIR/tests
+    - poetry run mypy src
+
+Run Tests:
+  stage: test
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
+  services:
+    - name: redis:6.2.10
+  variables:
+    REDIS_HOST: redis
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+      when: on_success
+  parallel:
+    matrix:
+      - PROVIDER: [ '<=3.0.0', '>=1.10.4' ]
+  before_script:
+    - |
+      python -m pip install poetry==$POETRY_VERSION
+      poetry install --all-extras
+      poetry add pydantic${PROVIDER}
+  script:
+    - poetry run pytest
 
 Publish:
   image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
-  stage: publish
+  stage: deploy
   rules:
     - if: $CI_COMMIT_BRANCH == "RNDIN-1068.update_from_main"
       when: on_success

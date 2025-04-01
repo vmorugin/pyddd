@@ -18,7 +18,7 @@ if pydantic_version.startswith('2'):
     from pydantic import BaseModel, PrivateAttr
     from pydantic._internal._model_construction import ModelMetaclass
 elif pydantic_version.startswith('1'):
-    from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr
+    from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr  # type: ignore[no-redef]
 else:
     raise ImportError('Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x')
 
@@ -50,27 +50,32 @@ class IMessage(abc.ABC, metaclass=IMessageMeta):
 
     @property
     @abc.abstractmethod
-    def domain(self) -> str:
+    def __domain__(self) -> str:
         ...
 
     @property
     @abc.abstractmethod
-    def message_name(self) -> str:
+    def __message_name__(self) -> str:
         ...
 
     @property
     @abc.abstractmethod
-    def topic(self) -> str:
+    def __topic__(self) -> str:
         ...
 
     @property
     @abc.abstractmethod
-    def message_id(self) -> str:
+    def __message_id__(self) -> str:
         ...
 
     @property
     @abc.abstractmethod
-    def type(self) -> MessageType:
+    def __type__(self) -> MessageType:
+        ...
+
+    @property
+    @abc.abstractmethod
+    def __timestamp__(self) -> dt.datetime:
         ...
 
     @abc.abstractmethod
@@ -79,11 +84,6 @@ class IMessage(abc.ABC, metaclass=IMessageMeta):
 
     @abc.abstractmethod
     def to_json(self) -> str:
-        ...
-
-    @property
-    @abc.abstractmethod
-    def occurred_on(self) -> dt.datetime:
         ...
 
 
@@ -100,30 +100,30 @@ class Message(IMessage):
         self._type = MessageType(message_type)
         self._payload = json.dumps(payload)
         self._message_id = message_id or str(uuid4())
-        self._occurred_on = occurred_on or dt.datetime.now(dt.UTC)
+        self._occurred_on = occurred_on or dt.datetime.utcnow()
 
     @property
-    def message_id(self) -> str:
+    def __message_id__(self) -> str:
         return self._message_id
 
     @property
-    def type(self) -> MessageType:
+    def __type__(self) -> MessageType:
         return self._type
 
     @property
-    def occurred_on(self) -> dt.datetime:
+    def __timestamp__(self) -> dt.datetime:
         return self._occurred_on
 
     @property
-    def domain(self) -> str:
+    def __domain__(self) -> str:
         return self._domain
 
     @property
-    def message_name(self) -> str:
+    def __message_name__(self) -> str:
         return self._name
 
     @property
-    def topic(self) -> str:
+    def __topic__(self) -> str:
         return f'{self._domain}.{self._name}'
 
     def to_dict(self) -> dict:
@@ -140,7 +140,7 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     def __new__(mcs, name, bases, namespace, domain: Optional[str] = None):
         cls = super().__new__(mcs, name, bases, namespace)
         if domain is not None:
-            cls._domain_name = domain
+            cls._domain_name = domain  # type: ignore[attr-defined]
         return cls
 
     def __init__(cls, name, bases, namespace, *, domain: Optional[str] = None):
@@ -149,46 +149,58 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
 
     @property
     def __domain__(cls) -> str:
-        return cls._domain_name
+        return cls._get_domain_name()
 
     @property
     def __message_name__(cls) -> str:
-        return cls._message_name
+        return cls._get_message_name()
 
     @property
     def __topic__(cls) -> str:
+        return cls._get_topic()
+
+    def _get_topic(cls):
         return f"{cls._domain_name}.{cls._message_name}"
+
+    def _get_message_name(cls):
+        return cls._message_name
+
+    def _get_domain_name(cls):
+        return cls._domain_name
 
 
 class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessageMeta):
-    _occurred_on: dt.datetime = PrivateAttr(default_factory=lambda: dt.datetime.now(dt.UTC))
+    _occurred_on: dt.datetime = PrivateAttr(default_factory=lambda: dt.datetime.utcnow())
     _reference: UUID = PrivateAttr(default_factory=uuid4)
 
     class Config:
         frozen = True
 
+    @classmethod  # type: ignore[misc]
     @property
-    def domain(self) -> str:
-        return self.__class__.__domain__
+    def __domain__(cls) -> str:
+        return cls._get_domain_name()
+
+    @classmethod  # type: ignore[misc]
+    @property
+    def __message_name__(cls) -> str:
+        return cls._get_message_name()
+
+    @classmethod  # type: ignore[misc]
+    @property
+    def __topic__(cls) -> str:
+        return cls._get_topic()
 
     @property
-    def message_name(self) -> str:
-        return self.__class__.__message_name__
-
-    @property
-    def topic(self) -> str:
-        return self.__class__.__topic__
-
-    @property
-    def message_id(self) -> str:
+    def __message_id__(self) -> str:
         return str(self._reference)
+
+    @property
+    def __timestamp__(self) -> dt.datetime:
+        return self._occurred_on
 
     def to_dict(self) -> dict:
         return self.dict()
 
     def to_json(self) -> str:
         return self.json()
-
-    @property
-    def occurred_on(self) -> dt.datetime:
-        return self._occurred_on

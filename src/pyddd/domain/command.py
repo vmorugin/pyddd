@@ -21,7 +21,7 @@ class _DomainCommandMeta(BaseDomainMessageMeta):
 
 class ICommand(IMessage, abc.ABC):
     @property
-    def type(self) -> MessageType:
+    def __type__(self) -> MessageType:
         return MessageType.COMMAND
 
 
