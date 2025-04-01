@@ -9,6 +9,11 @@ packages = [
 readme = "readme.md"
 license = "MIT"
 
+[[tool.poetry.source]]
+name = "Nexus mirror PyPi"
+url = "https://nexus.infra.myoffice.group/repository/pypi.org/simple"
+priority = "primary"
+
 [tool.poetry.dependencies]
 python = "^3.9"
 pydantic = ">=1.10.4,<3.0.0"
