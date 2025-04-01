@@ -24,6 +24,7 @@ variables:
   DOCKER_AUTH_CONFIG: $HARBOR_AUTH_CONFIG
   PYTHON_IMAGE_NAME: "pgs-python"
   PYTHON_IMAGE_TAG: "3.11"
+  VENV_DIR: "$CI_PROJECT_DIR/.venv"
 
 Lint with flake8:
   stage: test
@@ -78,7 +79,7 @@ Publish:
   image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   stage: deploy
   rules:
-    - if: $CI_COMMIT_BRANCH == "RNDIN-1068.update_from_main"
+    - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
   before_script:
     - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install poetry==${POETRY_VERSION}
