@@ -2,6 +2,7 @@ from pyddd.domain.entity import (
     Entity,
     RootEntity,
     EntityUid,
+    IdType,
 )
 from pyddd.domain import DomainEvent
 
@@ -66,3 +67,16 @@ class TestRootEntity:
 
         entity = SomeEntity()
         assert isinstance(entity.__reference__, EntityUid)
+
+    def test_can_set_custom_reference(self):
+        class SomeRootEntity(RootEntity[int]):
+            def __init__(self, reference: int):
+                self._reference = reference
+
+            @property
+            def reference(self) -> IdType:
+                return self.__reference__
+
+        entity = SomeRootEntity(reference=1234)
+        assert entity.__reference__ == entity.reference == 1234
+
