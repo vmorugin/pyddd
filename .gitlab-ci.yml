@@ -83,7 +83,7 @@ Publish:
   before_script:
     - |
       python -m pip install poetry==$POETRY_VERSION
-      poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
+      poetry config repositories.pgs ${CI_API_V4_URL}/projects/3162/packages/pypi
       poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
   script:
     - poetry publish --build --repository pgs
