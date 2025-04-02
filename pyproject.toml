@@ -44,7 +44,7 @@ no_implicit_optional = false
 [[tool.uv.index]]
 name = "gitlab-pypi"
 url = "https://git.nctresource.team/api/v4/projects/368/packages/pypi/simple"
-publish-url = "https://git.nctresource.team/api/v4/projects/368/packages/pypi/simple"
+publish-url = "https://git.nctresource.team/projects/368/packages/pypi"
 explicit = true
 
 
