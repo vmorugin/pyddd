@@ -70,7 +70,7 @@ Publish:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
   stage: deploy
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "dev"
       when: on_success
   before_script:
     - python -m pip install uv
