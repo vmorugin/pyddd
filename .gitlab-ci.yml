@@ -19,9 +19,6 @@ stages:
   - deploy
   - scan
 
-variables:
-  POETRY_VERSION: "1.8.5"
-
 Lint with flake8:
   stage: test
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
@@ -29,13 +26,11 @@ Lint with flake8:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - |
-      python -m pip install poetry==$POETRY_VERSION
-      poetry install --all-extras
+    - python -m pip install uv
   script:
     - |
-      poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-      poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --per-file-ignores="__init__.py:F401"
+      uvx flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
+      uvx flake8 src --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --per-file-ignores="__init__.py:F401"
 
 Lint with mypy:
   stage: test
@@ -45,10 +40,10 @@ Lint with mypy:
       when: on_success
   before_script:
     - |
-      python -m pip install poetry==$POETRY_VERSION
-      poetry install --all-extras
+      python -m pip install uv
+      uv venv
   script:
-    - poetry run mypy src
+    - uv run mypy src
 
 Run Tests:
   stage: test
@@ -65,11 +60,11 @@ Run Tests:
       - PROVIDER: [ '<=3.0.0', '>=1.10.4' ]
   before_script:
     - |
-      python -m pip install poetry==$POETRY_VERSION
-      poetry install --all-extras
-      poetry add pydantic${PROVIDER}
+      python -m pip install uv
+      uv venv
+      uv pip install "pydantic${PROVIDER}"
   script:
-    - poetry run pytest
+    - uv run pytest
 
 Publish:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
@@ -78,9 +73,8 @@ Publish:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
   before_script:
-    - |
-      python -m pip install poetry==$POETRY_VERSION
-      poetry config repositories.pgs ${CI_API_V4_URL}/projects/368/packages/pypi
-      poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
+    - python -m pip install uv
   script:
-    - poetry publish --build --repository pgs
+    - |
+      uv build
+      uv publish --publish-url ${CI_API_V4_URL}/projects/368/packages/pypi -p ${CI_JOB_TOKEN} -u gitlab-ci-token

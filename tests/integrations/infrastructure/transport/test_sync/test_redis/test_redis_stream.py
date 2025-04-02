@@ -18,7 +18,10 @@ from pyddd.domain.message import (
 from pyddd.infrastructure.transport.core.abstractions import (
     IMessageConsumer,
 )
-from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
+from pyddd.infrastructure.transport.core.event_factory import (
+    UniversalEventFactory,
+    PublishedEventFactory,
+)
 from pyddd.infrastructure.transport.sync.domain import (
     DefaultAskPolicy,
     MessageConsumer,
@@ -115,7 +118,7 @@ class TestRedisStreamConsumer:
         consumer = RedisStreamGroupConsumer(redis, group_name='test', consumer_name='consumer')
         assert isinstance(consumer, IMessageConsumer)
         assert isinstance(consumer.ask_policy, DefaultAskPolicy)
-        assert isinstance(consumer.event_factory, UniversalEventFactory)
+        assert isinstance(consumer.event_factory, PublishedEventFactory)
         assert isinstance(consumer.queue, NotificationQueue)
 
     def test_could_publish_event(self, redis):
@@ -130,7 +133,12 @@ class TestRedisStreamConsumer:
             return callback()
 
         callback = Mock()
-        consumer = RedisStreamGroupConsumer(redis, group_name=str(uuid.uuid4()), consumer_name=str(uuid.uuid4()))
+        consumer = RedisStreamGroupConsumer(
+            redis=redis,
+            group_name=str(uuid.uuid4()),
+            consumer_name=str(uuid.uuid4()),
+            event_factory=UniversalEventFactory()
+        )
         app = Application()
         app.include(module)
         app.set_defaults(module.domain, callback=callback)

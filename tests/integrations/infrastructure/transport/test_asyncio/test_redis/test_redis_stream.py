@@ -26,7 +26,10 @@ from pyddd.infrastructure.transport.asyncio.domain import (
 from pyddd.infrastructure.transport.asyncio.redis.stream_group.consumer import RedisStreamGroupConsumer
 from pyddd.infrastructure.transport.asyncio.redis.stream_group.publisher import RedisStreamPublisher
 from pyddd.infrastructure.transport.core.abstractions import IMessageConsumer
-from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
+from pyddd.infrastructure.transport.core.event_factory import (
+    UniversalEventFactory,
+    PublishedEventFactory,
+)
 
 
 class TestStreamHandler:
@@ -106,12 +109,13 @@ class TestConsumer:
 
         assert callback.call_count == 10
 
+
 class TestRedisStreamConsumer:
     def test_facade(self, redis):
         consumer = RedisStreamGroupConsumer(redis, group_name='test', consumer_name='consumer')
         assert isinstance(consumer, IMessageConsumer)
         assert isinstance(consumer.ask_policy, DefaultAskPolicy)
-        assert isinstance(consumer.event_factory, UniversalEventFactory)
+        assert isinstance(consumer.event_factory, PublishedEventFactory)
         assert isinstance(consumer.queue, NotificationQueue)
 
     async def test_could_publish_event(self, redis):
@@ -126,7 +130,12 @@ class TestRedisStreamConsumer:
             return callback()
 
         callback = Mock()
-        consumer = RedisStreamGroupConsumer(redis, group_name=str(uuid.uuid4()), consumer_name=str(uuid.uuid4()))
+        consumer = RedisStreamGroupConsumer(
+            redis,
+            group_name=str(uuid.uuid4()),
+            consumer_name=str(uuid.uuid4()),
+            event_factory=UniversalEventFactory(),
+        )
         app = Application()
         app.include(module)
         app.set_defaults(module.domain, callback=callback)
@@ -141,6 +150,7 @@ class TestRedisStreamConsumer:
         await app.stop_async()
 
         assert callback.call_count == 5
+
 
 class TestPublisher:
     async def test_publish_event(self, redis):

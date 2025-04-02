@@ -143,5 +143,4 @@ def set_application(app: IApplication):
 
 
 def get_application():
-    global __context
     return __context
