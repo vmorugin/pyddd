@@ -2,7 +2,7 @@
 version = "0.8.2"
 name = "pyddd"
 description = "Domain-Driven Design for Python"
-readme = "README.md"
+readme = "readme.md"
 requires-python = ">=3.9"
 dependencies = [
     "pydantic>=1.10.4,<3.0.0",
