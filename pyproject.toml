@@ -1,40 +1,57 @@
-[tool.poetry]
+[project]
+version = "0.8.2"
 name = "pyddd"
-version = "0.8.1"
 description = "Domain-Driven Design for Python"
-authors = ["v.morugin <vamorugin@gmail.com>"]
-packages = [
-    { include = "pyddd", from = "src" },
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=1.10.4,<3.0.0",
 ]
-readme = "readme.md"
 license = "MIT"
 
-[tool.poetry.dependencies]
-python = "^3.9"
-pydantic = ">=1.10.4,<3.0.0"
-tenacity = { version = ">=9.0.0", optional = true }
-redis = { version = ">=3.5.0", optional = true }
+[project.optional-dependencies]
+transport-redis = [
+    "redis>=3.5.0",
+]
+tenacity-retry = [
+    "tenacity>=9.0.0",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5"
-flake8 = "^7.1.2"
-pytest-asyncio = "^0.25.3"
-mypy = "^1.15.0"
-
-[tool.poetry.extras]
-redis = ["redis"]
-tenacity = ["tenacity"]
-
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.5",
+    "flake8>=7.1.2",
+    "pytest-asyncio>=0.25.3",
+    "mypy>=1.15.0",
+    "redis>=3.5.0",
+    "tenacity>=9.0.0",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/pyddd",
+]
+
 
 [tool.mypy]
 no_implicit_optional = false
+
+
+[[tool.uv.index]]
+name = "gitlab-pypi"
+url = "https://git.nctresource.team/api/v4/projects/368/packages/pypi/simple"
+publish-url = "https://git.nctresource.team/api/v4/projects/368/packages/pypi/simple"
+explicit = true
 
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_test_loop_scope = "function"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
