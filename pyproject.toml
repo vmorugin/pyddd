@@ -41,13 +41,6 @@ include = [
 no_implicit_optional = false
 
 
-[[tool.uv.index]]
-name = "gitlab-pypi"
-url = "https://git.nctresource.team/api/v4/projects/368/packages/pypi/simple"
-publish-url = "https://git.nctresource.team/projects/368/packages/pypi"
-explicit = true
-
-
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_test_loop_scope = "function"
