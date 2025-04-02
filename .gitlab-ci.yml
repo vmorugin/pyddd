@@ -29,8 +29,8 @@ Lint with flake8:
     - python -m pip install uv
   script:
     - |
-      uvx flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-      uvx flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --per-file-ignores="__init__.py:F401"
+      uvx flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
+      uvx flake8 src --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --per-file-ignores="__init__.py:F401"
 
 Lint with mypy:
   stage: test
@@ -41,7 +41,7 @@ Lint with mypy:
   before_script:
     - python -m pip install uv
   script:
-    - uvx run mypy .
+    - uvx mypy src
 
 Run Tests:
   stage: test
@@ -61,7 +61,7 @@ Run Tests:
       python -m pip install uv
       uv pip install "pydantic${PROVIDER}"
   script:
-    - uvx run pytest
+    - uvx run pytest --system
 
 Publish:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
