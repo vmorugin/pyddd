@@ -26,7 +26,7 @@ Lint with flake8:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m pipx install uv
+    - pip install uv
   script:
     - |
       uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -39,7 +39,7 @@ Lint with mypy:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - python -m pipx install uv
+    - pip install uv
   script:
     - uv run mypy .
 
@@ -58,7 +58,7 @@ Run Tests:
       - PROVIDER: [ '<=3.0.0', '>=1.10.4' ]
   before_script:
     - |
-      python -m pip install uv
+      pip install uv
       uv pip install "pydantic${PROVIDER}"
   script:
     - uv run pytest
