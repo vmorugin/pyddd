@@ -59,9 +59,10 @@ Run Tests:
   before_script:
     - |
       python -m pip install uv
+      uv venv
       uv pip install "pydantic${PROVIDER}"
   script:
-    - uvx run pytest --system
+    - uvx run pytest
 
 Publish:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
