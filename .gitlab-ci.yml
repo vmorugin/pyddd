@@ -75,4 +75,6 @@ Publish:
   before_script:
     - python -m pip install uv
   script:
-    - uv publish --index gitlab-pypi -u __token__ -p ${CI_JOB_TOKEN}
+    - |
+      uv build
+      uv publish --index gitlab-pypi -u __token__ -p ${CI_JOB_TOKEN}
