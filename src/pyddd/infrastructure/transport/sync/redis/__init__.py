@@ -1,2 +1,5 @@
-from .pubsub import RedisPubSubConsumer, RedisPubSubPublisher
+from .pubsub import (
+    RedisPubSubConsumer,
+    RedisPubSubPublisher,
+)
 from .stream_group import RedisStreamGroupConsumer, RedisStreamPublisher

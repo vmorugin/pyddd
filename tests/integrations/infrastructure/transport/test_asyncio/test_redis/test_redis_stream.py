@@ -134,8 +134,8 @@ class TestRedisStreamConsumer:
             redis,
             group_name=str(uuid.uuid4()),
             consumer_name=str(uuid.uuid4()),
-            event_factory=UniversalEventFactory()
-            )
+            event_factory=UniversalEventFactory(),
+        )
         app = Application()
         app.include(module)
         app.set_defaults(module.domain, callback=callback)
