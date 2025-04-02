@@ -39,9 +39,9 @@ Lint with mypy:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
-    - pip install uv
+    - python -m pip install uv
   script:
-    - uv run mypy .
+    - uvx run mypy .
 
 Run Tests:
   stage: test
@@ -58,10 +58,10 @@ Run Tests:
       - PROVIDER: [ '<=3.0.0', '>=1.10.4' ]
   before_script:
     - |
-      pip install uv
+      python -m pip install uv
       uv pip install "pydantic${PROVIDER}"
   script:
-    - uv run pytest
+    - uvx run pytest
 
 Publish:
   image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
