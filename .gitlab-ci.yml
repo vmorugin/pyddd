@@ -77,4 +77,4 @@ Publish:
   script:
     - |
       uv build
-      uv publish --publish-url ${CI_API_V4_URL}/projects/368/packages/pypi -t ${CI_JOB_TOKEN}
+      uv publish --publish-url ${CI_API_V4_URL}/projects/368/packages/pypi -p ${CI_JOB_TOKEN} -u pgs
