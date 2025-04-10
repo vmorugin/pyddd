@@ -3,8 +3,7 @@ from pyddd.domain.message import IMessage
 
 
 class NoneCondition(ICondition):
-    def __init__(self, *args, **kwargs):
-        ...
+    def __init__(self, *args, **kwargs): ...
 
     def check(self, event: IMessage) -> bool:
         return True

@@ -11,12 +11,12 @@ def _mock_ask(*args, **kwargs):
 
 class Notification(INotification):
     def __init__(
-            self,
-            message_id: str,
-            name: str,
-            payload: dict,
-            ask_func: AskProtocol = _mock_ask,
-            reject_func: RejectProtocol = _mock_ask,
+        self,
+        message_id: str,
+        name: str,
+        payload: dict,
+        ask_func: AskProtocol = _mock_ask,
+        reject_func: RejectProtocol = _mock_ask,
     ):
         self._reference = message_id
         self._name = name

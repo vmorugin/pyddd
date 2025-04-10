@@ -25,5 +25,4 @@ class ICommand(IMessage, abc.ABC):
         return MessageType.COMMAND
 
 
-class DomainCommand(BaseDomainMessage, ICommand, metaclass=_DomainCommandMeta):
-    ...
+class DomainCommand(BaseDomainMessage, ICommand, metaclass=_DomainCommandMeta): ...

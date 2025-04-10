@@ -15,13 +15,13 @@ from pyddd.infrastructure.transport.sync.domain.abstractions import (
 
 class NotificationQueue(INotificationQueue):
     def __init__(
-            self,
-            message_handler: IMessageHandler,
-            *,
-            batch_size: int = 50,
-            delay_ms: int = 10,
-            logger_name: str = 'notification.queue',
-            max_workers: int = 32,
+        self,
+        message_handler: IMessageHandler,
+        *,
+        batch_size: int = 50,
+        delay_ms: int = 10,
+        logger_name: str = "notification.queue",
+        max_workers: int = 32,
     ):
         self._handler = message_handler
         self._topics: set[str] = set()
@@ -52,9 +52,15 @@ class NotificationQueue(INotificationQueue):
                 messages = self._handler.read(topic, limit=self._batch_size)
                 for message in messages:
                     self._semaphore.acquire()
-                    threading.Thread(target=self._process_callback, args=(callback, message), daemon=True).start()
+                    threading.Thread(
+                        target=self._process_callback,
+                        args=(callback, message),
+                        daemon=True,
+                    ).start()
             except Exception as exc:
-                self._logger.error(f"Unexpected error while pulling {topic} messages!", exc_info=exc)
+                self._logger.error(
+                    f"Unexpected error while pulling {topic} messages!", exc_info=exc
+                )
             time.sleep(self._delay_ms)
 
     def _process_callback(self, callback, message):

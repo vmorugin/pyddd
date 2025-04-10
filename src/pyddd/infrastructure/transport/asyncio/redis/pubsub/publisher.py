@@ -14,7 +14,7 @@ from pyddd.infrastructure.transport.core.value_objects import PublishedEvent
 
 
 class RedisPubSubPublisher:
-    def __init__(self, client: Redis, logger_name: str = 'pyddd.event_publisher'):
+    def __init__(self, client: Redis, logger_name: str = "pyddd.event_publisher"):
         self._client = client
         self._module: EventPublisherModule = EventPublisherModule(self._publish)
         self._topics: set[str] = set()
@@ -43,9 +43,11 @@ class RedisPubSubPublisher:
                         full_event_name=message.__topic__,
                         message_id=message.__message_id__,
                         timestamp=str(message.__timestamp__.timestamp()),
-                        payload=message.to_json()
+                        payload=message.to_json(),
                     ).__dict__  # type: ignore[arg-type]
-                )
+                ),
             )
         except Exception as exc:
-            self._logger.critical(f"Failed to publish message {message.__topic__}", exc_info=exc)
+            self._logger.critical(
+                f"Failed to publish message {message.__topic__}", exc_info=exc
+            )

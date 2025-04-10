@@ -21,18 +21,19 @@ class FakeHandler(IMessageHandler):
 
 
 class TestNotificationQueue:
-
     def test_consume_must_sent_message_to_callback(self):
-        messages = [Notification(
-            message_id=str(uuid.uuid4()),
-            name='test:stream',
-            payload={},
-            ask_func=lambda: ...,
-            reject_func=lambda x: ...
-        )]
+        messages = [
+            Notification(
+                message_id=str(uuid.uuid4()),
+                name="test:stream",
+                payload={},
+                ask_func=lambda: ...,
+                reject_func=lambda x: ...,
+            )
+        ]
         reader = FakeHandler(messages)
         queue = NotificationQueue(message_handler=reader)
-        queue.bind('test:stream')
+        queue.bind("test:stream")
         callback = Mock()
         queue.consume(callback)
         time.sleep(0.01)
@@ -44,13 +45,13 @@ class TestNotificationQueue:
             Exception(),
             Notification(
                 message_id=str(uuid.uuid4()),
-                name='test:stream',
+                name="test:stream",
                 payload={},
             ),
         ]
         reader = FakeHandler(messages)
         queue = NotificationQueue(message_handler=reader)
-        queue.bind('test:stream')
+        queue.bind("test:stream")
         callback = Mock(side_effect=[messages])
         queue.consume(callback)
         time.sleep(0.01)
@@ -64,18 +65,18 @@ class TestNotificationQueue:
         messages = [
             Notification(
                 message_id=str(uuid.uuid4()),
-                name='test:stream',
+                name="test:stream",
                 payload={},
             ),
             Notification(
                 message_id=str(uuid.uuid4()),
-                name='test:stream',
+                name="test:stream",
                 payload={},
             ),
         ]
         reader = FakeHandler(messages)
         queue = NotificationQueue(message_handler=reader)
-        queue.bind('test:stream')
+        queue.bind("test:stream")
         callback = Mock(side_effect=endless_callback)
         queue.consume(callback)
         time.sleep(0.01)

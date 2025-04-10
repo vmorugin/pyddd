@@ -70,14 +70,10 @@ class TestBackoffRetry:
     def test_can_implement_with_backoff(self):
         pytest.importorskip("backoff")
         from pyddd.application.retry.backoff import OnException
+
         count = 3
 
-        @OnException(
-            on_exc=Exception,
-            base=0,
-            factor=0,
-            max_tries=count
-        )
+        @OnException(on_exc=Exception, base=0, factor=0, max_tries=count)
         @partial
         def example_func():
             nonlocal count
@@ -85,7 +81,6 @@ class TestBackoffRetry:
             if count > 0:
                 raise ValueError()
             return True
-
 
         assert example_func() is True
 
@@ -95,12 +90,7 @@ class TestBackoffRetry:
 
         count = 3
 
-        @OnException(
-            on_exc=Exception,
-            base=0,
-            factor=0,
-            max_tries=count
-        )
+        @OnException(on_exc=Exception, base=0, factor=0, max_tries=count)
         @partial
         async def example_func():
             nonlocal count
@@ -110,6 +100,4 @@ class TestBackoffRetry:
                 raise ValueError()
             return True
 
-
         assert await example_func() is True
-

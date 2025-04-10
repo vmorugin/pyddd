@@ -23,7 +23,6 @@ from pyddd.domain.command import DomainCommand
 
 
 class EventHandler(IHandler):
-
     def __init__(self, handler: ICommandHandler):
         self._handler = handler
         self._converter: IPayloadConverter = lambda x: x
@@ -37,8 +36,8 @@ class EventHandler(IHandler):
     def resolve(self, message: IMessage) -> AnyCallable:
         if not self._condition.check(message):
             raise FailedHandlerCondition(
-                f'Failed check condition {self._condition.__class__.__name__} '
-                f'with message {message.__topic__}:{message.to_json()}'
+                f"Failed check condition {self._condition.__class__.__name__} "
+                f"with message {message.__topic__}:{message.to_json()}"
             )
         command_type = self._handler.get_command_type()
         message = command_type(**self._converter(message.to_dict()))
@@ -71,7 +70,9 @@ class CommandHandler(ICommandHandler):
 
     def resolve(self, message: IMessage) -> AnyCallable:
         depends = {
-            self._command_param.name: self._command_param.annotation(**message.to_dict()),
+            self._command_param.name: self._command_param.annotation(
+                **message.to_dict()
+            ),
         }
         for name, param in self._signature.parameters.items():
             if name in self._defaults:
@@ -87,4 +88,6 @@ class CommandHandler(ICommandHandler):
         for name, param in signature.parameters.items():
             if isinstance(param.annotation, IMessageMeta):
                 return param
-        raise AttributeError(f"Can not find command param for {func} with params {signature}")
+        raise AttributeError(
+            f"Can not find command param for {func} with params {signature}"
+        )

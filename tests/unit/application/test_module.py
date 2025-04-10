@@ -20,21 +20,19 @@ from pyddd.domain import (
 from pyddd.domain.event import IEvent
 
 
-class ExampleCommand(DomainCommand, domain='test'):
-    ...
+class ExampleCommand(DomainCommand, domain="test"): ...
 
 
-class ExampleEvent(DomainEvent, domain='test'):
-    ...
+class ExampleEvent(DomainEvent, domain="test"): ...
 
 
 class TestModule:
     def test_must_implement_interface(self):
-        module = Module('')
+        module = Module("")
         assert isinstance(module, IModule)
 
     def test_register_as_decorator(self):
-        module = Module('test')
+        module = Module("test")
 
         @module.register
         def foo(cmd: ExampleCommand):
@@ -43,9 +41,9 @@ class TestModule:
         assert foo(cmd=ExampleCommand()) is True
 
     def test_subscribe_as_decorator(self):
-        module = Module('test')
+        module = Module("test")
 
-        @module.subscribe('test_event.Test')
+        @module.subscribe("test_event.Test")
         @module.register
         def foo(cmd: ExampleCommand):
             return True
@@ -53,55 +51,56 @@ class TestModule:
         assert foo(cmd=ExampleCommand()) is True
 
     def test_domain(self):
-        module = Module('test')
-        assert module.domain == 'test'
+        module = Module("test")
+        assert module.domain == "test"
 
     def test_register_without_command(self):
-        def foo():
-            ...
+        def foo(): ...
 
-        module = Module('domain')
+        module = Module("domain")
         with pytest.raises(AttributeError):
             module.register(foo)
 
     def test_subscribe_without_command_error(self):
-        def foo():
-            ...
+        def foo(): ...
 
-        module = Module('domain')
+        module = Module("domain")
         with pytest.raises(AttributeError):
-            module.subscribe('domain.Test')(foo)
+            module.subscribe("domain.Test")(foo)
 
     def test_register_twice_error(self):
-        def foo(cmd: ExampleCommand):
-            ...
+        def foo(cmd: ExampleCommand): ...
 
-        module = Module('domain')
+        module = Module("domain")
         module.register(foo)
-        with pytest.raises(ValueError, match="Already registered command 'test.ExampleCommand'"):
+        with pytest.raises(
+            ValueError, match="Already registered command 'test.ExampleCommand'"
+        ):
             module.register(foo)
 
     def test_handler_unregistered_command_must_fail(self):
-        module = Module('domain')
-        with pytest.raises(RuntimeError, match='Unregistered command test.ExampleCommand in Module:domain'):
+        module = Module("domain")
+        with pytest.raises(
+            RuntimeError,
+            match="Unregistered command test.ExampleCommand in Module:domain",
+        ):
             module.get_command_handler(ExampleCommand())
 
     def test_handle_command(self):
-        module = Module(domain='test')
+        module = Module(domain="test")
 
         @module.register
         def foo(cmd: ExampleCommand, bar: str):
             return bar
 
-        module.set_defaults(dict(bar='bzz'))
+        module.set_defaults(dict(bar="bzz"))
         handler = module.get_command_handler(ExampleCommand())
-        assert handler() == 'bzz'
+        assert handler() == "bzz"
 
     def test_handle_events(self):
-        class ExampleCommand2(DomainCommand, domain='test'):
-            ...
+        class ExampleCommand2(DomainCommand, domain="test"): ...
 
-        module = Module(domain='test')
+        module = Module(domain="test")
 
         @module.subscribe(ExampleEvent.__topic__)
         @module.register
@@ -121,13 +120,11 @@ class TestModule:
         assert mock.call_count == 2
 
     def test_could_subscribe_with_two_events_to_one_command(self):
-        class ExampleEvent1(DomainEvent, domain='test'):
-            ...
+        class ExampleEvent1(DomainEvent, domain="test"): ...
 
-        class ExampleEvent2(DomainEvent, domain='test'):
-            ...
+        class ExampleEvent2(DomainEvent, domain="test"): ...
 
-        module = Module(domain='test')
+        module = Module(domain="test")
 
         @module.subscribe(ExampleEvent1.__topic__)
         @module.subscribe(ExampleEvent2.__topic__)
@@ -146,10 +143,9 @@ class TestModule:
         assert handlers[0]() == 1
 
     def test_must_return_results_when_handle_events(self):
-        class ExampleCommand2(DomainCommand, domain='test'):
-            ...
+        class ExampleCommand2(DomainCommand, domain="test"): ...
 
-        module = Module(domain='test', executor=SyncExecutor())
+        module = Module(domain="test", executor=SyncExecutor())
 
         @module.subscribe(ExampleEvent.__topic__)
         @module.register
@@ -168,41 +164,49 @@ class TestModule:
         assert [h() for h in handlers] == [1, 2]
 
     def test_can_subscribe_with_converter(self):
-        class ExampleCommandWithParam(DomainCommand, domain='test'):
+        class ExampleCommandWithParam(DomainCommand, domain="test"):
             reference: str
 
-        class ExampleEventWithParam(DomainEvent, domain='test'):
+        class ExampleEventWithParam(DomainEvent, domain="test"):
             param_id: str
 
         def foo(command: ExampleCommandWithParam, callback):
             assert isinstance(command, ExampleCommandWithParam)
             callback(reference=command.reference)
 
-        module = Module(domain='test')
+        module = Module(domain="test")
         mock = Mock()
         module.set_defaults(dict(callback=mock))
         module.register(foo)
-        event = ExampleEventWithParam(param_id='123')
-        module.subscribe(event.__topic__, converter=lambda x: {'reference': x['param_id']})(foo)
+        event = ExampleEventWithParam(param_id="123")
+        module.subscribe(
+            event.__topic__, converter=lambda x: {"reference": x["param_id"]}
+        )(foo)
         handlers = module.get_event_handlers(event)
         assert len(handlers) == 1
         handlers[0](callback=mock)
-        mock.assert_called_with(reference='123')
+        mock.assert_called_with(reference="123")
 
     def test_can_subscribe_with_different_converters(self):
-        class ExampleCommandWithReferenceParam(DomainCommand, domain='test'):
+        class ExampleCommandWithReferenceParam(DomainCommand, domain="test"):
             reference: str
 
-        class ExampleEventWithFooParam(DomainEvent, domain='test'):
+        class ExampleEventWithFooParam(DomainEvent, domain="test"):
             foo: str
 
-        class ExampleEventWithBarParam(DomainEvent, domain='test'):
+        class ExampleEventWithBarParam(DomainEvent, domain="test"):
             bar: str
 
-        module = Module(domain='test')
+        module = Module(domain="test")
 
-        @module.subscribe(ExampleEventWithFooParam.__topic__, converter=lambda x: {'reference': x['foo']})
-        @module.subscribe(ExampleEventWithBarParam.__topic__, converter=lambda x: {'reference': x['bar']})
+        @module.subscribe(
+            ExampleEventWithFooParam.__topic__,
+            converter=lambda x: {"reference": x["foo"]},
+        )
+        @module.subscribe(
+            ExampleEventWithBarParam.__topic__,
+            converter=lambda x: {"reference": x["bar"]},
+        )
         @module.register
         def foo(command: ExampleCommandWithReferenceParam, callback):
             assert isinstance(command, ExampleCommandWithReferenceParam)
@@ -222,12 +226,12 @@ class TestModule:
         mock.assert_called_with(reference=bar_event.bar)
 
     def test_must_fail_when_get_command_handler_not_existed(self):
-        module = Module('...')
+        module = Module("...")
         with pytest.raises(RuntimeError):
             module.get_command_handler(ExampleCommand())
 
     def test_must_fail_when_get_command_handler_but_got_event(self):
-        module = Module('...')
+        module = Module("...")
 
         @module.subscribe(ExampleEvent.__topic__)
         @module.register
@@ -238,12 +242,12 @@ class TestModule:
             module.get_command_handler(ExampleEvent())
 
     def test_must_return_empty_list_when_get_unregistered_event_handlers(self):
-        module = Module('...')
+        module = Module("...")
         handlers = module.get_event_handlers(ExampleEvent())
         assert handlers == []
 
     def test_must_returns_list_event_handlers_when_registered(self):
-        module = Module('...')
+        module = Module("...")
 
         @module.subscribe(ExampleEvent.__topic__)
         @module.register
@@ -259,7 +263,7 @@ class TestModule:
             def check(self, event: IEvent) -> bool:
                 return False
 
-        module = Module('test')
+        module = Module("test")
         condition = FailCondition()
 
         @module.subscribe(ExampleEvent.__topic__, condition=condition)
@@ -289,9 +293,11 @@ class TestModule:
 
                 return wrapper
 
-        module = Module('test')
+        module = Module("test")
 
-        @module.subscribe(ExampleEvent.__topic__, retry_strategy=RetryStrategy(retry_count=3))
+        @module.subscribe(
+            ExampleEvent.__topic__, retry_strategy=RetryStrategy(retry_count=3)
+        )
         @module.register
         def foo(command: ExampleCommand, callback):
             return callback()

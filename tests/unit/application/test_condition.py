@@ -16,8 +16,7 @@ from pyddd.domain.message import (
 )
 
 
-class ExampleEvent(DomainEvent, domain='test'):
-    ...
+class ExampleEvent(DomainEvent, domain="test"): ...
 
 
 def test_always_true_to_none_condition():
@@ -26,17 +25,19 @@ def test_always_true_to_none_condition():
 
 
 @pytest.mark.parametrize(
-    'attrs, payload, expected', (
-            (['reference'], {'reference': '123'}, True),
-            (['reference'], {'id': 123}, False),
-            (['reference', 'name'], {'name': 123}, False),
-            (['reference', 'name'], {'name': 123, 'reference': 1}, True),
-            (['reference', 'name'], {}, False),
-
-    )
+    "attrs, payload, expected",
+    (
+        (["reference"], {"reference": "123"}, True),
+        (["reference"], {"id": 123}, False),
+        (["reference", "name"], {"name": 123}, False),
+        (["reference", "name"], {"name": 123, "reference": 1}, True),
+        (["reference", "name"], {}, False),
+    ),
 )
 def test_has_attribute_condition(attrs, payload, expected):
-    message = Message(full_name='test.Event', message_type=MessageType.EVENT, payload=payload)
+    message = Message(
+        full_name="test.Event", message_type=MessageType.EVENT, payload=payload
+    )
     condition = HasAttrs(*attrs)
     assert condition.check(message) is expected
 

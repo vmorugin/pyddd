@@ -18,11 +18,10 @@ from pyddd.domain.message import (
 
 
 class Application(IApplication):
-
     def __init__(
-            self,
-            logger_name: str = 'pyddd.application',
-            executor: IExecutor = None,
+        self,
+        logger_name: str = "pyddd.application",
+        executor: IExecutor = None,
     ):
         self._modules: dict[str, IModule] = {}
         self._defaults: dict[str, dict] = defaultdict(dict)
@@ -108,14 +107,18 @@ class Application(IApplication):
 
     def handle(self, message: IMessage, **depends):
         if not self._is_running:
-            raise RuntimeError(f'Can not handle {message.__topic__}. App is not running!')
+            raise RuntimeError(
+                f"Can not handle {message.__topic__}. App is not running!"
+            )
         if not isinstance(message, IMessage):
-            raise RuntimeError(f'Unexpected message type {message}')
+            raise RuntimeError(f"Unexpected message type {message}")
         if message.__type__ == MessageType.COMMAND:
             return self._handle_command(command=message, **depends)
         elif message.__type__ == MessageType.EVENT:
             return self._handle_event(event=message, **depends)
-        raise RuntimeError(f'Only support command end event message handling. Got {message.__type__}')
+        raise RuntimeError(
+            f"Only support command end event message handling. Got {message.__type__}"
+        )
 
     def _handle_command(self, command: IMessage, **depends):
         module = self._get_module_by_domain(command.__domain__)
@@ -131,7 +134,7 @@ class Application(IApplication):
     def _get_module_by_domain(self, domain: str) -> IModule:
         if module := self._modules.get(domain):
             return module
-        raise ValueError(f'Unregistered module for domain {domain}')
+        raise ValueError(f"Unregistered module for domain {domain}")
 
 
 __context = None

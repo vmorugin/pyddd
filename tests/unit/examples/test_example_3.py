@@ -21,7 +21,7 @@ from pyddd.domain.entity import (
 )
 from pyddd.domain.event import IEvent
 
-product_domain = 'product'
+product_domain = "product"
 
 
 class Product(RootEntity):
@@ -32,7 +32,9 @@ class Product(RootEntity):
     @classmethod
     def create(cls, sku: str, price: int):
         product = Product(sku, price=price)
-        product.register_event(ProductCreated(reference=str(product.__reference__), price=price))
+        product.register_event(
+            ProductCreated(reference=str(product.__reference__), price=price)
+        )
         return product
 
 
@@ -61,12 +63,10 @@ module = Module(product_domain)
 
 class IRepository(abc.ABC):
     @abc.abstractmethod
-    def save(self, entity: IRootEntity):
-        ...
+    def save(self, entity: IRootEntity): ...
 
 
-class IProductRepository(IRepository, abc.ABC):
-    ...
+class IProductRepository(IRepository, abc.ABC): ...
 
 
 @module.register
@@ -98,25 +98,20 @@ class StoredEvent:
 
 class IEventStore(abc.ABC):
     @abc.abstractmethod
-    def insert(self, event: StoredEvent):
-        ...
+    def insert(self, event: StoredEvent): ...
 
 
 class IEventSubscriber(abc.ABC):
-
     @abc.abstractmethod
-    def notify(self, event: IEvent):
-        ...
+    def notify(self, event: IEvent): ...
 
 
 class IEventPublisher(abc.ABC):
     @abc.abstractmethod
-    def publish(self, *events: IEvent):
-        ...
+    def publish(self, *events: IEvent): ...
 
     @abc.abstractmethod
-    def subscribe(self, subscriber: IEventSubscriber):
-        ...
+    def subscribe(self, subscriber: IEventSubscriber): ...
 
 
 class InMemoryEventStore(IEventStore):
@@ -141,7 +136,6 @@ class EventPublisher(IEventPublisher):
 
 
 class EventStoreListener(IEventSubscriber):
-
     def __init__(self, event_store: IEventStore):
         self._event_store = event_store
 
@@ -156,7 +150,6 @@ class EventStoreListener(IEventSubscriber):
 
 
 class ApplicationHandlerListener(IEventSubscriber):
-
     def __init__(self, application: Application):
         self._app = application
 
@@ -189,12 +182,17 @@ def test():
     publisher.subscribe(app_message_listener)
 
     repository_memory = {}
-    app.set_defaults(product_domain, repository=ImMemoryProductRepository(repository_memory, publisher=publisher))
+    app.set_defaults(
+        product_domain,
+        repository=ImMemoryProductRepository(repository_memory, publisher=publisher),
+    )
 
     app.run()
 
-    product_1 = app.handle(CreateProduct(sku='123', price=123))
-    product_2 = app.handle(CreateProduct(sku='123', price=0))  # will not be printed because of zero price
+    product_1 = app.handle(CreateProduct(sku="123", price=123))
+    product_2 = app.handle(
+        CreateProduct(sku="123", price=0)
+    )  # will not be printed because of zero price
 
     assert len(stored_memory) == 2
 

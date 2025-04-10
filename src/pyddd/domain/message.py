@@ -12,91 +12,80 @@ from uuid import (
 )
 from importlib.metadata import version
 
-pydantic_version = version('pydantic')
+pydantic_version = version("pydantic")
 
-if pydantic_version.startswith('2'):
+if pydantic_version.startswith("2"):
     from pydantic import BaseModel, PrivateAttr
     from pydantic._internal._model_construction import ModelMetaclass
-elif pydantic_version.startswith('1'):
+elif pydantic_version.startswith("1"):
     from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr  # type: ignore[no-redef]
 else:
-    raise ImportError('Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x')
+    raise ImportError(
+        "Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x"
+    )
 
 
 class MessageType(str, Enum):
-    EVENT = 'EVENT'
-    COMMAND = 'COMMAND'
+    EVENT = "EVENT"
+    COMMAND = "COMMAND"
 
 
 class IMessageMeta(abc.ABCMeta):
+    @property
+    @abc.abstractmethod
+    def __domain__(cls) -> str: ...
 
     @property
     @abc.abstractmethod
-    def __domain__(cls) -> str:
-        ...
+    def __message_name__(cls) -> str: ...
 
     @property
     @abc.abstractmethod
-    def __message_name__(cls) -> str:
-        ...
-
-    @property
-    @abc.abstractmethod
-    def __topic__(cls) -> str:
-        ...
+    def __topic__(cls) -> str: ...
 
 
 class IMessage(abc.ABC, metaclass=IMessageMeta):
+    @property
+    @abc.abstractmethod
+    def __domain__(self) -> str: ...
 
     @property
     @abc.abstractmethod
-    def __domain__(self) -> str:
-        ...
+    def __message_name__(self) -> str: ...
 
     @property
     @abc.abstractmethod
-    def __message_name__(self) -> str:
-        ...
+    def __topic__(self) -> str: ...
 
     @property
     @abc.abstractmethod
-    def __topic__(self) -> str:
-        ...
+    def __message_id__(self) -> str: ...
 
     @property
     @abc.abstractmethod
-    def __message_id__(self) -> str:
-        ...
+    def __type__(self) -> MessageType: ...
 
     @property
     @abc.abstractmethod
-    def __type__(self) -> MessageType:
-        ...
-
-    @property
-    @abc.abstractmethod
-    def __timestamp__(self) -> dt.datetime:
-        ...
+    def __timestamp__(self) -> dt.datetime: ...
 
     @abc.abstractmethod
-    def to_dict(self) -> dict:
-        ...
+    def to_dict(self) -> dict: ...
 
     @abc.abstractmethod
-    def to_json(self) -> str:
-        ...
+    def to_json(self) -> str: ...
 
 
 class Message(IMessage):
     def __init__(
-            self,
-            full_name: str,
-            message_type: Union[MessageType, str],
-            payload: dict,
-            message_id: Optional[str] = None,
-            occurred_on: Optional[dt.datetime] = None,
+        self,
+        full_name: str,
+        message_type: Union[MessageType, str],
+        payload: dict,
+        message_id: Optional[str] = None,
+        occurred_on: Optional[dt.datetime] = None,
     ):
-        self._domain, self._name = full_name.rsplit('.', 1)
+        self._domain, self._name = full_name.rsplit(".", 1)
         self._type = MessageType(message_type)
         self._payload = json.dumps(payload)
         self._message_id = message_id or str(uuid4())
@@ -124,7 +113,7 @@ class Message(IMessage):
 
     @property
     def __topic__(self) -> str:
-        return f'{self._domain}.{self._name}'
+        return f"{self._domain}.{self._name}"
 
     def to_dict(self) -> dict:
         return json.loads(self._payload)
@@ -170,7 +159,9 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
 
 
 class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessageMeta):
-    _occurred_on: dt.datetime = PrivateAttr(default_factory=lambda: dt.datetime.utcnow())
+    _occurred_on: dt.datetime = PrivateAttr(
+        default_factory=lambda: dt.datetime.utcnow()
+    )
     _reference: UUID = PrivateAttr(default_factory=uuid4)
 
     class Config:
