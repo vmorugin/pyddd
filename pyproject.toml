@@ -28,6 +28,7 @@ dev-dependencies = [
     "mypy>=1.15.0",
     "redis>=3.5.0",
     "tenacity>=9.0.0",
+    "backoff>=2.0.0"
 ]
 
 [build-system]
@@ -42,7 +43,6 @@ include = [
 
 [tool.mypy]
 no_implicit_optional = false
-
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -304,6 +304,7 @@ transport-redis = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "backoff" },
     { name = "flake8" },
     { name = "mypy" },
     { name = "pytest" },
@@ -323,6 +324,7 @@ provides-extras = ["transport-redis", "tenacity-retry", "backoff-retry"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "backoff", specifier = ">=2.0.0" },
     { name = "flake8", specifier = ">=7.1.2" },
     { name = "mypy", specifier = ">=1.15.0" },
     { name = "pytest", specifier = ">=8.3.5" },
