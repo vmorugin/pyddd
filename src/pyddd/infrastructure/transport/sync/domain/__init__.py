@@ -10,12 +10,12 @@ from .notification import Notification
 from .queue import NotificationQueue
 
 __all__ = [
-    DefaultAskPolicy,
-    MessageConsumer,
-    Notification,
-    NotificationQueue,
-    IAskPolicy,
-    ICallback,
-    INotificationQueue,
-    IMessageHandler,
+    "DefaultAskPolicy",
+    "MessageConsumer",
+    "Notification",
+    "NotificationQueue",
+    "IAskPolicy",
+    "ICallback",
+    "INotificationQueue",
+    "IMessageHandler",
 ]

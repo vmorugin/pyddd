@@ -5,4 +5,4 @@ from .entity import (
 from .event import DomainEvent
 from .command import DomainCommand
 
-__all__ = [IEntity, IRootEntity, DomainEvent, DomainCommand]
+__all__ = ["IEntity", "IRootEntity", "DomainEvent", "DomainCommand"]

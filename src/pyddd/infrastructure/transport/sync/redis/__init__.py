@@ -5,8 +5,8 @@ from .pubsub import (
 from .stream_group import RedisStreamGroupConsumer, RedisStreamPublisher
 
 __all__ = [
-    RedisPubSubPublisher,
-    RedisPubSubConsumer,
-    RedisStreamPublisher,
-    RedisStreamGroupConsumer,
+    "RedisPubSubPublisher",
+    "RedisPubSubConsumer",
+    "RedisStreamPublisher",
+    "RedisStreamGroupConsumer",
 ]
