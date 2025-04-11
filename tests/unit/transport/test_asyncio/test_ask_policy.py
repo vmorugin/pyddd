@@ -42,7 +42,9 @@ class TestDefaultAskPolicy:
     def test_must_implement_interface(self, policy):
         assert isinstance(policy, IAskPolicy)
 
-    async def test_must_call_app_handle(self, policy, notification, app, event_factory, domain_event):
+    async def test_must_call_app_handle(
+        self, policy, notification, app, event_factory, domain_event
+    ):
         await policy.process(notification, event_factory=event_factory, application=app)
         app.handle.assert_called_with(domain_event)
 
@@ -50,7 +52,9 @@ class TestDefaultAskPolicy:
         await policy.process(notification, event_factory=event_factory, application=app)
         assert notification.ack.called
 
-    async def test_must_not_ask_if_error_build_message(self, policy, notification, app, event_factory):
+    async def test_must_not_ask_if_error_build_message(
+        self, policy, notification, app, event_factory
+    ):
         event_factory.build_event.side_effect = Exception()
         await policy.process(notification, event_factory=event_factory, application=app)
         assert not notification.ack.called

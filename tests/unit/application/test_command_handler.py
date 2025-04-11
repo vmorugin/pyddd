@@ -8,12 +8,10 @@ from pyddd.domain import (
 )
 
 
-class ExampleCommand(DomainCommand, domain='test'):
-    ...
+class ExampleCommand(DomainCommand, domain="test"): ...
 
 
-class ExampleEvent(DomainEvent, domain='test'):
-    ...
+class ExampleEvent(DomainEvent, domain="test"): ...
 
 
 class TestCommandHandler:

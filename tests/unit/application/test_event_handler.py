@@ -21,12 +21,10 @@ from pyddd.domain.event import IEvent
 from pyddd.domain.message import IMessage
 
 
-class ExampleEvent(DomainEvent, domain='test'):
-    ...
+class ExampleEvent(DomainEvent, domain="test"): ...
 
 
-class ExampleCommand(DomainCommand, domain='test'):
-    ...
+class ExampleCommand(DomainCommand, domain="test"): ...
 
 
 class FakeCommandHandler(ICommandHandler):
@@ -70,38 +68,38 @@ class TestEventHandler:
         assert mock.called
 
     def test_must_returns_result(self):
-        class CustomEvent(DomainEvent, domain='test'):
+        class CustomEvent(DomainEvent, domain="test"):
             id: str
 
-        class CustomCommand(DomainCommand, domain='test'):
+        class CustomCommand(DomainCommand, domain="test"):
             id: str
 
-        callback = Mock(return_value='12')
+        callback = Mock(return_value="12")
         handler = EventHandler(FakeCommandHandler(CustomCommand, callback=callback))
-        func = handler.resolve(CustomEvent(id='12'))
-        assert func() == '12'
+        func = handler.resolve(CustomEvent(id="12"))
+        assert func() == "12"
 
     def test_must_resolve_event(self):
-        callback = Mock(return_value='123')
+        callback = Mock(return_value="123")
         handler = EventHandler(FakeCommandHandler(ExampleCommand, callback))
         func = handler.resolve(ExampleEvent())
-        assert func() == '123'
+        assert func() == "123"
 
     def test_must_resolve_with_converter(self):
-        class CustomCommand(DomainCommand, domain='test'):
+        class CustomCommand(DomainCommand, domain="test"):
             reference: str
 
-        class CustomEvent(DomainEvent, domain='test'):
+        class CustomEvent(DomainEvent, domain="test"):
             id: str
 
         def callback(cmd: CustomCommand):
             return cmd.reference
 
         handler = EventHandler(FakeCommandHandler(CustomCommand, callback))
-        handler.set_converter(lambda x: {'reference': x['id']})
-        func = handler.resolve(CustomEvent(id='123'))
+        handler.set_converter(lambda x: {"reference": x["id"]})
+        func = handler.resolve(CustomEvent(id="123"))
         result = func()
-        assert result == '123'
+        assert result == "123"
 
     def test_must_fail_resolve_when_fail_condition(self):
         class FailCondition(ICondition):
@@ -111,7 +109,7 @@ class TestEventHandler:
         mock = Mock()
         handler = EventHandler(FakeCommandHandler(ExampleCommand, mock))
         handler.set_condition(FailCondition())
-        with pytest.raises(FailedHandlerCondition, match='Failed check condition FailCondition'):
+        with pytest.raises(FailedHandlerCondition, match="Failed check condition FailCondition"):
             handler.resolve(ExampleEvent())
 
     def test_always_call_retry_strategy(self):

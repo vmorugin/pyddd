@@ -21,18 +21,19 @@ class FakeHandler(IMessageHandler):
 
 
 class TestNotificationQueue:
-
     async def test_consume_must_sent_message_to_callback(self):
-        messages = [Notification(
-            message_id=str(uuid.uuid4()),
-            name='test:stream',
-            payload={},
-            ask_func=lambda: ...,
-            reject_func=lambda x: ...
-        )]
+        messages = [
+            Notification(
+                message_id=str(uuid.uuid4()),
+                name="test:stream",
+                payload={},
+                ask_func=lambda: ...,
+                reject_func=lambda x: ...,
+            )
+        ]
         reader = FakeHandler(messages)
         queue = NotificationQueue(message_handler=reader)
-        await queue.bind('test:stream')
+        await queue.bind("test:stream")
         callback = AsyncMock()
         await queue.consume(callback)
         await asyncio.sleep(0.01)
@@ -43,13 +44,13 @@ class TestNotificationQueue:
             Exception(),
             Notification(
                 message_id=str(uuid.uuid4()),
-                name='test:stream',
+                name="test:stream",
                 payload={},
             ),
         ]
         reader = FakeHandler(messages)
         queue = NotificationQueue(message_handler=reader)
-        await queue.bind('test:stream')
+        await queue.bind("test:stream")
         callback = AsyncMock(side_effect=[messages])
         await queue.consume(callback)
         await asyncio.sleep(0.01)
@@ -62,18 +63,18 @@ class TestNotificationQueue:
         messages = [
             Notification(
                 message_id=str(uuid.uuid4()),
-                name='test:stream',
+                name="test:stream",
                 payload={},
             ),
             Notification(
                 message_id=str(uuid.uuid4()),
-                name='test:stream',
+                name="test:stream",
                 payload={},
             ),
         ]
         reader = FakeHandler(messages)
         queue = NotificationQueue(message_handler=reader)
-        await queue.bind('test:stream')
+        await queue.bind("test:stream")
         callback = AsyncMock(side_effect=endless_callback)
         await queue.consume(callback)
         await asyncio.sleep(0.01)

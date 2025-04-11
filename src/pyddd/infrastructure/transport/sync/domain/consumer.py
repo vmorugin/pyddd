@@ -15,10 +15,10 @@ from pyddd.infrastructure.transport.sync.domain.abstractions import (
 
 class MessageConsumer(IMessageConsumer):
     def __init__(
-            self,
-            queue: INotificationQueue,
-            ask_policy: IAskPolicy,
-            event_factory: IEventFactory
+        self,
+        queue: INotificationQueue,
+        ask_policy: IAskPolicy,
+        event_factory: IEventFactory,
     ):
         self._queue = queue
         self._ask_policy = ask_policy
@@ -51,8 +51,7 @@ class MessageConsumer(IMessageConsumer):
     def _before_stop_handler(self, _signal: ApplicationSignal, _app: IApplication):
         self._queue.stop_consume()
 
-    def _after_stop_handler(self, _signal: ApplicationSignal, _app: IApplication):
-        ...
+    def _after_stop_handler(self, _signal: ApplicationSignal, _app: IApplication): ...
 
     def _ask_message(self, message: INotification):
         if self._application:

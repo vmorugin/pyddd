@@ -10,14 +10,11 @@ from pyddd.infrastructure.transport.core.value_objects import NotificationTracke
 
 
 class DefaultNotificationTrackerStrategy(INotificationTrackerStrategy):
-
     def create_tracker(self, track_key: str) -> NotificationTrackerState:
         return NotificationTrackerState(track_key=track_key, last_recent_notification_id=None)
 
     def track_most_recent_message(
-            self,
-            tracker: NotificationTrackerState,
-            *messages: INotification
+        self, tracker: NotificationTrackerState, *messages: INotification
     ) -> NotificationTrackerState:
         if not messages:
             return tracker
@@ -27,9 +24,9 @@ class DefaultNotificationTrackerStrategy(INotificationTrackerStrategy):
 
 class NotificationTracker(INotificationTracker):
     def __init__(
-            self,
-            track_key: str,
-            track_strategy: INotificationTrackerStrategy = DefaultNotificationTrackerStrategy()
+        self,
+        track_key: str,
+        track_strategy: INotificationTrackerStrategy = DefaultNotificationTrackerStrategy(),
     ):
         self._strategy = track_strategy
         self._tracker = track_strategy.create_tracker(track_key)

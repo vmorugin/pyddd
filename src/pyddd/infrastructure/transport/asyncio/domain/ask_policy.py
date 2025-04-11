@@ -7,8 +7,12 @@ from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
 
 
 class DefaultAskPolicy(IAskPolicy):
-
-    async def process(self, notification: INotification, event_factory: IEventFactory, application: IApplication):
+    async def process(
+        self,
+        notification: INotification,
+        event_factory: IEventFactory,
+        application: IApplication,
+    ):
         try:
             event = event_factory.build_event(notification)
             await application.handle(event)

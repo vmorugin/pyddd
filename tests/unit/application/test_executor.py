@@ -13,12 +13,10 @@ from pyddd.domain import (
 )
 
 
-class ExampleCommand(DomainCommand, domain='test'):
-    ...
+class ExampleCommand(DomainCommand, domain="test"): ...
 
 
-class ExampleEvent(DomainEvent, domain='test'):
-    ...
+class ExampleEvent(DomainEvent, domain="test"): ...
 
 
 class TestSyncExecutor:
@@ -31,8 +29,8 @@ class TestSyncExecutor:
             return value
 
         executor = SyncExecutor()
-        result = executor.process_handler(handler=foo, value='123')
-        assert result == '123'
+        result = executor.process_handler(handler=foo, value="123")
+        assert result == "123"
 
     def test_process_event(self):
         def foo(callback):

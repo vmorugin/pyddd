@@ -12,7 +12,7 @@ from concurrent.futures import (
 
 
 class SyncExecutor(IExecutor):
-    def __init__(self, logger_name: str = 'pyddd.executor'):
+    def __init__(self, logger_name: str = "pyddd.executor"):
         self._logger = logging.getLogger(logger_name)
         self._executor = ThreadPoolExecutor()
 
@@ -30,12 +30,11 @@ class SyncExecutor(IExecutor):
         try:
             return handler(**kwargs)
         except Exception as exc:
-            self._logger.warning(f'Failed to process handler {handler}', exc_info=exc)
+            self._logger.warning(f"Failed to process handler {handler}", exc_info=exc)
             return exc
 
 
 class AsyncExecutor(IExecutor):
-
     def process_handler(self, handler: AnyCallable, **kwargs):
         future: asyncio.Future = asyncio.Future()
         task = asyncio.create_task(handler(**kwargs))

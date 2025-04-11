@@ -17,7 +17,7 @@ from pyddd.domain.entity import (
     RootEntity,
 )
 
-product_domain = 'product'
+product_domain = "product"
 
 
 class ProductCreated(DomainEvent, domain=product_domain):
@@ -56,16 +56,13 @@ module = Module(product_domain)
 
 class IRepository(abc.ABC):
     @abc.abstractmethod
-    async def save(self, entity: Product):
-        ...
+    async def save(self, entity: Product): ...
 
     @abc.abstractmethod
-    async def get(self, entity_id: str) -> Product:
-        ...
+    async def get(self, entity_id: str) -> Product: ...
 
 
-class IProductRepository(IRepository, abc.ABC):
-    ...
+class IProductRepository(IRepository, abc.ABC): ...
 
 
 @module.register
@@ -77,12 +74,10 @@ async def create_product(cmd: CreateProduct, repository: IProductRepository):
 
 class IProductStorageAdapter(abc.ABC):
     @abc.abstractmethod
-    async def get_price(self, sku: str) -> int:
-        ...
+    async def get_price(self, sku: str) -> int: ...
 
     @abc.abstractmethod
-    async def get_stock(self, sku: str) -> int:
-        ...
+    async def get_stock(self, sku: str) -> int: ...
 
 
 class ImMemoryProductRepository(IProductRepository):
@@ -113,17 +108,16 @@ class PriceAdapter(IProductStorageAdapter):
         return random.randint(1, 5)
 
 
-@module.subscribe('product.ProductCreated', converter=lambda x: {'product_id': str(x['reference'])})
+@module.subscribe("product.ProductCreated", converter=lambda x: {"product_id": str(x["reference"])})
 @module.register
 async def actualize_product(
-        cmd: ActualizeProduct,
-        repository: IProductRepository,
-        price_adapter: IProductStorageAdapter,
+    cmd: ActualizeProduct,
+    repository: IProductRepository,
+    price_adapter: IProductStorageAdapter,
 ):
     product = await repository.get(cmd.product_id)
     new_price, new_stock = await asyncio.gather(
-        price_adapter.get_price(product.sku),
-        price_adapter.get_stock(product.sku)
+        price_adapter.get_price(product.sku), price_adapter.get_stock(product.sku)
     )
     product.renew_price(new_price)
     product.update_stock(new_stock)
@@ -138,7 +132,7 @@ async def test():
     set_application(app)
     await app.run_async()
 
-    product_id = await app.handle(CreateProduct(sku='AB123CD'))
+    product_id = await app.handle(CreateProduct(sku="AB123CD"))
 
     product = await repository.get(str(product_id))
     assert product.price == 0

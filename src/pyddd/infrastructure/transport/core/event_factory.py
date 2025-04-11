@@ -30,5 +30,5 @@ class PublishedEventFactory(IEventFactory):
             message_id=published_event.message_id,
             message_type=MessageType.EVENT,
             payload=json.loads(published_event.payload),
-            occurred_on=dt.datetime.fromtimestamp(float(published_event.timestamp))
+            occurred_on=dt.datetime.fromtimestamp(float(published_event.timestamp)),
         )
