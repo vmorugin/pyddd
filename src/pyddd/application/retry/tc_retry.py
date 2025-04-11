@@ -9,10 +9,10 @@ from tenacity.wait import wait_base
 
 class TenacityAsyncRetry(IRetryStrategy):
     def __init__(
-            self,
-            retry: tc.retry_base = tc.retry_never,
-            stop: stop_base = tc.stop_after_attempt(1),
-            wait: wait_base = tc.wait_none(),
+        self,
+        retry: tc.retry_base = tc.retry_never,
+        stop: stop_base = tc.stop_after_attempt(1),
+        wait: wait_base = tc.wait_none(),
     ):
         self._retry = retry
         self._stop = stop
@@ -24,10 +24,10 @@ class TenacityAsyncRetry(IRetryStrategy):
 
 class TenacitySyncRetry(IRetryStrategy):
     def __init__(
-            self,
-            retry: tc.retry_base = tc.retry_never,
-            stop: stop_base = tc.stop_after_attempt(1),
-            wait: wait_base = tc.wait_none(),
+        self,
+        retry: tc.retry_base = tc.retry_never,
+        stop: stop_base = tc.stop_after_attempt(1),
+        wait: wait_base = tc.wait_none(),
     ):
         self._retry = retry
         self._stop = stop

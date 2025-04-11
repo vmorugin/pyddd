@@ -20,11 +20,11 @@ from pyddd.domain import (
 from pyddd.domain.entity import RootEntity
 
 
-class CreatePet(DomainCommand, domain='pet'):
+class CreatePet(DomainCommand, domain="pet"):
     name: str
 
 
-class PetCreated(DomainEvent, domain='pet'):
+class PetCreated(DomainEvent, domain="pet"):
     reference: str
     name: str
 
@@ -46,18 +46,15 @@ class Pet(RootEntity):
 
 class IRepository(abc.ABC):
     @abc.abstractmethod
-    async def save(self, entity: IRootEntity):
-        ...
+    async def save(self, entity: IRootEntity): ...
 
 
 class IPetRepository(IRepository, abc.ABC):
-
     @abc.abstractmethod
-    async def get(self, name: str) -> Pet:
-        ...
+    async def get(self, name: str) -> Pet: ...
 
 
-pet_module = Module('pet')
+pet_module = Module("pet")
 
 
 @pet_module.register
@@ -67,12 +64,12 @@ async def create_pet(cmd: CreatePet, repository: IPetRepository):
     return pet.__reference__
 
 
-class CreateGreetLogCommand(DomainCommand, domain='greet'):
+class CreateGreetLogCommand(DomainCommand, domain="greet"):
     pet_id: str
     name: str
 
 
-class SayGreetCommand(DomainCommand, domain='greet'):
+class SayGreetCommand(DomainCommand, domain="greet"):
     pet_id: str
 
 
@@ -81,8 +78,8 @@ class GreetReference(uuid.UUID):
         super().__init__(value)
 
     @classmethod
-    def generate(cls, pet_id: str) -> 'GreetReference':
-        return cls(str(uuid.uuid5(NAMESPACE_URL, f'/journal/{pet_id}')))
+    def generate(cls, pet_id: str) -> "GreetReference":
+        return cls(str(uuid.uuid5(NAMESPACE_URL, f"/journal/{pet_id}")))
 
 
 class PerGreetJournal(RootEntity[GreetReference]):
@@ -91,19 +88,20 @@ class PerGreetJournal(RootEntity[GreetReference]):
         self.pet_name = pet_name
 
     def greet(self):
-        return f'Hi, {self.pet_name}!'
+        return f"Hi, {self.pet_name}!"
 
 
 class IPetGreetRepo(IRepository, abc.ABC):
     @abc.abstractmethod
-    async def get_by_pet_id(self, pet_id: str) -> PerGreetJournal:
-        ...
+    async def get_by_pet_id(self, pet_id: str) -> PerGreetJournal: ...
 
 
-greet_module = Module('greet')
+greet_module = Module("greet")
 
 
-@greet_module.subscribe('pet.PetCreated', converter=lambda x: {"pet_id": x['reference'], "name": x['name']})
+@greet_module.subscribe(
+    "pet.PetCreated", converter=lambda x: {"pet_id": x["reference"], "name": x["name"]}
+)
 @greet_module.register
 async def register_pet(cmd: CreateGreetLogCommand, repository: IPetGreetRepo):
     journal = await repository.get_by_pet_id(cmd.pet_id)
@@ -121,8 +119,7 @@ async def say_greet(cmd: SayGreetCommand, repository: IPetGreetRepo):
 
 class BaseRepository(abc.ABC):
     @abc.abstractmethod
-    async def _insert(self, entity: IRootEntity):
-        ...
+    async def _insert(self, entity: IRootEntity): ...
 
     async def save(self, entity: IRootEntity):
         await self._insert(entity)
@@ -159,18 +156,18 @@ async def test():
     app = Application(executor=AsyncExecutor())
     app.include(greet_module)
     app.include(pet_module)
-    app.set_defaults('pet', repository=InMemoryPetRepo({}))
-    app.set_defaults('greet', repository=InMemoryGreetRepo({}))
+    app.set_defaults("pet", repository=InMemoryPetRepo({}))
+    app.set_defaults("greet", repository=InMemoryGreetRepo({}))
 
     # set app_globally
     set_application(app)
 
     await app.run_async()
 
-    fluff_id = await app.handle(CreatePet(name='Fluff'))
-    max_id = await app.handle(CreatePet(name='Max'))
+    fluff_id = await app.handle(CreatePet(name="Fluff"))
+    max_id = await app.handle(CreatePet(name="Max"))
     greet_fluff = await app.handle(SayGreetCommand(pet_id=fluff_id))
-    assert greet_fluff == 'Hi, Fluff!'
+    assert greet_fluff == "Hi, Fluff!"
 
     greet_max = await app.handle(SayGreetCommand(pet_id=max_id))
-    assert greet_max == 'Hi, Max!'
+    assert greet_max == "Hi, Max!"

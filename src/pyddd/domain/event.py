@@ -23,5 +23,4 @@ class IEvent(IMessage, abc.ABC):
         return MessageType.EVENT
 
 
-class DomainEvent(BaseDomainMessage, IEvent, metaclass=_DomainEventMeta):
-    ...
+class DomainEvent(BaseDomainMessage, IEvent, metaclass=_DomainEventMeta): ...

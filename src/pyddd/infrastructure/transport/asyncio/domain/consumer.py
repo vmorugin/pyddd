@@ -16,10 +16,10 @@ from pyddd.infrastructure.transport.core.abstractions import IMessageConsumer
 
 class MessageConsumer(IMessageConsumer):
     def __init__(
-            self,
-            queue: INotificationQueue,
-            ask_policy: IAskPolicy,
-            event_factory: IEventFactory
+        self,
+        queue: INotificationQueue,
+        ask_policy: IAskPolicy,
+        event_factory: IEventFactory,
     ):
         self._queue = queue
         self._ask_policy = ask_policy

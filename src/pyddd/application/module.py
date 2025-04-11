@@ -27,12 +27,7 @@ from pyddd.domain.message import IMessage
 
 
 class Module(IModule, ISubscribe, IRegister):
-    def __init__(
-            self,
-            domain: str,
-            executor: IExecutor = None,
-            logger_name: str = 'pyddd.module'
-    ):
+    def __init__(self, domain: str, executor: IExecutor = None, logger_name: str = "pyddd.module"):
         self._domain = domain
         self._executor = executor or SyncExecutor()
         self._defaults: dict[str, t.Any] = {}
@@ -57,12 +52,12 @@ class Module(IModule, ISubscribe, IRegister):
         return func
 
     def subscribe(
-            self,
-            event_name: str,
-            *,
-            converter: IPayloadConverter = lambda x: x,
-            condition: ICondition = none_condition,
-            retry_strategy: IRetryStrategy = none_retry,
+        self,
+        event_name: str,
+        *,
+        converter: IPayloadConverter = lambda x: x,
+        condition: ICondition = none_condition,
+        retry_strategy: IRetryStrategy = none_retry,
     ):
         def wrapper(func):
             handler = EventHandler(CommandHandler(func))
@@ -77,7 +72,9 @@ class Module(IModule, ISubscribe, IRegister):
 
     def get_command_handler(self, command: IMessage):
         if command.__topic__ not in self._command_handlers:
-            raise RuntimeError(f'Unregistered command {command.__topic__} in {self.__class__.__name__}:{self._domain}')
+            raise RuntimeError(
+                f"Unregistered command {command.__topic__} in {self.__class__.__name__}:{self._domain}"
+            )
         return self._command_handlers[command.__topic__].resolve(command)
 
     def get_event_handlers(self, event: IMessage):
@@ -86,7 +83,13 @@ class Module(IModule, ISubscribe, IRegister):
             try:
                 handlers.append(handler.resolve(event))
             except FailedHandlerCondition as exc:
-                self._logger.debug(f"Handler {handler} with event {event} did not pass condition", exc_info=exc)
+                self._logger.debug(
+                    f"Handler {handler} with event {event} did not pass condition",
+                    exc_info=exc,
+                )
             except Exception as exc:
-                self._logger.warning(f"Can not resolve message {event} with handler {handler}", exc_info=exc)
+                self._logger.warning(
+                    f"Can not resolve message {event} with handler {handler}",
+                    exc_info=exc,
+                )
         return handlers

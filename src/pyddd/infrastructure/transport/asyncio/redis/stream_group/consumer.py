@@ -17,7 +17,9 @@ from pyddd.infrastructure.transport.core.abstractions import (
 from pyddd.infrastructure.transport.core.event_factory import (
     PublishedEventFactory,
 )
-from pyddd.infrastructure.transport.core.tracker_factory import NotificationTrackerFactory
+from pyddd.infrastructure.transport.core.tracker_factory import (
+    NotificationTrackerFactory,
+)
 from pyddd.infrastructure.transport.asyncio.domain import (
     INotificationQueue,
     IAskPolicy,
@@ -31,16 +33,15 @@ from pyddd.infrastructure.transport.core.value_objects import NotificationTracke
 
 
 class RedisStreamGroupConsumer(IMessageConsumer):
-
     def __init__(
-            self,
-            redis: Redis,
-            group_name: str,
-            consumer_name: str,
-            queue: INotificationQueue = None,
-            event_factory: IEventFactory = None,
-            ask_policy: IAskPolicy = None,
-            block_ms: int = None,
+        self,
+        redis: Redis,
+        group_name: str,
+        consumer_name: str,
+        queue: INotificationQueue = None,
+        event_factory: IEventFactory = None,
+        ask_policy: IAskPolicy = None,
+        block_ms: int = None,
     ):
         self._ask_policy = ask_policy or DefaultAskPolicy()
         self._event_factory = event_factory or PublishedEventFactory()
@@ -50,13 +51,13 @@ class RedisStreamGroupConsumer(IMessageConsumer):
                 consumer_name=consumer_name,
                 client=redis,
                 block=block_ms,
-                tracker_factory=NotificationTrackerFactory(strategy=RedisStreamTrackerStrategy())
+                tracker_factory=NotificationTrackerFactory(strategy=RedisStreamTrackerStrategy()),
             )
         )
         self._consumer = MessageConsumer(
             queue=self._queue,
             event_factory=self._event_factory,
-            ask_policy=self._ask_policy
+            ask_policy=self._ask_policy,
         )
 
     def subscribe(self, topic: str):
@@ -80,12 +81,12 @@ class RedisStreamGroupConsumer(IMessageConsumer):
 
 class GroupStreamHandler(IMessageHandler):
     def __init__(
-            self,
-            group_name: str,
-            consumer_name: str,
-            client: Redis,
-            tracker_factory: INotificationTrackerFactory,
-            block: t.Optional[int] = 0,
+        self,
+        group_name: str,
+        consumer_name: str,
+        client: Redis,
+        tracker_factory: INotificationTrackerFactory,
+        block: t.Optional[int] = 0,
     ):
         self._group_name = group_name
         self._consumer_name = consumer_name
@@ -116,11 +117,7 @@ class GroupStreamHandler(IMessageHandler):
     async def bind(self, topic: str):
         self._trackers[topic] = self._tracker_factory.create_tracker(topic)
         with suppress(ResponseError):
-            await self._client.xgroup_create(
-                topic,
-                self._group_name,
-                mkstream=True
-            )
+            await self._client.xgroup_create(topic, self._group_name, mkstream=True)
 
     async def _read_message(self, topic: str, last_message_id: str, limit: int = None) -> list:
         return await self._client.xreadgroup(
@@ -132,7 +129,6 @@ class GroupStreamHandler(IMessageHandler):
         )
 
     def _ask(self, topic: str, message_id: str):
-
         async def _wrapper(requeue: bool = False):
             if not requeue:
                 await self._client.xack(topic, self._group_name, message_id)
@@ -142,16 +138,14 @@ class GroupStreamHandler(IMessageHandler):
 
 class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
     def create_tracker(self, track_key: str) -> NotificationTrackerState:
-        tracker = NotificationTrackerState(track_key=track_key, last_recent_notification_id='0')
+        tracker = NotificationTrackerState(track_key=track_key, last_recent_notification_id="0")
         return tracker
 
     def track_most_recent_message(
-            self,
-            tracker: NotificationTrackerState,
-            *messages: INotification
-            ) -> NotificationTrackerState:
+        self, tracker: NotificationTrackerState, *messages: INotification
+    ) -> NotificationTrackerState:
         if not messages:
-            last_notification_id = '>'
+            last_notification_id = ">"
         else:
             last_notification_id = messages[-1].message_id
         return dataclasses.replace(tracker, last_recent_notification_id=last_notification_id)

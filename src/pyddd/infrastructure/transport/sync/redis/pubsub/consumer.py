@@ -32,12 +32,12 @@ class RedisPubSubConsumer(IMessageConsumer):
     """
 
     def __init__(
-            self,
-            redis: Redis,
-            *,
-            queue: INotificationQueue = None,
-            event_factory: IEventFactory = None,
-            ask_policy: IAskPolicy = None,
+        self,
+        redis: Redis,
+        *,
+        queue: INotificationQueue = None,
+        event_factory: IEventFactory = None,
+        ask_policy: IAskPolicy = None,
     ):
         self._ask_policy = ask_policy or DefaultAskPolicy()
         self._event_factory = event_factory or PublishedEventFactory()
@@ -45,7 +45,7 @@ class RedisPubSubConsumer(IMessageConsumer):
         self._consumer = MessageConsumer(
             queue=self._queue,
             event_factory=self._event_factory,
-            ask_policy=self._ask_policy
+            ask_policy=self._ask_policy,
         )
 
     def subscribe(self, topic: str):
@@ -68,7 +68,7 @@ class RedisPubSubConsumer(IMessageConsumer):
 
 
 class PubSubNotificationQueue(INotificationQueue):
-    def __init__(self, pubsub: PubSub, logger_name: str = 'notification.queue'):
+    def __init__(self, pubsub: PubSub, logger_name: str = "notification.queue"):
         self._pubsub = pubsub
         self._running = False
         self._executor = ThreadPoolExecutor()
@@ -90,11 +90,11 @@ class PubSubNotificationQueue(INotificationQueue):
         while self._running:
             try:
                 for message in self._pubsub.listen():
-                    if message['type'] == 'message':
+                    if message["type"] == "message":
                         notification = Notification(
                             message_id=str(uuid.uuid4()),
-                            name=message['channel'].decode(),
-                            payload=json.loads(message['data']),
+                            name=message["channel"].decode(),
+                            payload=json.loads(message["data"]),
                         )
                         threading.Thread(target=callback, args=(notification,), daemon=True).start()
             except Exception as exc:

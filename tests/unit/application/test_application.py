@@ -26,12 +26,10 @@ from pyddd.domain import (
 )
 
 
-class ExampleCommand(DomainCommand, domain='test'):
-    ...
+class ExampleCommand(DomainCommand, domain="test"): ...
 
 
-class ExampleEvent(DomainEvent, domain='test'):
-    ...
+class ExampleEvent(DomainEvent, domain="test"): ...
 
 
 class TestApplication:
@@ -47,15 +45,15 @@ class TestApplication:
         assert isinstance(app, IApplication)
 
     def test_include_twice(self, application):
-        application.include(Module('test'))
+        application.include(Module("test"))
         with pytest.raises(ValueError, match="Already registered domain 'test'"):
-            application.include(Module('test'))
+            application.include(Module("test"))
 
     def test_handle_command(self, application):
         def foo(cmd: ExampleCommand):
             return True
 
-        module = Module('test')
+        module = Module("test")
         module.register(foo)
         application.include(module)
         result = application.handle(ExampleCommand())
@@ -65,7 +63,7 @@ class TestApplication:
         def foo(cmd: ExampleCommand):
             return 1
 
-        module = Module('test')
+        module = Module("test")
         event = ExampleEvent()
         module.subscribe(event.__topic__)(foo)
         application.include(module)
@@ -76,33 +74,33 @@ class TestApplication:
         application.handle(ExampleEvent())
 
     def test_handle_unresolved_command(self, application):
-        with pytest.raises(ValueError, match='Unregistered module for domain'):
+        with pytest.raises(ValueError, match="Unregistered module for domain"):
             application.handle(ExampleCommand())
 
     def test_handle_with_defaults(self, application):
         def foo(cmd: ExampleCommand, atr: str):
             return atr
 
-        application.set_defaults('test', atr='success')
-        module = Module('test')
+        application.set_defaults("test", atr="success")
+        module = Module("test")
         module.register(foo)
         application.include(module)
         result = application.handle(ExampleCommand())
-        assert result == 'success'
+        assert result == "success"
 
     def test_handle_with_overwrite_defaults(self, application):
         def foo(cmd: ExampleCommand, atr: str):
             return atr
 
-        application.set_defaults('test', atr='fail')
-        module = Module('test')
+        application.set_defaults("test", atr="fail")
+        module = Module("test")
         module.register(foo)
         application.include(module)
-        result = application.handle(ExampleCommand(), atr='success')
-        assert result == 'success'
+        result = application.handle(ExampleCommand(), atr="success")
+        assert result == "success"
 
     def test_must_return_exceptions_when_handle_event(self, application):
-        module = Module(domain='test')
+        module = Module(domain="test")
 
         @module.subscribe(ExampleEvent.__topic__)
         def foo(command: ExampleCommand):
@@ -159,12 +157,12 @@ class TestApplication:
 
     def test_can_not_stop_before_run(self):
         app = Application()
-        with pytest.raises(RuntimeError, match='Can not stop not running application'):
+        with pytest.raises(RuntimeError, match="Can not stop not running application"):
             app.stop()
 
     async def test_can_not_astop_before_run(self):
         app = Application()
-        with pytest.raises(RuntimeError, match='Can not stop not running application'):
+        with pytest.raises(RuntimeError, match="Can not stop not running application"):
             await app.stop_async()
 
     def test_can_not_run_after_stop(self):
@@ -217,7 +215,9 @@ class TestApplication:
 
     def test_can_not_handle_not_running_error(self):
         app = Application()
-        with pytest.raises(RuntimeError, match='Can not handle test.ExampleEvent. App is not running!'):
+        with pytest.raises(
+            RuntimeError, match="Can not handle test.ExampleEvent. App is not running!"
+        ):
             app.handle(ExampleEvent())
 
     async def test_must_set_async_executor_if_run_async(self):
