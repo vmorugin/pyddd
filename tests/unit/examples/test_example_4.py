@@ -108,9 +108,7 @@ class PriceAdapter(IProductStorageAdapter):
         return random.randint(1, 5)
 
 
-@module.subscribe(
-    "product.ProductCreated", converter=lambda x: {"product_id": str(x["reference"])}
-)
+@module.subscribe("product.ProductCreated", converter=lambda x: {"product_id": str(x["reference"])})
 @module.register
 async def actualize_product(
     cmd: ActualizeProduct,
@@ -130,9 +128,7 @@ async def test():
     app = Application()
     app.include(module)
     repository = ImMemoryProductRepository({})
-    app.set_defaults(
-        product_domain, repository=repository, price_adapter=PriceAdapter()
-    )
+    app.set_defaults(product_domain, repository=repository, price_adapter=PriceAdapter())
     set_application(app)
     await app.run_async()
 

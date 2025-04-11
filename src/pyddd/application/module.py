@@ -27,9 +27,7 @@ from pyddd.domain.message import IMessage
 
 
 class Module(IModule, ISubscribe, IRegister):
-    def __init__(
-        self, domain: str, executor: IExecutor = None, logger_name: str = "pyddd.module"
-    ):
+    def __init__(self, domain: str, executor: IExecutor = None, logger_name: str = "pyddd.module"):
         self._domain = domain
         self._executor = executor or SyncExecutor()
         self._defaults: dict[str, t.Any] = {}

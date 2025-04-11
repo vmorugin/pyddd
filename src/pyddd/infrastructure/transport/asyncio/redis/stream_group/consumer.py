@@ -51,9 +51,7 @@ class RedisStreamGroupConsumer(IMessageConsumer):
                 consumer_name=consumer_name,
                 client=redis,
                 block=block_ms,
-                tracker_factory=NotificationTrackerFactory(
-                    strategy=RedisStreamTrackerStrategy()
-                ),
+                tracker_factory=NotificationTrackerFactory(strategy=RedisStreamTrackerStrategy()),
             )
         )
         self._consumer = MessageConsumer(
@@ -100,9 +98,7 @@ class GroupStreamHandler(IMessageHandler):
     async def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]:
         messages = []
         tracker = self._trackers[topic]
-        response = await self._read_message(
-            topic, tracker.last_recent_notification_id, limit
-        )
+        response = await self._read_message(topic, tracker.last_recent_notification_id, limit)
         for items in response:
             _, streams = items
             for stream in streams:
@@ -110,9 +106,7 @@ class GroupStreamHandler(IMessageHandler):
                 message = Notification(
                     message_id=message_id.decode(),
                     name=topic,
-                    payload={
-                        key.decode(): value.decode() for key, value in payload.items()
-                    },
+                    payload={key.decode(): value.decode() for key, value in payload.items()},
                     ask_func=self._ask(topic, message_id),
                     reject_func=self._ask(topic, message_id),
                 )
@@ -125,9 +119,7 @@ class GroupStreamHandler(IMessageHandler):
         with suppress(ResponseError):
             await self._client.xgroup_create(topic, self._group_name, mkstream=True)
 
-    async def _read_message(
-        self, topic: str, last_message_id: str, limit: int = None
-    ) -> list:
+    async def _read_message(self, topic: str, last_message_id: str, limit: int = None) -> list:
         return await self._client.xreadgroup(
             self._group_name,
             self._consumer_name,
@@ -146,9 +138,7 @@ class GroupStreamHandler(IMessageHandler):
 
 class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
     def create_tracker(self, track_key: str) -> NotificationTrackerState:
-        tracker = NotificationTrackerState(
-            track_key=track_key, last_recent_notification_id="0"
-        )
+        tracker = NotificationTrackerState(track_key=track_key, last_recent_notification_id="0")
         return tracker
 
     def track_most_recent_message(
@@ -158,6 +148,4 @@ class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
             last_notification_id = ">"
         else:
             last_notification_id = messages[-1].message_id
-        return dataclasses.replace(
-            tracker, last_recent_notification_id=last_notification_id
-        )
+        return dataclasses.replace(tracker, last_recent_notification_id=last_notification_id)

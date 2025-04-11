@@ -45,6 +45,4 @@ class RedisStreamPublisher:
                 ).__dict__,  # type: ignore[arg-type]
             )
         except Exception as exc:
-            self._logger.critical(
-                f"Failed to publish message {message.__topic__}", exc_info=exc
-            )
+            self._logger.critical(f"Failed to publish message {message.__topic__}", exc_info=exc)

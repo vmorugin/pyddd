@@ -73,9 +73,7 @@ class TestModule:
 
         module = Module("domain")
         module.register(foo)
-        with pytest.raises(
-            ValueError, match="Already registered command 'test.ExampleCommand'"
-        ):
+        with pytest.raises(ValueError, match="Already registered command 'test.ExampleCommand'"):
             module.register(foo)
 
     def test_handler_unregistered_command_must_fail(self):
@@ -179,9 +177,7 @@ class TestModule:
         module.set_defaults(dict(callback=mock))
         module.register(foo)
         event = ExampleEventWithParam(param_id="123")
-        module.subscribe(
-            event.__topic__, converter=lambda x: {"reference": x["param_id"]}
-        )(foo)
+        module.subscribe(event.__topic__, converter=lambda x: {"reference": x["param_id"]})(foo)
         handlers = module.get_event_handlers(event)
         assert len(handlers) == 1
         handlers[0](callback=mock)
@@ -295,9 +291,7 @@ class TestModule:
 
         module = Module("test")
 
-        @module.subscribe(
-            ExampleEvent.__topic__, retry_strategy=RetryStrategy(retry_count=3)
-        )
+        @module.subscribe(ExampleEvent.__topic__, retry_strategy=RetryStrategy(retry_count=3))
         @module.register
         def foo(command: ExampleCommand, callback):
             return callback()

@@ -109,9 +109,7 @@ class TestEventHandler:
         mock = Mock()
         handler = EventHandler(FakeCommandHandler(ExampleCommand, mock))
         handler.set_condition(FailCondition())
-        with pytest.raises(
-            FailedHandlerCondition, match="Failed check condition FailCondition"
-        ):
+        with pytest.raises(FailedHandlerCondition, match="Failed check condition FailCondition"):
             handler.resolve(ExampleEvent())
 
     def test_always_call_retry_strategy(self):

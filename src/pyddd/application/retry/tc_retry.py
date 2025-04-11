@@ -19,9 +19,7 @@ class TenacityAsyncRetry(IRetryStrategy):
         self._wait = wait
 
     def __call__(self, func: AnyCallable) -> AnyCallable:
-        return tc.AsyncRetrying(
-            retry=self._retry, stop=self._stop, wait=self._wait
-        ).wraps(func)
+        return tc.AsyncRetrying(retry=self._retry, stop=self._stop, wait=self._wait).wraps(func)
 
 
 class TenacitySyncRetry(IRetryStrategy):
@@ -36,6 +34,4 @@ class TenacitySyncRetry(IRetryStrategy):
         self._wait = wait
 
     def __call__(self, func: AnyCallable) -> AnyCallable:
-        return tc.Retrying(retry=self._retry, stop=self._stop, wait=self._wait).wraps(
-            func
-        )
+        return tc.Retrying(retry=self._retry, stop=self._stop, wait=self._wait).wraps(func)

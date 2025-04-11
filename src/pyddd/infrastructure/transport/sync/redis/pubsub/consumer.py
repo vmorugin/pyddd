@@ -96,11 +96,7 @@ class PubSubNotificationQueue(INotificationQueue):
                             name=message["channel"].decode(),
                             payload=json.loads(message["data"]),
                         )
-                        threading.Thread(
-                            target=callback, args=(notification,), daemon=True
-                        ).start()
+                        threading.Thread(target=callback, args=(notification,), daemon=True).start()
             except Exception as exc:
-                self._logger.error(
-                    "Unexpected error while pulling pubsub", exc_info=exc
-                )
+                self._logger.error("Unexpected error while pulling pubsub", exc_info=exc)
             time.sleep(0.001)

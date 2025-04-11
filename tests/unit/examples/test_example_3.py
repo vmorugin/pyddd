@@ -32,9 +32,7 @@ class Product(RootEntity):
     @classmethod
     def create(cls, sku: str, price: int):
         product = Product(sku, price=price)
-        product.register_event(
-            ProductCreated(reference=str(product.__reference__), price=price)
-        )
+        product.register_event(ProductCreated(reference=str(product.__reference__), price=price))
         return product
 
 

@@ -62,10 +62,7 @@ class TestStreamHandler:
         await handler.bind("user:update")
         assert await handler.read("user:update") == []
 
-        [
-            await redis.xadd("user:update", {"test_data": str(uuid.uuid4())})
-            for _ in range(10)
-        ]
+        [await redis.xadd("user:update", {"test_data": str(uuid.uuid4())}) for _ in range(10)]
 
         messages = await handler.read("user:update")
         assert len(messages) >= 10
@@ -121,9 +118,7 @@ class TestConsumer:
 
 class TestRedisStreamConsumer:
     def test_facade(self, redis):
-        consumer = RedisStreamGroupConsumer(
-            redis, group_name="test", consumer_name="consumer"
-        )
+        consumer = RedisStreamGroupConsumer(redis, group_name="test", consumer_name="consumer")
         assert isinstance(consumer, IMessageConsumer)
         assert isinstance(consumer.ask_policy, DefaultAskPolicy)
         assert isinstance(consumer.event_factory, PublishedEventFactory)
@@ -176,9 +171,7 @@ class TestPublisher:
         publisher.set_application(app)
         publisher.register(event.__topic__)
 
-        await redis.xgroup_create(
-            name=event.__topic__, groupname=unique_name, mkstream=True
-        )
+        await redis.xgroup_create(name=event.__topic__, groupname=unique_name, mkstream=True)
         await app.run_async()
         await app.handle(event)
 

@@ -119,9 +119,7 @@ class TestConsumer:
 
 class TestRedisStreamConsumer:
     def test_facade(self, redis):
-        consumer = RedisStreamGroupConsumer(
-            redis, group_name="test", consumer_name="consumer"
-        )
+        consumer = RedisStreamGroupConsumer(redis, group_name="test", consumer_name="consumer")
         assert isinstance(consumer, IMessageConsumer)
         assert isinstance(consumer.ask_policy, DefaultAskPolicy)
         assert isinstance(consumer.event_factory, PublishedEventFactory)

@@ -10,9 +10,7 @@ from pyddd.infrastructure.transport.core.abstractions import (
 
 class IMessageHandler(abc.ABC):
     @abc.abstractmethod
-    async def read(
-        self, topic: str, limit: int = None
-    ) -> t.Sequence[INotification]: ...
+    async def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]: ...
 
     @abc.abstractmethod
     async def bind(self, topic: str): ...

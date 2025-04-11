@@ -45,10 +45,7 @@ class Entity(IEntity[IdType], metaclass=_EntityMeta):
         return self._reference
 
     def __eq__(self, other):
-        return (
-            self.__class__ == other.__class__
-            and self.__reference__ == other.__reference__
-        )
+        return self.__class__ == other.__class__ and self.__reference__ == other.__reference__
 
 
 class _RootEntityMeta(abc.ABCMeta):
@@ -77,7 +74,4 @@ class RootEntity(IRootEntity[IdType], metaclass=_RootEntityMeta):
         return self._reference
 
     def __eq__(self, other):
-        return (
-            self.__class__ == other.__class__
-            and self.__reference__ == other.__reference__
-        )
+        return self.__class__ == other.__class__ and self.__reference__ == other.__reference__

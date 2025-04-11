@@ -59,9 +59,7 @@ class TestDefaultAskPolicy:
         await policy.process(notification, event_factory=event_factory, application=app)
         assert not notification.ack.called
 
-    async def test_must_not_ask_if_handling_message(
-        self, policy, notification, app, event_factory
-    ):
+    async def test_must_not_ask_if_handling_message(self, policy, notification, app, event_factory):
         app.handle.side_effect = Exception()
         await policy.process(notification, event_factory=event_factory, application=app)
         assert not notification.ack.called

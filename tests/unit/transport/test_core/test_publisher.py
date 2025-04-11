@@ -18,10 +18,7 @@ class TestEventPublisher:
 
     def test_must_have_different_domains_postfix(self):
         publisher = Mock()
-        assert (
-            EventPublisherModule(publisher).domain
-            != EventPublisherModule(publisher).domain
-        )
+        assert EventPublisherModule(publisher).domain != EventPublisherModule(publisher).domain
 
     def test_can_register_messages(self):
         module = EventPublisherModule(Mock())

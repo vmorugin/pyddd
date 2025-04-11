@@ -20,9 +20,7 @@ if pydantic_version.startswith("2"):
 elif pydantic_version.startswith("1"):
     from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr  # type: ignore[no-redef]
 else:
-    raise ImportError(
-        "Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x"
-    )
+    raise ImportError("Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x")
 
 
 class MessageType(str, Enum):
@@ -159,9 +157,7 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
 
 
 class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessageMeta):
-    _occurred_on: dt.datetime = PrivateAttr(
-        default_factory=lambda: dt.datetime.utcnow()
-    )
+    _occurred_on: dt.datetime = PrivateAttr(default_factory=lambda: dt.datetime.utcnow())
     _reference: UUID = PrivateAttr(default_factory=uuid4)
 
     class Config:

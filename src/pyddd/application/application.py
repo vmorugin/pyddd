@@ -107,9 +107,7 @@ class Application(IApplication):
 
     def handle(self, message: IMessage, **depends):
         if not self._is_running:
-            raise RuntimeError(
-                f"Can not handle {message.__topic__}. App is not running!"
-            )
+            raise RuntimeError(f"Can not handle {message.__topic__}. App is not running!")
         if not isinstance(message, IMessage):
             raise RuntimeError(f"Unexpected message type {message}")
         if message.__type__ == MessageType.COMMAND:

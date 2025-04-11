@@ -14,9 +14,7 @@ class _DomainEventMeta(BaseDomainMessageMeta):
             try:
                 _ = cls.__domain__
             except AttributeError:
-                raise ValueError(
-                    f"required set domain name for '{cls.__module__}.{cls.__name__}'"
-                )
+                raise ValueError(f"required set domain name for '{cls.__module__}.{cls.__name__}'")
 
 
 class IEvent(IMessage, abc.ABC):
