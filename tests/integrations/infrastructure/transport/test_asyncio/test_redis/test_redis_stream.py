@@ -29,7 +29,10 @@ from pyddd.infrastructure.transport.asyncio.redis.stream_group.consumer import (
 from pyddd.infrastructure.transport.asyncio.redis.stream_group.publisher import (
     RedisStreamPublisher,
 )
-from pyddd.infrastructure.transport.core.abstractions import IMessageConsumer
+from pyddd.infrastructure.transport.core.abstractions import (
+    IMessageConsumer,
+    IEventFactory,
+)
 from pyddd.infrastructure.transport.core.event_factory import (
     UniversalEventFactory,
     PublishedEventFactory,
@@ -159,16 +162,51 @@ class TestRedisStreamConsumer:
 
 
 class TestPublisher:
-    async def test_publish_event(self, redis):
+    @pytest.fixture
+    def app(self):
+        app = Application()
+        return app
+
+    @pytest.fixture
+    def get_publisher(self, app, redis):
+        def _wrapper(event_factory: IEventFactory = None):
+            publisher = RedisStreamPublisher(client=redis, event_factory=event_factory)
+            publisher.set_application(app)
+            return publisher
+
+        return _wrapper
+
+    async def test_publish_event_universal_factory(self, redis, get_publisher, app):
+        unique_name = str(uuid.uuid4())
+        event = Message(
+            message_type=MessageType.EVENT,
+            full_name="test.domain.FakeEvent",
+            payload={"test": "1"},
+        )
+        publisher = get_publisher(event_factory=UniversalEventFactory())
+        publisher.register(event.__topic__)
+
+        await redis.xgroup_create(name=event.__topic__, groupname=unique_name, mkstream=True)
+        await app.run_async()
+        await app.handle(event)
+
+        messages = await redis.xreadgroup(
+            groupname=unique_name,
+            consumername=unique_name,
+            streams={event.__topic__: ">"},
+        )
+        stream_name, streams = messages[0]
+        message_id, payload = streams[0]
+        assert {key.decode(): value.decode() for key, value in payload.items()} == event.to_dict()
+
+    async def test_publish_event_with_published_factory(self, redis, get_publisher, app):
         unique_name = str(uuid.uuid4())
         event = Message(
             message_type=MessageType.EVENT,
             full_name="test.domain.FakeEvent",
             payload={"test": True},
         )
-        app = Application()
-        publisher = RedisStreamPublisher(client=redis)
-        publisher.set_application(app)
+        publisher = get_publisher()
         publisher.register(event.__topic__)
 
         await redis.xgroup_create(name=event.__topic__, groupname=unique_name, mkstream=True)
