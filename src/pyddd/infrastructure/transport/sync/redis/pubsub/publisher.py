@@ -46,11 +46,9 @@ class RedisPubSubPublisher:
     def _publish(self, message: IMessage):
         notification = self._event_factory.build_notification(message)
         try:
-            (
-                self._client.publish(
+            self._client.publish(
                     channel=message.__topic__,
                     message=json.dumps(notification.payload),
-                ),
             )
         except Exception as exc:
             self._logger.critical(f"Failed to publish message {message.__topic__}", exc_info=exc)
