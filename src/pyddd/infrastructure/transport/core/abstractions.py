@@ -3,7 +3,6 @@ import typing as t
 
 from pyddd.application.abstractions import IApplication
 from pyddd.domain.message import (
-    Message,
     IMessage,
 )
 from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
@@ -31,7 +30,10 @@ class INotification(abc.ABC):
 
 class IEventFactory(abc.ABC):
     @abc.abstractmethod
-    def build_event(self, message: INotification) -> Message: ...
+    def build_event(self, notification: INotification) -> IMessage: ...
+
+    @abc.abstractmethod
+    def build_notification(self, message: IMessage) -> INotification: ...
 
 
 class INotificationTracker(abc.ABC):

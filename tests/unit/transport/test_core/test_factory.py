@@ -2,65 +2,99 @@ import datetime
 import json
 import uuid
 
+import pytest
+
+from pyddd.domain.message import (
+    IMessage,
+    Message,
+)
 from pyddd.infrastructure.transport.core.abstractions import (
     INotification,
     IEventFactory,
 )
-from pyddd.infrastructure.transport.core.event_factory import PublishedEventFactory
+from pyddd.infrastructure.transport.core.event_factory import (
+    UniversalEventFactory,
+    PublishedEventFactory,
+    UniversalNotification,
+)
 from pyddd.infrastructure.transport.core.value_objects import PublishedEvent
 
 
-class FakeNotification(INotification):
-    def __init__(
-        self,
-        message_id: str,
-        name: str,
-        payload: dict,
-    ):
-        self._message_id = message_id
-        self._name = name
-        self._payload = payload
+class TestUniversalEventFactory:
+    @pytest.fixture
+    def factory(self):
+        return UniversalEventFactory()
 
-    @property
-    def message_id(self) -> str:
-        return self._message_id
+    def test_must_impl_interface(self, factory):
+        assert isinstance(factory, IEventFactory)
 
-    @property
-    def name(self) -> str:
-        return self._name
+    def test_build_event(self, factory):
+        notification = UniversalNotification(
+            message_id=str(uuid.uuid4()),
+            full_name="test:domain:FakeNotificationName",
+            payload={"some_random": str(uuid.uuid4())},
+        )
+        message = factory.build_event(notification)
+        assert isinstance(message, IMessage)
+        assert message.__topic__ == "test.domain.FakeNotificationName"
+        assert message.__type__ == "EVENT"
+        assert message.__message_name__ == "FakeNotificationName"
+        assert isinstance(message.__timestamp__, datetime.datetime)
+        assert message.to_dict() == notification.payload
 
-    @property
-    def payload(self) -> dict:
-        return self._payload
-
-    def ack(self):
-        pass
-
-    def reject(self, requeue: bool):
-        pass
+    def test_build_notification(self, factory):
+        message = Message(
+            message_type="EVENT",
+            full_name="test.domain.FakeMessage",
+            payload=dict(some_random=str(uuid.uuid4())),
+        )
+        notification = factory.build_notification(message)
+        assert isinstance(notification, INotification)
+        assert notification.name == "test.domain.FakeMessage"
+        assert notification.payload == message.to_dict()
 
 
 class TestPublishedEventDomainEventTranslator:
-    def test_must_impl_interface(self):
-        factory = PublishedEventFactory()
+    @pytest.fixture
+    def factory(self):
+        return PublishedEventFactory()
+
+    def test_must_impl_interface(self, factory):
         assert isinstance(factory, IEventFactory)
 
-    def test_translate_from_published_event(self):
+    def test_translate_from_notification(self, factory):
         published_event = PublishedEvent(
             full_event_name="test.domain.FakeNotificationName",
             message_id=str(uuid.uuid4()),
             payload=json.dumps(dict(result=True)),
             timestamp=str(datetime.datetime(2020, 1, 1, 1, 1, 25).timestamp()),
         )
-        notification = FakeNotification(
+        notification = UniversalNotification(
             message_id=str(uuid.uuid4()),
-            name="test:domain:FakeNotificationName",
+            full_name="test:domain:FakeNotificationName",
             payload=published_event.__dict__,
         )
         factory = PublishedEventFactory()
-        domain_event = factory.build_event(notification)
-        assert domain_event.__domain__ == "test.domain"
-        assert domain_event.__topic__ == "test.domain.FakeNotificationName"
-        assert domain_event.__message_name__ == "FakeNotificationName"
-        assert domain_event.__timestamp__ == datetime.datetime(2020, 1, 1, 1, 1, 25)
-        assert domain_event.to_dict() == dict(result=True)
+        message = factory.build_event(notification)
+        assert isinstance(message, IMessage)
+        assert message.__domain__ == "test.domain"
+        assert message.__topic__ == "test.domain.FakeNotificationName"
+        assert message.__message_name__ == "FakeNotificationName"
+        assert message.__timestamp__ == datetime.datetime(2020, 1, 1, 1, 1, 25)
+        assert message.to_dict() == dict(result=True)
+
+    def test_build_notification(self, factory):
+        event = Message(
+            message_type="EVENT",
+            full_name="test.domain.FakeEvent",
+            payload={"some_random": str(uuid.uuid4())},
+        )
+        published_event = PublishedEvent(
+                full_event_name=event.__topic__,
+                message_id=event.__message_id__,
+                payload=event.to_json(),
+                timestamp=str(event.__timestamp__.timestamp()),
+            )
+        notification = factory.build_notification(event)
+        assert notification.name == event.__topic__
+        assert notification.payload == published_event.__dict__

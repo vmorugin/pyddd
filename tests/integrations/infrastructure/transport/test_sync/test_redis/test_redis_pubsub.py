@@ -2,6 +2,8 @@ import json
 import time
 from unittest.mock import Mock
 
+import pytest
+
 from pyddd.application import (
     Application,
     Module,
@@ -13,6 +15,7 @@ from pyddd.domain.message import (
 )
 from pyddd.infrastructure.transport.core.abstractions import (
     IMessageConsumer,
+    IEventFactory,
 )
 from pyddd.infrastructure.transport.core.event_factory import (
     UniversalEventFactory,
@@ -82,7 +85,7 @@ class TestRedisPubsubConsumer:
         consumer = RedisPubSubConsumer(redis)
         assert isinstance(consumer, IMessageConsumer)
         assert isinstance(consumer.ask_policy, DefaultAskPolicy)
-        assert isinstance(consumer.event_factory, PublishedEventFactory)
+        assert isinstance(consumer.event_factory, UniversalEventFactory)
         assert isinstance(consumer.queue, PubSubNotificationQueue)
 
     def test_could_publish_event(self, redis):
@@ -115,15 +118,49 @@ class TestRedisPubsubConsumer:
 
 
 class TestPublisher:
-    def test_publish_event(self, redis):
+    @pytest.fixture
+    def app(self):
+        app = Application()
+        return app
+
+    @pytest.fixture
+    def get_publisher(self, app, redis):
+        def _wrapper(event_factory: IEventFactory = None):
+            publisher = RedisPubSubPublisher(client=redis, event_factory=event_factory)
+            publisher.set_application(app)
+            return publisher
+
+        return _wrapper
+
+    def test_publish_with_universal_factory(self, redis, get_publisher, app):
         event = Message(
             message_type=MessageType.EVENT,
             full_name="test.domain.FakeEvent",
             payload={"test": True},
         )
-        app = Application()
-        publisher = RedisPubSubPublisher(client=redis)
-        publisher.set_application(app)
+        publisher = get_publisher()
+        publisher.register(event.__topic__)
+
+        pubsub = redis.pubsub()
+        pubsub.subscribe(event.__topic__)
+
+        app.run()
+        list(app.handle(event))
+
+        welcome_message = pubsub.get_message()
+        assert welcome_message is not None
+
+        message = pubsub.get_message(ignore_subscribe_messages=True)
+        data = json.loads(message["data"])
+        assert data == event.to_dict()
+
+    def test_publish_event_with_published_event_factory(self, redis, get_publisher, app):
+        event = Message(
+            message_type=MessageType.EVENT,
+            full_name="test.domain.FakeEvent",
+            payload={"test": True},
+        )
+        publisher = get_publisher(event_factory=PublishedEventFactory())
         publisher.register(event.__topic__)
 
         pubsub = redis.pubsub()
