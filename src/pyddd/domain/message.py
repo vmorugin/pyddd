@@ -136,24 +136,15 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
 
     @property
     def __domain__(cls) -> str:
-        return cls._get_domain_name()
+        return cls._domain_name
 
     @property
     def __message_name__(cls) -> str:
-        return cls._get_message_name()
+        return cls._message_name
 
     @property
     def __topic__(cls) -> str:
-        return cls._get_topic()
-
-    def _get_topic(cls):
         return f"{cls._domain_name}.{cls._message_name}"
-
-    def _get_message_name(cls):
-        return cls._message_name
-
-    def _get_domain_name(cls):
-        return cls._domain_name
 
 
 class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessageMeta):
@@ -163,20 +154,17 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
     class Config:
         frozen = True
 
-    @classmethod  # type: ignore[misc]
     @property
-    def __domain__(cls) -> str:
-        return cls._get_domain_name()
+    def __domain__(self) -> str:
+        return str(self.__class__.__domain__)
 
-    @classmethod  # type: ignore[misc]
     @property
-    def __message_name__(cls) -> str:
-        return cls._get_message_name()
+    def __message_name__(self) -> str:
+        return str(self.__class__.__message_name__)
 
-    @classmethod  # type: ignore[misc]
     @property
-    def __topic__(cls) -> str:
-        return cls._get_topic()
+    def __topic__(self) -> str:
+        return str(self.__class__.__topic__)
 
     @property
     def __message_id__(self) -> str:
