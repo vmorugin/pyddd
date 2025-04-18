@@ -90,11 +90,11 @@ class TestPublishedEventDomainEventTranslator:
             payload={"some_random": str(uuid.uuid4())},
         )
         published_event = PublishedEvent(
-                full_event_name=event.__topic__,
-                message_id=event.__message_id__,
-                payload=event.to_json(),
-                timestamp=str(event.__timestamp__.timestamp()),
-            )
+            full_event_name=event.__topic__,
+            message_id=event.__message_id__,
+            payload=event.to_json(),
+            timestamp=str(event.__timestamp__.timestamp()),
+        )
         notification = factory.build_notification(event)
         assert notification.name == event.__topic__
         assert notification.payload == published_event.__dict__
