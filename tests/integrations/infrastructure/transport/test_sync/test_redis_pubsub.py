@@ -11,7 +11,7 @@ from pyddd.infrastructure.transport.sync.domain import (
     MessageConsumer,
     DefaultAskPolicy,
 )
-from pyddd.infrastructure.transport.sync.redis import PubSubNotificationQueue
+from pyddd.infrastructure.transport.sync.redis.pubsub.consumer import PubSubNotificationQueue
 
 
 class TestWithPubSub:

@@ -10,7 +10,7 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     MessageConsumer,
     DefaultAskPolicy,
 )
-from pyddd.infrastructure.transport.asyncio.redis import PubSubNotificationQueue
+from pyddd.infrastructure.transport.asyncio.redis.pubsub.consumer import PubSubNotificationQueue
 from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 
 
