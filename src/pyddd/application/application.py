@@ -114,9 +114,7 @@ class Application(IApplication):
             return self._handle_command(command=message, **depends)
         elif message.__type__ == MessageType.EVENT:
             return self._handle_event(event=message, **depends)
-        raise RuntimeError(
-            f"Only support command end event message handling. Got {message.__type__}"
-        )
+        raise RuntimeError(f"Only support command end event message handling. Got {message.__type__}")
 
     def _handle_command(self, command: IMessage, **depends):
         module = self._get_module_by_domain(command.__domain__)

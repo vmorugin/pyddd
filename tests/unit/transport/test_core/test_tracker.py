@@ -13,9 +13,7 @@ from pyddd.infrastructure.transport.core.tracker import NotificationTracker
 
 class TestNotificationTracker:
     def test_last_recent_id_null_by_default(self):
-        tracker = NotificationTrackerState(
-            track_key="test:stream", last_recent_notification_id=None
-        )
+        tracker = NotificationTrackerState(track_key="test:stream", last_recent_notification_id=None)
         assert tracker.last_recent_notification_id is None
         assert tracker.track_key == "test:stream"
 
@@ -30,9 +28,7 @@ class TestNotificationTrackerEntity:
                 return dataclasses.replace(tracker, last_recent_notification_id=">")
 
             def create_tracker(self, track_key: str) -> NotificationTrackerState:
-                return NotificationTrackerState(
-                    track_key=track_key, last_recent_notification_id="0"
-                )
+                return NotificationTrackerState(track_key=track_key, last_recent_notification_id="0")
 
         return CustomNotificationTrackerStrategy()
 

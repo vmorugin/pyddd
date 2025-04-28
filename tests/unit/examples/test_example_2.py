@@ -99,9 +99,7 @@ class IPetGreetRepo(IRepository, abc.ABC):
 greet_module = Module("greet")
 
 
-@greet_module.subscribe(
-    "pet.PetCreated", converter=lambda x: {"pet_id": x["reference"], "name": x["name"]}
-)
+@greet_module.subscribe("pet.PetCreated", converter=lambda x: {"pet_id": x["reference"], "name": x["name"]})
 @greet_module.register
 async def register_pet(cmd: CreateGreetLogCommand, repository: IPetGreetRepo):
     journal = await repository.get_by_pet_id(cmd.pet_id)

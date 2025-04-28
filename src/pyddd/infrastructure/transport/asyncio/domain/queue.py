@@ -47,7 +47,5 @@ class NotificationQueue(INotificationQueue):
                 for message in messages:
                     asyncio.create_task(callback(message))
             except Exception as exc:
-                self._logger.error(
-                    f"Unexpected error while pulling {topic} messages!", exc_info=exc
-                )
+                self._logger.error(f"Unexpected error while pulling {topic} messages!", exc_info=exc)
             await asyncio.sleep(self._delay_ms)

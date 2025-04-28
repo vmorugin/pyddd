@@ -103,9 +103,7 @@ class TestConsumer:
 
         ask_policy = DefaultAskPolicy()
         queue = NotificationQueue(message_handler=redis_stream_handler)
-        consumer = MessageConsumer(
-            queue=queue, ask_policy=ask_policy, event_factory=UniversalEventFactory()
-        )
+        consumer = MessageConsumer(queue=queue, ask_policy=ask_policy, event_factory=UniversalEventFactory())
         consumer.set_application(app)
         consumer.subscribe("test:stream")
         await app.run_async()

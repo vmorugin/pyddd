@@ -188,9 +188,7 @@ def test():
     app.run()
 
     product_1 = app.handle(CreateProduct(sku="123", price=123))
-    product_2 = app.handle(
-        CreateProduct(sku="123", price=0)
-    )  # will not be printed because of zero price
+    product_2 = app.handle(CreateProduct(sku="123", price=0))  # will not be printed because of zero price
 
     assert len(stored_memory) == 2
 

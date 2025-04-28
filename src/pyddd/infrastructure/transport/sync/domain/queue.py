@@ -58,9 +58,7 @@ class NotificationQueue(INotificationQueue):
                         daemon=True,
                     ).start()
             except Exception as exc:
-                self._logger.error(
-                    f"Unexpected error while pulling {topic} messages!", exc_info=exc
-                )
+                self._logger.error(f"Unexpected error while pulling {topic} messages!", exc_info=exc)
             time.sleep(self._delay_ms)
 
     def _process_callback(self, callback, message):
