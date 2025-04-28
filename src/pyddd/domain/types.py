@@ -1,4 +1,5 @@
 import re
+from contextlib import suppress
 
 
 class DomainName(str):
@@ -45,14 +46,42 @@ class DomainName(str):
     def __repr__(self):
         return f"DomainName('{self}')"
 
+def get_domain_name(
+    cls,
+    bases: tuple[type],
+    domain: DomainName | str | None = None,
+) -> DomainName | None:
+    domains: set[DomainName] = set()  # type: ignore
+    for base in bases:
+        with suppress(AttributeError):
+            if getattr(base, '__domain_name__') is not None:
+                domains.add(base.__domain_name__)  # type: ignore
+
+    if len(domains) > 1:
+        raise RuntimeError("Not allowed multiple inheritance domain")
+
+    if len(domains) == 1 and domain is not None and domain != cls.__domain_name__:
+        raise RuntimeError(
+            f"not allowed replace domain name in child class: {cls.__module__}.{cls.__name__}"
+        )
+
+    if len(domains) == 0 and domain is not None:
+        return DomainName(domain)
+
+    if len(domains) == 1 and (domain is None or domain == cls.__domain_name__):
+        return cls.__domain_name__  # type: ignore
+
+    return None
+
 class _DomainErrorMeta(type):
     def __init__(cls, name, bases, namespace, domain: DomainName | str | None = None):
         super().__init__(name, bases, namespace, domain=domain)
-        if cls.__module__ == __name__:
+        if cls.__module__ == __name__ and cls.__name__ == "DomainError":
             return
-        if domain is None:
+        domain_name = get_domain_name(cls, bases, domain)
+        if domain_name is None:
             raise ValueError(f"required set domain name for error '{cls.__module__}.{cls.__name__}'")
-        cls.__domain_name = DomainName(domain)
+        cls.__domain_name = domain_name
 
     @property
     def __domain_name__(cls) -> DomainName:

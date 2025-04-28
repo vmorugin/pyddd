@@ -40,3 +40,12 @@ class TestDomainError:
             class TestDomainError(DomainError, domain='test___asd'):
                 ...
 
+    def test_could_impl_base_class(self):
+        class TestDomainError(DomainError, domain=DomainName("test")):
+            ...
+
+        class SecondError(TestDomainError):
+            ...
+
+        assert TestDomainError.__domain_name__ == "test"
+
