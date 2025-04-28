@@ -14,9 +14,7 @@ class _DomainCommandMeta(BaseDomainMessageMeta):
             try:
                 _ = cls._domain_name
             except AttributeError:
-                raise ValueError(
-                    f"required set domain name for command '{cls.__module__}.{cls.__name__}'"
-                )
+                raise ValueError(f"required set domain name for command '{cls.__module__}.{cls.__name__}'")
 
 
 class ICommand(IMessage, abc.ABC):

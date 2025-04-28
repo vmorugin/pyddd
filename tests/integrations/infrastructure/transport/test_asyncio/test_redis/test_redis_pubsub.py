@@ -58,9 +58,7 @@ class TestWithPubSub:
         callback = Mock()
         event_factory = UniversalEventFactory()
         queue = PubSubNotificationQueue(pubsub=redis.pubsub())
-        consumer = MessageConsumer(
-            queue=queue, event_factory=event_factory, ask_policy=DefaultAskPolicy()
-        )
+        consumer = MessageConsumer(queue=queue, event_factory=event_factory, ask_policy=DefaultAskPolicy())
         app = Application()
         app.include(module)
         app.set_defaults(module.domain, callback=callback)

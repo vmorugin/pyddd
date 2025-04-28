@@ -215,9 +215,7 @@ class TestApplication:
 
     def test_can_not_handle_not_running_error(self):
         app = Application()
-        with pytest.raises(
-            RuntimeError, match="Can not handle test.ExampleEvent. App is not running!"
-        ):
+        with pytest.raises(RuntimeError, match="Can not handle test.ExampleEvent. App is not running!"):
             app.handle(ExampleEvent())
 
     async def test_must_set_async_executor_if_run_async(self):

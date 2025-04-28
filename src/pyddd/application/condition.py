@@ -105,9 +105,4 @@ class Equal(ICondition):
         self._attrs = attrs
 
     def check(self, event: IMessage) -> bool:
-        return all(
-            (
-                key in event.to_dict() and event.to_dict()[key] == value
-                for key, value in self._attrs.items()
-            )
-        )
+        return all((key in event.to_dict() and event.to_dict()[key] == value for key, value in self._attrs.items()))

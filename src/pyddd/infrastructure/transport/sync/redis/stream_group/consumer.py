@@ -121,9 +121,7 @@ class GroupStreamHandler(IMessageHandler):
         with suppress(ResponseError):
             self._client.xgroup_create(topic, self._group_name, mkstream=True)
 
-    def _read_message(
-        self, topic: str, last_message_id: str, limit: int = None
-    ) -> t.Union[list, t.Any]:
+    def _read_message(self, topic: str, last_message_id: str, limit: int = None) -> t.Union[list, t.Any]:
         return self._client.xreadgroup(
             self._group_name,
             self._consumer_name,
