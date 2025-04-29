@@ -35,17 +35,17 @@ class DefaultAskPolicy(IAskPolicy):
             results = await application.handle(event)
             if len(results) == 0:
                 self._logger.warning(
-                    "Rejecting message %s by reason: %s", notification, "Not handled"
+                    "Rejecting message %s by reason: %s", event, "Not handled"
                 )
                 await notification.reject(requeue=False)
             elif all((isinstance(result, Exception) for result in results)):
                 self._logger.exception(
                     "Requeue message %s by reason: %s",
-                    notification,
+                    event,
                     "All handlers finished with exception",
                 )
                 await notification.reject(requeue=True)
             else:
                 await notification.ack()
         except Exception as exc:
-            self._logger.error(f"Error when handling notification {notification}", exc_info=exc)
+            self._logger.error(f"Error when handling notification {event}", exc_info=exc)
