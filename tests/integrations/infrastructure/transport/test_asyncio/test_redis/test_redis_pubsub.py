@@ -11,8 +11,8 @@ from pyddd.application import (
 from pyddd.domain import DomainCommand
 from pyddd.domain.message import (
     Message,
-    MessageType,
 )
+from pyddd.domain.abstractions import MessageType
 from pyddd.infrastructure.transport.asyncio.domain import (
     MessageConsumer,
     DefaultAskPolicy,

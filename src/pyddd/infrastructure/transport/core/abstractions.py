@@ -2,9 +2,7 @@ import abc
 import typing as t
 
 from pyddd.application.abstractions import IApplication
-from pyddd.domain.message import (
-    IMessage,
-)
+from pyddd.domain.abstractions import IMessage
 from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
 
 

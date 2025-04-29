@@ -4,6 +4,8 @@ import uuid
 
 from pyddd.domain.message import (
     Message,
+)
+from pyddd.domain.abstractions import (
     MessageType,
     IMessage,
 )

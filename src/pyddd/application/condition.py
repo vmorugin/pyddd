@@ -1,5 +1,5 @@
 from pyddd.application.abstractions import ICondition
-from pyddd.domain.message import IMessage
+from pyddd.domain.abstractions import IMessage
 
 
 class NoneCondition(ICondition):

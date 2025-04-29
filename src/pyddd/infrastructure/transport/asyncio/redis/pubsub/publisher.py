@@ -6,7 +6,7 @@ from pyddd.application.abstractions import (
     IApplication,
     ApplicationSignal,
 )
-from pyddd.domain.message import IMessage
+from pyddd.domain.abstractions import IMessage
 from pyddd.infrastructure.transport.core.abstractions import IEventFactory
 from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 from pyddd.infrastructure.transport.core.publisher import (

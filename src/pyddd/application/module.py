@@ -23,7 +23,7 @@ from pyddd.application.handler import (
     CommandHandler,
 )
 from pyddd.application.retry import none_retry
-from pyddd.domain.message import IMessage
+from pyddd.domain.abstractions import IMessage
 
 
 class Module(IModule, ISubscribe, IRegister):
