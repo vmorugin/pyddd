@@ -12,8 +12,8 @@ from pyddd.application.condition import (
 from pyddd.domain.event import DomainEvent
 from pyddd.domain.message import (
     Message,
-    MessageType,
 )
+from pyddd.domain.abstractions import MessageType
 
 
 class ExampleEvent(DomainEvent, domain="test"): ...

@@ -1,7 +1,7 @@
 import dataclasses
 import typing as t
 
-from pyddd.domain.entity import ValueObject
+from pyddd.domain.abstractions import ValueObject
 
 
 @dataclasses.dataclass(frozen=True)

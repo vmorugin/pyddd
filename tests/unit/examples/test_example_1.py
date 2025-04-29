@@ -30,12 +30,11 @@ class PetCreated(DomainEvent, domain="pet"):
 
 
 class Pet(RootEntity):
-    def __init__(self, name: str):
-        self.name = name
+    name: str
 
     @classmethod
     def create(cls, name: str):
-        pet = cls(name)
+        pet = cls(name=name)
         pet.register_event(PetCreated(name=name, pet_id=str(pet.__reference__)))
         return pet
 
@@ -82,9 +81,13 @@ class GreetReference(uuid.UUID):
 
 
 class PerGreetJournal(RootEntity[GreetReference]):
-    def __init__(self, pet_id: str, pet_name: str):
-        self._reference = GreetReference.generate(pet_id)
-        self.pet_name = pet_name
+    pet_id: str
+    pet_name: str
+
+    @classmethod
+    def create(cls, pet_id: str, pet_name: str) -> "PerGreetJournal":
+        journal = PerGreetJournal(pet_id=pet_id, pet_name=pet_name, __reference__=GreetReference.generate(pet_id))
+        return journal
 
     def greet(self):
         return f"Hi, {self.pet_name}!"
@@ -103,7 +106,7 @@ greet_module = Module("greet")
 def register_pet(cmd: InsertGreetLogCommand, repository: IPetGreetRepo):
     journal = repository.get_by_pet_id(cmd.pet_id)
     if journal is None:
-        journal = PerGreetJournal(pet_id=cmd.pet_id, pet_name=cmd.name)
+        journal = PerGreetJournal.create(pet_id=cmd.pet_id, pet_name=cmd.name)
         repository.save(journal)
     return journal.__reference__
 

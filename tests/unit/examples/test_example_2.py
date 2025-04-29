@@ -30,14 +30,12 @@ class PetCreated(DomainEvent, domain="pet"):
 
 
 class Pet(RootEntity):
-    def __init__(self, name: str):
-        self._reference = str(uuid.uuid4())
-        self.name = name
+    name: str
 
     @classmethod
     def create(cls, name: str):
-        pet = cls(name)
-        pet.register_event(PetCreated(name=name, reference=pet.__reference__))
+        pet = cls(name=name)
+        pet.register_event(PetCreated(name=name, reference=str(pet.__reference__)))
         return pet
 
     def rename(self, name: str):
@@ -83,9 +81,12 @@ class GreetReference(uuid.UUID):
 
 
 class PerGreetJournal(RootEntity[GreetReference]):
-    def __init__(self, pet_id: str, pet_name: str):
-        self._reference = GreetReference.generate(pet_id)
-        self.pet_name = pet_name
+    pet_id: str
+    pet_name: str
+
+    @classmethod
+    def create(cls, pet_id: str, pet_name: str) -> "PerGreetJournal":
+        return cls(pet_id=pet_id, pet_name=pet_name, __reference__=GreetReference.generate(pet_id))
 
     def greet(self):
         return f"Hi, {self.pet_name}!"
@@ -104,7 +105,7 @@ greet_module = Module("greet")
 async def register_pet(cmd: CreateGreetLogCommand, repository: IPetGreetRepo):
     journal = await repository.get_by_pet_id(cmd.pet_id)
     if journal is None:
-        journal = PerGreetJournal(pet_id=cmd.pet_id, pet_name=cmd.name)
+        journal = PerGreetJournal.create(pet_id=cmd.pet_id, pet_name=cmd.name)
         await repository.save(journal)
     return journal.__reference__
 
@@ -164,8 +165,8 @@ async def test():
 
     fluff_id = await app.handle(CreatePet(name="Fluff"))
     max_id = await app.handle(CreatePet(name="Max"))
-    greet_fluff = await app.handle(SayGreetCommand(pet_id=fluff_id))
+    greet_fluff = await app.handle(SayGreetCommand(pet_id=str(fluff_id)))
     assert greet_fluff == "Hi, Fluff!"
 
-    greet_max = await app.handle(SayGreetCommand(pet_id=max_id))
+    greet_max = await app.handle(SayGreetCommand(pet_id=str(max_id)))
     assert greet_max == "Hi, Max!"

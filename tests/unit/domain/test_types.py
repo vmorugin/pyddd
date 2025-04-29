@@ -15,37 +15,48 @@ class TestDomain:
         domain = DomainName("test.domain")
         assert domain == "test.domain"
 
-    @pytest.mark.parametrize("domain", ('test--domain', 'test.domain:ru', 'test,domain, test_domain', '1', 'Camel'))
+    @pytest.mark.parametrize("domain", ("test--domain", "test.domain:ru", "test,domain, test_domain", "1", "Camel"))
     def test_must_be_lowecase_digits_or_str(self, domain):
         with pytest.raises(ValueError):
             DomainName(domain)
+
 
 class TestDomainError:
     def test_domain_error_must_be_subclass_of_exc(self):
         assert issubclass(DomainError, Exception)
 
     def test_has_domain_prop(self):
-        class TestDomainError(DomainError, domain=DomainName("test")):
-            ...
+        class TestDomainError(DomainError, domain=DomainName("test")): ...
 
         assert TestDomainError.__domain_name__ == "test"
 
     def test_could_not_pass_empty_domain(self):
         with pytest.raises(ValueError):
-            class TestDomainError(DomainError, domain=None):
-                ...
+
+            class TestDomainError(DomainError, domain=None): ...
 
     def test_could_not_pass_invalid_domain(self):
         with pytest.raises(ValueError):
-            class TestDomainError(DomainError, domain='test___asd'):
-                ...
+
+            class TestDomainError(DomainError, domain="test___asd"): ...
 
     def test_could_impl_base_class(self):
-        class TestDomainError(DomainError, domain=DomainName("test")):
-            ...
+        class TestDomainError(DomainError, domain=DomainName("test")): ...
 
-        class SecondError(TestDomainError):
-            ...
+        class SecondError(TestDomainError): ...
 
         assert TestDomainError.__domain_name__ == "test"
 
+    def test_could_formate_template(self):
+        class TestError(DomainError, domain=DomainName("test")):
+            __template__ = "Person {login} not found"
+
+        err = TestError(login="app-co")
+        assert str(err) == "Person app-co not found"
+
+    def test_could_pass_message(self):
+        class TestError(DomainError, domain=DomainName("test")):
+            __template__ = "Person {login} not found"
+
+        err = TestError("Custom error")
+        assert str(err) == "Custom error"

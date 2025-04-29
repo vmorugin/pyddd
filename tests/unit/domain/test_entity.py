@@ -1,6 +1,8 @@
 from pyddd.domain.entity import (
     Entity,
     RootEntity,
+)
+from pyddd.domain.abstractions import (
     EntityUid,
     IdType,
 )
@@ -20,10 +22,15 @@ class TestEntity:
 
         assert SomeEntity() != SomeEntity()
 
+    def test_must_be_hashable(self):
+        class SomeEntity(Entity[str]): ...
+
+        entity = SomeEntity(__reference__="123")
+        assert hash(entity) == hash("123")
+
     def test_can_init_with_custom_attributes(self):
         class SomeEntity(Entity):
-            def __init__(self, name: str):
-                self.name = name
+            name: str
 
         entity = SomeEntity(name="Test")
         assert entity.name == "Test"

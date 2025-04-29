@@ -1,6 +1,11 @@
+from contextlib import (
+    contextmanager,
+    asynccontextmanager,
+)
 from unittest.mock import (
     Mock,
     AsyncMock,
+    call,
 )
 
 import pytest
@@ -19,6 +24,7 @@ from pyddd.application.abstractions import (
     IApplication,
     ApplicationSignal,
 )
+from pyddd.application.application import get_running_application
 
 from pyddd.domain import (
     DomainCommand,
@@ -43,6 +49,32 @@ class TestApplication:
     def test_must_implement_interface(self):
         app = Application()
         assert isinstance(app, IApplication)
+
+    def test_call_lifespan_with_sync_run_and_stop(self):
+        @contextmanager
+        def lifespan(application: Application):
+            mock(application, 1)
+            yield
+            mock(application, 2)
+
+        mock = Mock()
+        app = Application(lifespan=lifespan)
+        app.run()
+        app.stop()
+        assert mock.call_args_list == [call(app, 1), call(app, 2)]
+
+    async def test_call_lifespan_with_async_run_and_stop(self):
+        @asynccontextmanager
+        async def lifespan(application: Application):
+            mock(application, 1)
+            yield
+            mock(application, 2)
+
+        mock = Mock()
+        app = Application(lifespan=lifespan)
+        await app.run_async()
+        await app.stop_async()
+        assert mock.call_args_list == [call(app, 1), call(app, 2)]
 
     def test_include_twice(self, application):
         application.include(Module("test"))
@@ -233,3 +265,15 @@ def test_set_and_get_application():
     app = Application()
     set_application(app)
     assert get_application() == app
+
+
+def test_get_running_messagebus():
+    app = Application()
+    app.run()
+    assert get_running_application() == app
+
+
+async def test_get_running_async_messagebus():
+    app = Application()
+    await app.run_async()
+    assert get_running_application() == app

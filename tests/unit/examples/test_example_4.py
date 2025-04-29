@@ -25,14 +25,13 @@ class ProductCreated(DomainEvent, domain=product_domain):
 
 
 class Product(RootEntity):
-    def __init__(self, sku: str, price: int, stock: int):
-        self.sku = sku
-        self.price = price
-        self.stock = stock
+    sku: str
+    price: int
+    stock: int
 
     @classmethod
     def create(cls, sku: str):
-        product = Product(sku, price=0, stock=0)
+        product = Product(sku=sku, price=0, stock=0)
         product.register_event(ProductCreated(reference=str(product.__reference__)))
         return product
 
