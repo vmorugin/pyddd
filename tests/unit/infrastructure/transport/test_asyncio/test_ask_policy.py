@@ -4,6 +4,8 @@ from unittest.mock import (
 )
 
 import pytest
+
+from pyddd.application import Application
 from pyddd.domain import DomainEvent
 
 from pyddd.infrastructure.transport.asyncio.domain import (
@@ -23,11 +25,15 @@ class TestDefaultAskPolicy:
 
     @pytest.fixture
     def notification(self):
-        return Mock(spec=INotification)
+        notification = Mock(spec=INotification)
+        notification.reject = AsyncMock()
+        return notification
 
     @pytest.fixture
     def app(self):
-        return AsyncMock()
+        app = AsyncMock(spec=Application)
+        app.handle = AsyncMock(return_value=[True])
+        return app
 
     @pytest.fixture
     def domain_event(self):
