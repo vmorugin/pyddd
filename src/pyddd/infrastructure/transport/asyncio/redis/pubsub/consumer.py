@@ -60,7 +60,7 @@ class RedisPubSubConsumer(IMessageConsumer):
 
 
 class PubSubNotificationQueue(INotificationQueue):
-    def __init__(self, pubsub: PubSub, logger_name: str = "notification.queue"):
+    def __init__(self, pubsub: PubSub, logger_name: str = "pyddd.transport.queue"):
         self._pubsub = pubsub
         self._running = False
         self._pooling_task: t.Optional[asyncio.Task] = None

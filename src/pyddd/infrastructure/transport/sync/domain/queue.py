@@ -20,7 +20,7 @@ class NotificationQueue(INotificationQueue):
         *,
         batch_size: int = 50,
         delay_ms: int = 10,
-        logger_name: str = "notification.queue",
+        logger_name: str = "pyddd.transport.queue",
         max_workers: int = 32,
     ):
         self._handler = message_handler
