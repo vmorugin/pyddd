@@ -17,11 +17,7 @@ if pydantic_version.startswith("2"):
     )
     from pydantic._internal._model_construction import ModelMetaclass
 elif pydantic_version.startswith("1"):
-    from pydantic.main import (
-        ModelMetaclass,
-        BaseModel,
-        PrivateAttr,  # type: ignore[no-redef]
-    )
+    from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr  # type: ignore[no-redef]
 else:
     raise ImportError("Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x")
 
