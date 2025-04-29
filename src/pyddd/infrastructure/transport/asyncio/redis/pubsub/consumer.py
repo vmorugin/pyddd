@@ -12,9 +12,7 @@ from pyddd.infrastructure.transport.core.abstractions import (
     IMessageConsumer,
     IEventFactory,
 )
-from pyddd.infrastructure.transport.core.event_factory import (
-    PublishedEventFactory,
-)
+from pyddd.infrastructure.transport.core.event_factory import UniversalEventFactory
 from pyddd.infrastructure.transport.asyncio.domain import (
     INotificationQueue,
     IAskPolicy,
@@ -34,7 +32,7 @@ class RedisPubSubConsumer(IMessageConsumer):
         ask_policy: IAskPolicy = None,
     ):
         self._ask_policy = ask_policy or DefaultAskPolicy()
-        self._event_factory = event_factory or PublishedEventFactory()
+        self._event_factory = event_factory or UniversalEventFactory()
         self._queue = queue or PubSubNotificationQueue(pubsub=redis.pubsub())
         self._consumer = MessageConsumer(
             queue=self._queue,

@@ -147,7 +147,7 @@ class TestRedisPubsubConsumer:
         consumer = RedisPubSubConsumer(redis)
         assert isinstance(consumer, IMessageConsumer)
         assert isinstance(consumer.ask_policy, DefaultAskPolicy)
-        assert isinstance(consumer.event_factory, PublishedEventFactory)
+        assert isinstance(consumer.event_factory, UniversalEventFactory)
         assert isinstance(consumer.queue, PubSubNotificationQueue)
 
     async def test_could_publish_event(self, redis):
