@@ -1,9 +1,9 @@
-import abc
 from pyddd.domain.message import (
-    IMessage,
-    MessageType,
     BaseDomainMessage,
     BaseDomainMessageMeta,
+)
+from pyddd.domain.abstractions import (
+    IEvent,
 )
 
 
@@ -15,12 +15,6 @@ class _DomainEventMeta(BaseDomainMessageMeta):
                 _ = cls.__domain__
             except AttributeError:
                 raise ValueError(f"required set domain name for '{cls.__module__}.{cls.__name__}'")
-
-
-class IEvent(IMessage, abc.ABC):
-    @property
-    def __type__(self) -> MessageType:
-        return MessageType.EVENT
 
 
 class DomainEvent(BaseDomainMessage, IEvent, metaclass=_DomainEventMeta): ...

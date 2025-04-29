@@ -15,9 +15,9 @@ from pyddd.application.abstractions import (
 )
 from pyddd.application.exceptions import FailedHandlerCondition
 from pyddd.application.retry import none_retry
-from pyddd.domain.message import (
-    IMessage,
+from pyddd.domain.abstractions import (
     IMessageMeta,
+    IMessage,
 )
 from pyddd.domain.command import DomainCommand
 
@@ -70,7 +70,7 @@ class CommandHandler(ICommandHandler):
 
     def resolve(self, message: IMessage) -> AnyCallable:
         depends = {
-            self._command_param.name: self._command_param.annotation(**message.to_dict()),
+            self._command_param.name: self._command_param.annotation.load(message),
         }
         for name, param in self._signature.parameters.items():
             if name in self._defaults:

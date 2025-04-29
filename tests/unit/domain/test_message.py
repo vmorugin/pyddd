@@ -4,8 +4,8 @@ import pytest
 
 from pyddd.domain.message import (
     Message,
-    MessageType,
 )
+from pyddd.domain.abstractions import MessageType
 from pyddd.domain import (
     DomainCommand,
     DomainEvent,
@@ -89,3 +89,16 @@ class TestDomainCommand:
         with pytest.raises(ValueError):
 
             class ExampleCommand(DomainCommand): ...
+
+    def test_load_from_dict(self):
+        class ExampleCommand(DomainCommand, domain="test"):
+            reference: str
+
+        command = ExampleCommand.load(payload={"reference": "123"})
+        assert command.__type__ == "COMMAND"
+        assert command.__message_name__ == "ExampleCommand"
+        assert command.__domain__ == "test"
+        assert command.to_dict() == {"reference": "123"}
+        assert command.to_json() == '{"reference":"123"}'
+        assert isinstance(command.__timestamp__, dt.datetime)
+        assert isinstance(command.__message_id__, str)

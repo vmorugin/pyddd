@@ -14,24 +14,23 @@ from pyddd.application import (
 from pyddd.domain import (
     DomainCommand,
     DomainEvent,
+    IRootEntity,
 )
 from pyddd.domain.entity import (
     RootEntity,
-    IRootEntity,
 )
-from pyddd.domain.event import IEvent
+from pyddd.domain.abstractions import IEvent
 
 product_domain = "product"
 
 
 class Product(RootEntity):
-    def __init__(self, sku: str, price: int):
-        self.sku = sku
-        self.price = price
+    sku: str
+    price: int
 
     @classmethod
     def create(cls, sku: str, price: int):
-        product = Product(sku, price=price)
+        product = Product(sku=sku, price=price)
         product.register_event(ProductCreated(reference=str(product.__reference__), price=price))
         return product
 

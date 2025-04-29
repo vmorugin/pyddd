@@ -1,9 +1,9 @@
 [project]
-version = "0.9.3"
+version = "0.10.0"
 name = "pyddd"
 description = "Domain-Driven Design for Python"
 readme = "readme.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "pydantic>=1.10.4,<3.0.0",
 ]

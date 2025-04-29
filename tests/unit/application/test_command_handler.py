@@ -6,6 +6,7 @@ from pyddd.domain import (
     DomainCommand,
     DomainEvent,
 )
+from pyddd.domain.types import FrozenJsonDict
 
 
 class ExampleCommand(DomainCommand, domain="test"): ...
@@ -49,7 +50,7 @@ class TestCommandHandler:
         mock = Mock()
         handler = CommandHandler(foo)
         handler.set_defaults(dict(callback=mock))
-        handler.resolve(ExampleEvent())()
+        handler.resolve(ExampleCommand())()
         assert mock.called
 
     def test_with_default_override(self):
@@ -61,3 +62,18 @@ class TestCommandHandler:
         handler.set_defaults(dict(callback=Mock()))
         func = handler.resolve(ExampleCommand())
         assert func(callback=mock) is mock
+
+    def test_could_resolve_frozen_dict_type(self):
+        class TestCommand(DomainCommand, domain="test"):
+            foo: FrozenJsonDict
+
+            class Config:
+                arbitrary_types_allowed = True
+
+        def foo(command: TestCommand):
+            return command.foo["success"]
+
+        handler = CommandHandler(foo)
+        func = handler.resolve(TestCommand(foo=FrozenJsonDict({"success": True})))
+        result = func()
+        assert result is True
