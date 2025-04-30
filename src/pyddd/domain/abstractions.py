@@ -94,6 +94,9 @@ class IMessage(abc.ABC, metaclass=IMessageMeta):
     @abc.abstractmethod
     def to_json(self) -> str: ...
 
+    def __repr__(self):
+        return f"{self.__topic__}:{self.to_json()}"
+
 
 class IEvent(IMessage, abc.ABC):
     @property
