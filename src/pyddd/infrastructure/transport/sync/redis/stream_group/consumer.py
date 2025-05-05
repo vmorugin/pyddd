@@ -97,23 +97,23 @@ class GroupStreamHandler(IMessageHandler):
         self._tracker_factory = tracker_factory
         self._trackers: dict[str, INotificationTracker] = {}
 
-    def read_batch(self, limit: int = None) -> t.Sequence[INotification]:
-        messages: list[INotification] = []
-        streams = {topic: tracker.last_recent_notification_id for topic, tracker in self._trackers.items()}
-        response = self._read_messages(streams, limit)
+    def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]:
+        messages = []
+        tracker = self._trackers[topic]
+        response = self._read_message(topic, tracker.last_recent_notification_id, limit)
         for items in response:
-            topic, streams = items[0].decode(), items[1]
-            tracker = self._trackers[topic]
-            before_read_messages_len = len(messages)
+            _, streams = items
             for stream in streams:
-                message_id, payload = stream  # type: ignore[misc]
-                message = self._redis_message_to_notification(
-                    message_id=message_id.decode(),  # type: ignore[has-type]
-                    topic=topic,
-                    payload=payload,  # type: ignore[has-type]
+                message_id, payload = stream
+                message = Notification(
+                    message_id=message_id.decode(),
+                    name=topic,
+                    payload={key.decode(): value.decode() for key, value in payload.items()},
+                    ask_func=self._ask(topic, message_id),
+                    reject_func=self._ask(topic, message_id),
                 )
                 messages.append(message)
-            tracker.track_messages(messages[before_read_messages_len:])
+        tracker.track_messages(messages)
         return messages
 
     def bind(self, topic: str):
@@ -121,22 +121,13 @@ class GroupStreamHandler(IMessageHandler):
         with suppress(ResponseError):
             self._client.xgroup_create(topic, self._group_name, mkstream=True)
 
-    def _read_messages(self, streams: dict, limit: int = None):
+    def _read_message(self, topic: str, last_message_id: str, limit: int = None) -> t.Union[list, t.Any]:
         return self._client.xreadgroup(
             self._group_name,
             self._consumer_name,
-            streams=streams,
+            {topic: last_message_id},
             count=limit,
             block=self._block,
-        )
-
-    def _redis_message_to_notification(self, message_id: str, topic: str, payload: dict[bytes, bytes]):
-        return Notification(
-            message_id=message_id,
-            name=topic,
-            payload={key.decode(): value.decode() for key, value in payload.items()},
-            ask_func=self._ask(topic, message_id),
-            reject_func=self._ask(topic, message_id),
         )
 
     def _ask(self, topic: str, message_id: str):

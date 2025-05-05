@@ -13,8 +13,8 @@ class FakeHandler(IMessageHandler):
     def __init__(self, messages: list[Notification]):
         self._messages = iter(messages)
 
-    def read_batch(self, limit: int = None) -> list[Notification]:
-        return list(self._messages)[:limit]
+    def read(self, topic: str, limit: int = None) -> list[Notification]:
+        return [message for message in self._messages if message.name == topic][:limit]
 
     def bind(self, topic: str):
         pass
@@ -41,21 +41,18 @@ class TestNotificationQueue:
         queue.stop_consume()
 
     def test_queue_must_ignore_errors(self):
-        messages = [
-            Exception(),
-            Notification(
-                message_id=str(uuid.uuid4()),
-                name="test:stream",
-                payload={},
-            ),
-        ]
-        reader = FakeHandler(messages)
+        message = Notification(
+            message_id=str(uuid.uuid4()),
+            name="test:stream",
+            payload={},
+        )
+        reader = FakeHandler([message])
         queue = NotificationQueue(message_handler=reader)
         queue.bind("test:stream")
-        callback = Mock(side_effect=[messages])
+        callback = Mock(side_effect=[Exception(), message])
         queue.consume(callback)
         time.sleep(0.01)
-        callback.assert_called_with(messages[-1])
+        callback.assert_called_with(message)
         queue.stop_consume()
 
     def test_must_not_wait_callback(self):

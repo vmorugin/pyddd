@@ -13,8 +13,8 @@ class FakeHandler(IMessageHandler):
     def __init__(self, messages: list[Notification]):
         self._messages = messages
 
-    async def read_batch(self, limit: int = None) -> list[Notification]:
-        return self._messages[:limit]
+    async def read(self, topic: str, limit: int = None) -> list[Notification]:
+        return self._messages
 
     async def bind(self, topic: str):
         pass

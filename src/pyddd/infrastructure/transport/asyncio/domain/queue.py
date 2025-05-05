@@ -31,20 +31,21 @@ class NotificationQueue(INotificationQueue):
 
     async def consume(self, callback: ICallback):
         self._running = True
-        task = asyncio.create_task(self._long_pull(callback))
-        self._tasks.append(task)
+        for topic in self._topics:
+            task = asyncio.create_task(self._long_pull(topic, callback))
+            self._tasks.append(task)
 
     async def stop_consume(self):
         self._running = False
         for task in self._tasks:
             task.cancel(f"Canceled task {task}")
 
-    async def _long_pull(self, callback: ICallback):
+    async def _long_pull(self, topic: str, callback: ICallback):
         while self._running:
             try:
-                messages = await self._handler.read_batch(limit=self._batch_size)
+                messages = await self._handler.read(topic, limit=self._batch_size)
                 for message in messages:
                     asyncio.create_task(callback(message))
             except Exception as exc:
-                self._logger.error("Unexpected error while pulling messages!", exc_info=exc)
+                self._logger.error(f"Unexpected error while pulling {topic} messages!", exc_info=exc)
             await asyncio.sleep(self._delay_ms)
