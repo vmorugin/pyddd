@@ -3,6 +3,8 @@ from unittest.mock import (
 )
 
 import pytest
+
+from pyddd.application.abstractions import IApplication
 from pyddd.domain import DomainEvent
 from pyddd.infrastructure.transport.core.abstractions import (
     INotification,
@@ -26,7 +28,9 @@ class TestDefaultAskPolicy:
 
     @pytest.fixture
     def app(self):
-        return Mock()
+        app = Mock(spec=IApplication)
+        app.handle = Mock(return_value=[True])
+        return app
 
     @pytest.fixture
     def domain_event(self):
