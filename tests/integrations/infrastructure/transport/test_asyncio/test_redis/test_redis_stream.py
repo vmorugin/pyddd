@@ -71,8 +71,8 @@ class TestStreamHandler:
         assert len(messages) == 10
 
     async def test_reader_could_read_messages_from_all_topics(self, redis, handler):
-        await handler.bind('test:foo')
-        await handler.bind('test:bar')
+        await handler.bind("test:foo")
+        await handler.bind("test:bar")
 
         [await redis.xadd("test:foo", {"test_data": str(uuid.uuid4())}) for _ in range(20)]
         [await redis.xadd("test:bar", {"test_data": str(uuid.uuid4())}) for _ in range(20)]

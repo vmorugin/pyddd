@@ -34,9 +34,7 @@ class DefaultAskPolicy(IAskPolicy):
         try:
             results = await application.handle(event)
             if len(results) == 0:
-                self._logger.warning(
-                    "Rejecting message %s by reason: %s", event, "Not handled"
-                )
+                self._logger.warning("Rejecting message %s by reason: %s", event, "Not handled")
                 await notification.reject(requeue=False)
             elif all((isinstance(result, Exception) for result in results)):
                 self._logger.exception(

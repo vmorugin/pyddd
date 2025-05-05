@@ -22,7 +22,7 @@ from pyddd.infrastructure.persistence.abstractions import (
 )
 from pyddd.infrastructure.persistence.uow import UnitOfWorkBuilder
 
-__domain__ = DomainName('workspace')
+__domain__ = DomainName("workspace")
 
 module = Module(__domain__)
 
@@ -40,21 +40,18 @@ class DeleteWorkspace(BaseCommand):
     workspace_id: str
 
 
-class WorkspaceId(str):
-    ...
+class WorkspaceId(str): ...
 
 
-class TenantId(str):
-    ...
+class TenantId(str): ...
 
 
-class ProjectId(str):
-    ...
+class ProjectId(str): ...
 
 
 class WorkspaceStatus(str, Enum):
-    CREATED = 'CREATED'
-    DELETED = 'DELETED'
+    CREATED = "CREATED"
+    DELETED = "DELETED"
 
 
 class Tenant(RootEntity[TenantId]):
@@ -83,45 +80,37 @@ class Workspace(RootEntity[WorkspaceId]):
 
 class ITenantRepository(abc.ABC):
     @abc.abstractmethod
-    def create(self, name: str) -> Tenant:
-        ...
+    def create(self, name: str) -> Tenant: ...
 
 
 class IProjectRepository(abc.ABC):
     @abc.abstractmethod
-    def create(self, name: str, tenant_id: TenantId) -> Project:
-        ...
+    def create(self, name: str, tenant_id: TenantId) -> Project: ...
 
 
 class IWorkspaceRepository(abc.ABC):
     @abc.abstractmethod
-    def create(self, tenant: Tenant, project: Project) -> Workspace:
-        ...
+    def create(self, tenant: Tenant, project: Project) -> Workspace: ...
 
     @abc.abstractmethod
-    def get(self, reference: WorkspaceId) -> Workspace:
-        ...
+    def get(self, reference: WorkspaceId) -> Workspace: ...
 
 
 class IWorkspaceRepoFactory(IRepository, abc.ABC):
     @abc.abstractmethod
-    def tenant(self) -> ITenantRepository:
-        ...
+    def tenant(self) -> ITenantRepository: ...
 
     @abc.abstractmethod
-    def workspace(self) -> IWorkspaceRepository:
-        ...
+    def workspace(self) -> IWorkspaceRepository: ...
 
     @abc.abstractmethod
-    def project(self) -> IProjectRepository:
-        ...
+    def project(self) -> IProjectRepository: ...
 
 
 @module.register
 async def create_workspace_and_tenant_and_project(
-        cmd: CreateWorkspace,
-        uow_builder: IUnitOfWorkBuilder[IWorkspaceRepoFactory]
-        ) -> WorkspaceId:
+    cmd: CreateWorkspace, uow_builder: IUnitOfWorkBuilder[IWorkspaceRepoFactory]
+) -> WorkspaceId:
     """
     This is an example of UoW with multi-repository. Not recommend to do the same in production!
     Right way - separate the usecase to 3:
@@ -158,7 +147,6 @@ class BaseInMemoryRepo:
 
 
 class InMemoryTenantRepo(ITenantRepository, BaseInMemoryRepo):
-
     def create(self, name: str) -> Tenant:
         tenant = Tenant(name=name, __reference__=TenantId(str(uuid.uuid4())))
         self._seen[tenant.__reference__] = tenant
@@ -166,7 +154,6 @@ class InMemoryTenantRepo(ITenantRepository, BaseInMemoryRepo):
 
 
 class InMemoryProjectRepo(IProjectRepository, BaseInMemoryRepo):
-
     def create(self, name: str, tenant_id: TenantId) -> Project:
         project = Project(name=name, tenant_id=tenant_id, __reference__=ProjectId(str(uuid.uuid4())))
         self._seen[project.__reference__] = project
@@ -180,10 +167,7 @@ class InMemoryWorkspaceRepo(IWorkspaceRepository, BaseInMemoryRepo):
 
     def create(self, tenant: Tenant, project: Project) -> Workspace:
         workspace = Workspace(
-            __reference__=WorkspaceId(str(uuid.uuid4())),
-            tenant=tenant,
-            project=project,
-            status=WorkspaceStatus.CREATED
+            __reference__=WorkspaceId(str(uuid.uuid4())), tenant=tenant, project=project, status=WorkspaceStatus.CREATED
         )
         self._seen[workspace.__reference__] = workspace
         return workspace
@@ -194,11 +178,11 @@ class InMemoryWorkspaceRepo(IWorkspaceRepository, BaseInMemoryRepo):
 
 class RepositoryFactory(IWorkspaceRepoFactory):
     def __init__(
-            self,
-            memory: dict,
-            tenant_repo: InMemoryTenantRepo,
-            project_repo: InMemoryProjectRepo,
-            workspace_repo: InMemoryWorkspaceRepo,
+        self,
+        memory: dict,
+        tenant_repo: InMemoryTenantRepo,
+        project_repo: InMemoryProjectRepo,
+        workspace_repo: InMemoryWorkspaceRepo,
     ):
         self._memory = memory
         self._tenant_repo = tenant_repo
@@ -228,11 +212,11 @@ class RepositoryFactory(IWorkspaceRepoFactory):
 
 class RepoBuilder(IRepositoryBuilder):
     def __init__(
-            self,
-            memory: dict,
-            tenant_repo: InMemoryTenantRepo,
-            project_repo: InMemoryProjectRepo,
-            workspace_repo: InMemoryWorkspaceRepo,
+        self,
+        memory: dict,
+        tenant_repo: InMemoryTenantRepo,
+        project_repo: InMemoryProjectRepo,
+        workspace_repo: InMemoryWorkspaceRepo,
     ):
         self._memory = memory
         self._tenant_repo = tenant_repo
@@ -244,7 +228,7 @@ class RepoBuilder(IRepositoryBuilder):
             memory=self._memory,
             tenant_repo=self._tenant_repo,
             project_repo=self._project_repo,
-            workspace_repo=self._workspace_repo
+            workspace_repo=self._workspace_repo,
         )
 
 
@@ -262,26 +246,22 @@ async def test_create_workspace_example():
         dict(
             uow_builder=UnitOfWorkBuilder(
                 repository_builder=RepoBuilder(
-                    memory=database,
-                    tenant_repo=tenant_repo,
-                    project_repo=project_repo,
-                    workspace_repo=workspace_repo
+                    memory=database, tenant_repo=tenant_repo, project_repo=project_repo, workspace_repo=workspace_repo
                 )
             )
-
         )
     )
     app.include(module)
 
     await app.run_async()
 
-    workspace_id = await app.handle(CreateWorkspace(tenant_name='default', project_name='pyddd'))
+    workspace_id = await app.handle(CreateWorkspace(tenant_name="default", project_name="pyddd"))
 
     workspace = workspace_repo.get(workspace_id)
     assert isinstance(workspace, Workspace)
     assert workspace.status == WorkspaceStatus.CREATED
-    assert workspace.project.name == 'pyddd'
-    assert workspace.tenant.name == 'default'
+    assert workspace.project.name == "pyddd"
+    assert workspace.tenant.name == "default"
 
     await app.handle(DeleteWorkspace(workspace_id=workspace_id))
 

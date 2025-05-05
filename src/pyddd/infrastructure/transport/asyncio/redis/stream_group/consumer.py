@@ -34,14 +34,14 @@ from pyddd.infrastructure.transport.core.value_objects import NotificationTracke
 
 class RedisStreamGroupConsumer(IMessageConsumer):
     def __init__(
-            self,
-            redis: Redis,
-            group_name: str,
-            consumer_name: str,
-            queue: INotificationQueue = None,
-            event_factory: IEventFactory = None,
-            ask_policy: IAskPolicy = None,
-            block_ms: int = 0,
+        self,
+        redis: Redis,
+        group_name: str,
+        consumer_name: str,
+        queue: INotificationQueue = None,
+        event_factory: IEventFactory = None,
+        ask_policy: IAskPolicy = None,
+        block_ms: int = 0,
     ):
         self._ask_policy = ask_policy or DefaultAskPolicy()
         self._event_factory = event_factory or PublishedEventFactory()
@@ -81,12 +81,12 @@ class RedisStreamGroupConsumer(IMessageConsumer):
 
 class GroupStreamHandler(IMessageHandler):
     def __init__(
-            self,
-            group_name: str,
-            consumer_name: str,
-            client: Redis,
-            tracker_factory: INotificationTrackerFactory,
-            block: t.Optional[int] = 0,
+        self,
+        group_name: str,
+        consumer_name: str,
+        client: Redis,
+        tracker_factory: INotificationTrackerFactory,
+        block: t.Optional[int] = 0,
     ):
         self._group_name = group_name
         self._consumer_name = consumer_name
@@ -108,7 +108,7 @@ class GroupStreamHandler(IMessageHandler):
                 message = self._redis_message_to_notification(
                     message_id=message_id.decode(),  # type: ignore[has-type]
                     topic=topic,
-                    payload=payload  # type: ignore[has-type]
+                    payload=payload,  # type: ignore[has-type]
                 )
                 messages.append(message)
             tracker.track_messages(messages[before_read_messages_len:])
@@ -151,7 +151,7 @@ class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
         return tracker
 
     def track_most_recent_message(
-            self, tracker: NotificationTrackerState, *messages: INotification
+        self, tracker: NotificationTrackerState, *messages: INotification
     ) -> NotificationTrackerState:
         if not messages:
             last_notification_id = ">"

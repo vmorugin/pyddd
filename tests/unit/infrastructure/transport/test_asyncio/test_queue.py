@@ -41,9 +41,9 @@ class TestNotificationQueue:
 
     async def test_queue_must_ignore_errors(self):
         message = Notification(
-                message_id=str(uuid.uuid4()),
-                name="test:stream",
-                payload={},
+            message_id=str(uuid.uuid4()),
+            name="test:stream",
+            payload={},
         )
         reader = FakeHandler([message])
         queue = NotificationQueue(message_handler=reader)
@@ -53,9 +53,9 @@ class TestNotificationQueue:
 
     async def test_not_call_message_if_not_bind(self):
         message = Notification(
-                message_id=str(uuid.uuid4()),
-                name="test:stream",
-                payload={},
+            message_id=str(uuid.uuid4()),
+            name="test:stream",
+            payload={},
         )
         reader = FakeHandler([message])
         queue = NotificationQueue(message_handler=reader)
