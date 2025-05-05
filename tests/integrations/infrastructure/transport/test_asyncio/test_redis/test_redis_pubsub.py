@@ -132,7 +132,7 @@ class TestPublisher:
         welcome_message = await pubsub.get_message()
         assert welcome_message is not None
 
-        message = await pubsub.get_message(ignore_subscribe_messages=True)
+        message = await pubsub.get_message()
         data = json.loads(message["data"])
         assert data == dict(
             full_event_name=event.__topic__,

@@ -225,7 +225,7 @@ wheels = [
 
 [[package]]
 name = "pyddd"
-version = "0.10.0"
+version = "0.10.4"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },

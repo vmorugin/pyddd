@@ -44,29 +44,41 @@ class TestStreamHandler:
 
     def test_reader_first_read_can_be_none(self, handler):
         handler.bind("user:update")
-        messages = handler.read("user:update")
+        messages = handler.read_batch()
         assert messages == []
 
     def test_reader_must_get_new_messages(self, handler, redis):
         payload = {"test_data": str(uuid.uuid4())}
         handler.bind("user:update")
-        assert handler.read(topic="user:update") == []
+        assert handler.read_batch() == []
 
         redis.xadd("user:update", payload)
 
-        messages = handler.read(topic="user:update")
+        messages = handler.read_batch()
         message = messages.pop()
         assert isinstance(message, Notification)
         assert message.payload == payload
 
     def test_reader_could_read_ten_messages(self, redis, handler):
         handler.bind("user:update")
-        assert handler.read("user:update") == []
+        assert handler.read_batch() == []
 
-        [redis.xadd("user:update", {"test_data": str(uuid.uuid4())}) for _ in range(10)]
+        [redis.xadd("user:update", {"test_data": str(uuid.uuid4())}) for _ in range(15)]
 
-        messages = handler.read("user:update")
-        assert len(messages) >= 10
+        messages = handler.read_batch(10)
+        assert len(messages) == 10
+
+    def test_reader_could_read_messages_from_all_topics(self, redis, handler):
+        handler.bind('test:foo')
+        handler.bind('test:bar')
+
+        [redis.xadd("test:foo", {"test_data": str(uuid.uuid4())}) for _ in range(20)]
+        [redis.xadd("test:bar", {"test_data": str(uuid.uuid4())}) for _ in range(20)]
+
+        assert handler.read_batch() == []
+
+        messages = handler.read_batch(10)
+        assert len(messages) == 20
 
 
 class TestConsumer:

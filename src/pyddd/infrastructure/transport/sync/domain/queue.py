@@ -1,10 +1,6 @@
 import logging
 import threading
 import time
-from concurrent.futures import (
-    Future,
-    ThreadPoolExecutor,
-)
 
 from pyddd.infrastructure.transport.sync.domain.abstractions import (
     INotificationQueue,
@@ -21,44 +17,46 @@ class NotificationQueue(INotificationQueue):
         batch_size: int = 50,
         delay_ms: int = 10,
         logger_name: str = "pyddd.transport.queue",
-        max_workers: int = 32,
     ):
         self._handler = message_handler
-        self._topics: set[str] = set()
-        self._tasks: list[Future] = []
         self._batch_size = batch_size
         self._delay_ms = delay_ms * 0.001
         self._logger = logging.getLogger(logger_name)
         self._is_running = False
-        self._executor: ThreadPoolExecutor = ThreadPoolExecutor()
-        self._semaphore = threading.Semaphore(max_workers)
+        self._threads: list[threading.Thread] = []
 
     def bind(self, topic: str):
-        self._topics.add(topic)
         self._handler.bind(topic)
 
     def consume(self, callback: ICallback):
         self._is_running = True
-        for topic in self._topics:
-            self._executor.submit(self._long_pull, topic, callback)
+        thread = threading.Thread(
+            target=self._long_pull,
+            args=(callback,),
+            daemon=True,
+        )
+        self._threads.append(thread)
+        thread.start()
 
     def stop_consume(self):
         self._is_running = False
-        self._executor.shutdown(wait=False, cancel_futures=True)
+        for thread in self._threads:
+            thread.join(self._delay_ms)
 
-    def _long_pull(self, topic: str, callback: ICallback):
+    def _long_pull(self, callback: ICallback):
         while self._is_running:
             try:
-                messages = self._handler.read(topic, limit=self._batch_size)
+                messages = self._handler.read_batch(limit=self._batch_size)
                 for message in messages:
-                    self._semaphore.acquire()
-                    threading.Thread(
+                    thread = threading.Thread(
                         target=self._process_callback,
                         args=(callback, message),
                         daemon=True,
-                    ).start()
+                    )
+                    self._threads.append(thread)
+                    thread.start()
             except Exception as exc:
-                self._logger.error(f"Unexpected error while pulling {topic} messages!", exc_info=exc)
+                self._logger.error(f"Unexpected error while pulling messages!", exc_info=exc)
             time.sleep(self._delay_ms)
 
     def _process_callback(self, callback, message):
@@ -66,5 +64,3 @@ class NotificationQueue(INotificationQueue):
             callback(message)
         except Exception as exc:
             self._logger.info("Callback processing error", exc_info=exc)
-        finally:
-            self._semaphore.release()

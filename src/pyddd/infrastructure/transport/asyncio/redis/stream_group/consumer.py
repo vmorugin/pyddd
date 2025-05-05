@@ -34,14 +34,14 @@ from pyddd.infrastructure.transport.core.value_objects import NotificationTracke
 
 class RedisStreamGroupConsumer(IMessageConsumer):
     def __init__(
-        self,
-        redis: Redis,
-        group_name: str,
-        consumer_name: str,
-        queue: INotificationQueue = None,
-        event_factory: IEventFactory = None,
-        ask_policy: IAskPolicy = None,
-        block_ms: int = None,
+            self,
+            redis: Redis,
+            group_name: str,
+            consumer_name: str,
+            queue: INotificationQueue = None,
+            event_factory: IEventFactory = None,
+            ask_policy: IAskPolicy = None,
+            block_ms: int = 0,
     ):
         self._ask_policy = ask_policy or DefaultAskPolicy()
         self._event_factory = event_factory or PublishedEventFactory()
@@ -81,12 +81,12 @@ class RedisStreamGroupConsumer(IMessageConsumer):
 
 class GroupStreamHandler(IMessageHandler):
     def __init__(
-        self,
-        group_name: str,
-        consumer_name: str,
-        client: Redis,
-        tracker_factory: INotificationTrackerFactory,
-        block: t.Optional[int] = 0,
+            self,
+            group_name: str,
+            consumer_name: str,
+            client: Redis,
+            tracker_factory: INotificationTrackerFactory,
+            block: t.Optional[int] = 0,
     ):
         self._group_name = group_name
         self._consumer_name = consumer_name
@@ -95,23 +95,23 @@ class GroupStreamHandler(IMessageHandler):
         self._tracker_factory = tracker_factory
         self._trackers: dict[str, INotificationTracker] = {}
 
-    async def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]:
-        messages = []
-        tracker = self._trackers[topic]
-        response = await self._read_message(topic, tracker.last_recent_notification_id, limit)
+    async def read_batch(self, limit: int = None) -> t.Sequence[INotification]:
+        messages: list[INotification] = []
+        streams = {topic: tracker.last_recent_notification_id for topic, tracker in self._trackers.items()}
+        response = await self._read_messages(streams, limit)
         for items in response:
-            _, streams = items
+            topic, streams = items[0].decode(), items[1]
+            tracker = self._trackers[topic]
+            before_read_messages_len = len(messages)
             for stream in streams:
-                message_id, payload = stream
-                message = Notification(
-                    message_id=message_id.decode(),
-                    name=topic,
-                    payload={key.decode(): value.decode() for key, value in payload.items()},
-                    ask_func=self._ask(topic, message_id),
-                    reject_func=self._ask(topic, message_id),
+                message_id, payload = stream  # type: ignore[misc]
+                message = self._redis_message_to_notification(
+                    message_id=message_id.decode(),  # type: ignore[has-type]
+                    topic=topic,
+                    payload=payload  # type: ignore[has-type]
                 )
                 messages.append(message)
-        tracker.track_messages(messages)
+            tracker.track_messages(messages[before_read_messages_len:])
         return messages
 
     async def bind(self, topic: str):
@@ -119,13 +119,22 @@ class GroupStreamHandler(IMessageHandler):
         with suppress(ResponseError):
             await self._client.xgroup_create(topic, self._group_name, mkstream=True)
 
-    async def _read_message(self, topic: str, last_message_id: str, limit: int = None) -> list:
+    async def _read_messages(self, streams: dict, limit: int = None) -> list:
         return await self._client.xreadgroup(
             self._group_name,
             self._consumer_name,
-            {topic: last_message_id},
+            streams=streams,
             count=limit,
             block=self._block,
+        )
+
+    def _redis_message_to_notification(self, message_id: str, topic: str, payload: dict[bytes, bytes]):
+        return Notification(
+            message_id=message_id,
+            name=topic,
+            payload={key.decode(): value.decode() for key, value in payload.items()},
+            ask_func=self._ask(topic, message_id),
+            reject_func=self._ask(topic, message_id),
         )
 
     def _ask(self, topic: str, message_id: str):
@@ -142,7 +151,7 @@ class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
         return tracker
 
     def track_most_recent_message(
-        self, tracker: NotificationTrackerState, *messages: INotification
+            self, tracker: NotificationTrackerState, *messages: INotification
     ) -> NotificationTrackerState:
         if not messages:
             last_notification_id = ">"

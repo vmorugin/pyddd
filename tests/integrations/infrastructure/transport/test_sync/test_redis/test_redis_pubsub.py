@@ -150,7 +150,7 @@ class TestPublisher:
         welcome_message = pubsub.get_message()
         assert welcome_message is not None
 
-        message = pubsub.get_message(ignore_subscribe_messages=True)
+        message = pubsub.get_message()
         data = json.loads(message["data"])
         assert data == event.to_dict()
 
@@ -172,7 +172,9 @@ class TestPublisher:
         welcome_message = pubsub.get_message()
         assert welcome_message is not None
 
-        message = pubsub.get_message(ignore_subscribe_messages=True)
+        time.sleep(0.01)
+
+        message = pubsub.get_message()
         data = json.loads(message["data"])
         assert data == dict(
             full_event_name=event.__topic__,
