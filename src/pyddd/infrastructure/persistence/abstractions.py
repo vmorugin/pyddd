@@ -7,12 +7,11 @@ TLock = t.TypeVar("TLock")
 TLockKey: t.TypeAlias = str | None
 
 
+TRepo = t.TypeVar("TRepo")
+
 class IRepository(abc.ABC):
     @abc.abstractmethod
     def commit(self): ...
-
-
-TRepo = t.TypeVar("TRepo", bound=IRepository)
 
 
 class IUnitOfWork(t.Generic[TRepo], abc.ABC):
