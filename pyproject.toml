@@ -1,5 +1,5 @@
 [project]
-version = "0.11.3"
+version = "0.11.5"
 name = "pyddd"
 description = "Domain-Driven Design for Python"
 readme = "readme.md"
@@ -19,6 +19,10 @@ tenacity-retry = [
 backoff-retry = [
     "backoff>=2.0.0",
 ]
+
+[[tool.uv.index]]
+name = "NEXUS_MIRROR_PYPI"
+url = "https://nexus.infra.myoffice.group/repository/pypi.org/simple"
 
 [tool.uv]
 dev-dependencies = [

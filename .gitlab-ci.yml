@@ -74,6 +74,8 @@ Run Tests:
 Publish:
   image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   stage: deploy
+  variables:
+    PUBLISH_URL: "https://nexus.infra.myoffice.group/repository/private_cloud-pgs-pypi/"
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
@@ -82,4 +84,4 @@ Publish:
   script:
     - |
       uv build
-      uv publish --publish-url ${CI_API_V4_URL}/projects/368/packages/pypi -p ${CI_JOB_TOKEN} -u gitlab-ci-token
+      uv publish --publish-url $PUBLISH_URL -u $PGS_NEXUS_USER -p $PGS_NEXUS_PASS
