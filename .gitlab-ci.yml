@@ -19,33 +19,44 @@ stages:
   - deploy
   - scan
 
-Lint with ruff:
-  stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
-  rules:
-    - if: '$CI_PIPELINE_SOURCE != "schedule"'
-      when: on_success
-  before_script:
-    - python -m pip install uv
-  script:
-    - uvx ruff check src
+variables:
+  POETRY_VERSION: "1.8.5"
+  DOCKER_AUTH_CONFIG: $HARBOR_AUTH_CONFIG
+  PYTHON_IMAGE_NAME: "pgs-python"
+  PYTHON_IMAGE_TAG: "3.11"
+  VENV_DIR: "$CI_PROJECT_DIR/.venv"
 
-Lint with mypy:
+Lint with flake8:
   stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: on_success
   before_script:
     - |
-      python -m pip install uv
-      uv venv
+      python -m pip install poetry==$POETRY_VERSION
+      poetry install --all-extras
   script:
-    - uv run mypy src
+    - |
+      poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --per-file-ignores="__init__.py:F401"
+
+Lint with mypy:
+  stage: test
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+      when: on_success
+  before_script:
+    - |
+      python -m pip install poetry==$POETRY_VERSION
+      poetry install --all-extras
+  script:
+    - poetry run mypy src
 
 Run Tests:
   stage: test
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   services:
     - name: redis:6.2.10
   variables:
@@ -58,21 +69,21 @@ Run Tests:
       - PROVIDER: [ '<=3.0.0', '>=1.10.4' ]
   before_script:
     - |
-      python -m pip install uv
-      uv venv
-      uv pip install "pydantic${PROVIDER}"
+      python -m pip install poetry==$POETRY_VERSION
+      poetry install --all-extras
+      poetry add pydantic${PROVIDER}
   script:
-    - uv run pytest
+    - poetry run pytest
 
 Publish:
-  image: ${DOCKER_REGISTRY_URL}/${PYTHON_IMAGE_TAG}
+  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
   stage: deploy
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
   before_script:
-    - python -m pip install uv
+    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install poetry==${POETRY_VERSION}
+    - poetry config repositories.pgs ${CI_API_V4_URL}/projects/3162/packages/pypi
+    - poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
   script:
-    - |
-      uv build
-      uv publish --publish-url ${CI_API_V4_URL}/projects/368/packages/pypi -p ${CI_JOB_TOKEN} -u gitlab-ci-token
+    - poetry publish --build --repository pgs
