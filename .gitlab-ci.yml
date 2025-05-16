@@ -82,8 +82,8 @@ Publish:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
   before_script:
-    - python -m venv $VENV_DIR && source $VENV_DIR/bin/activate && pip install poetry==${POETRY_VERSION}
-    - poetry config repositories.pgs ${CI_API_V4_URL}/projects/3162/packages/pypi
-    - poetry config http-basic.pgs gitlab-ci-token ${CI_JOB_TOKEN}
+    - python -m pip install uv
   script:
-    - poetry publish --build --repository pgs
+    - |
+      uv build
+      uv publish --publish-url ${CI_API_V4_URL}/projects/368/packages/pypi -p ${CI_JOB_TOKEN} -u gitlab-ci-token
