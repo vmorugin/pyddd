@@ -9,60 +9,48 @@
 
 - **Разделение доменов** через `Module`
 - **Использование команд и событий** (`DomainCommand`, `DomainEvent`)
-- **Корневые сущности (`RootEntity`)** и управление идентификаторами (`EntityId`)
+- **Корневые сущности (`RootEntity`)**
 - **Встроенный менеджер зависимостей**
 - **Событийно-ориентированная архитектура**
-
+- **Транспорт для работы с событиями**
+- **Базовый `Unit Of Work` и репозиторий**
 
 ## Локальная установка зависимостей
 
 Нужно установить poetry и все зависимости.
 Запуск тестов через pytest
 ```bash
-pip install poetry
-poetry install --all-extras
+pip install uv
+uv install --all-extras
 
 pytest .
 ```
 
-## Установка пакета как зависимость
-
-Доступна из внутреннего pypi-репозитория. Пример установки через poetry:
-
-Если не добавлен локальный pypi источник - нужно выполнить команду
-```bash
-poetry source add local-pypi https://git.nctresource.team/api/v4/projects/368/packages/pypi/simple
-```
-Следом работаем с пакетом как с обычной зависимостью
-```bash
-poetry add pyddd
-poetry install
-```
-
 ## Быстрый старт
 
-### Определение доменной модели
-
 ```python
-class PetCreated(DomainEvent, domain='pet'):
+import abc
+from pyddd.domain import RootEntity, DomainEvent, DomainCommand, DomainName
+from pyddd.application import Module, Application, set_application
+
+# Определение домена
+
+__domain__ = DomainName('pet')
+
+class PetCreated(DomainEvent, domain=__domain__):
     pet_id: str
     name: str
 
-
 class Pet(RootEntity):
-    def __init__(self, name: str):
-        self.name = name
+    name: str
 
     @classmethod
     def create(cls, name: str):
-        pet = cls(name)
+        pet = cls(name=name)
         pet.register_event(PetCreated(name=name, pet_id=pet.__reference__))
         return pet
-```
 
-### Репозитории и модуль
-
-```python
+# Репозитории и модуль
 class IPetRepository(abc.ABC):
     @abc.abstractmethod
     def save(self, entity: RootEntity):
@@ -73,11 +61,11 @@ class IPetRepository(abc.ABC):
         ...
 
 
-class CreatePet(DomainCommand, domain='pet'):
+class CreatePet(DomainCommand, domain=__domain__):
     name: str
 
 
-pet_module = Module('pet')
+pet_module = Module(__domain__)
 
 
 @pet_module.register
@@ -85,11 +73,8 @@ def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     repository.save(pet)
     return pet.__reference__
-```
 
-### Запуск приложения
-
-```python
+# Запуск приложения
 class InMemoryPetRepo(IPetRepository):
     def __init__(self):
         self.memory = {}
@@ -108,7 +93,7 @@ app.include(pet_module)
 app.set_defaults('pet', repository=InMemoryPetRepo())
 set_application(app)
 
-# Использование
+# Работа с юзкейсами через команды и шину приложения
 fluff_id = app.handle(CreatePet(name='Fluff'))
 print(f'Создан питомец с ID: {fluff_id}')
 ```
