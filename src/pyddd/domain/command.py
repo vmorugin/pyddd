@@ -1,9 +1,9 @@
-import abc
 from pyddd.domain.message import (
-    IMessage,
-    MessageType,
     BaseDomainMessage,
     BaseDomainMessageMeta,
+)
+from pyddd.domain.abstractions import (
+    ICommand,
 )
 
 
@@ -14,15 +14,7 @@ class _DomainCommandMeta(BaseDomainMessageMeta):
             try:
                 _ = cls._domain_name
             except AttributeError:
-                raise ValueError(
-                    f"required set domain name for command '{cls.__module__}.{cls.__name__}'"
-                )
-
-
-class ICommand(IMessage, abc.ABC):
-    @property
-    def __type__(self) -> MessageType:
-        return MessageType.COMMAND
+                raise ValueError(f"required set domain name for command '{cls.__module__}.{cls.__name__}'")
 
 
 class DomainCommand(BaseDomainMessage, ICommand, metaclass=_DomainCommandMeta): ...

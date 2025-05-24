@@ -1,7 +1,20 @@
+import contextlib
+import functools
+import inspect
 import logging
+import typing as t
+import warnings
 from collections import defaultdict
+from contextlib import suppress
+from typing import (
+    AsyncContextManager,
+    ContextManager,
+)
 
-from pyddd.application.executor import SyncExecutor, AsyncExecutor
+from pyddd.application.executor import (
+    SyncExecutor,
+    AsyncExecutor,
+)
 from pyddd.application.abstractions import (
     IExecutor,
     IApplication,
@@ -9,17 +22,19 @@ from pyddd.application.abstractions import (
     SignalListener,
     IModule,
     AnyCallable,
+    Lifespan,
 )
 from pyddd.application.signal_manager import SignalManager
-from pyddd.domain.message import (
-    IMessage,
+from pyddd.domain.abstractions import (
     MessageType,
+    IMessage,
 )
 
 
 class Application(IApplication):
     def __init__(
         self,
+        lifespan: Lifespan = None,
         logger_name: str = "pyddd.application",
         executor: IExecutor = None,
     ):
@@ -29,6 +44,8 @@ class Application(IApplication):
         self._executor = executor
         self._is_running = False
         self._is_stopped = False
+        self._lifespan_context = _build_lifespan(lifespan)(self)
+        self._lifespan = None
         self._signal_manager = SignalManager()
 
     def set_defaults(self, domain: str, **kwargs):
@@ -50,11 +67,15 @@ class Application(IApplication):
         if self._executor is None:
             self._executor = AsyncExecutor()
 
-        await self._signal_manager.notify_async(ApplicationSignal.BEFORE_RUN, self)
+        self._lifespan = _wrap_async_ctx_manager(self._lifespan_context)
 
+        await self._signal_manager.notify_async(ApplicationSignal.BEFORE_RUN, self)
+        await anext(self._lifespan)
         self._is_running = True
 
         await self._signal_manager.notify_async(ApplicationSignal.AFTER_RUN, self)
+
+        set_application(self)
 
     async def stop_async(self):
         if not self._is_running:
@@ -63,6 +84,8 @@ class Application(IApplication):
         await self._signal_manager.notify_async(ApplicationSignal.BEFORE_STOP, self)
 
         self._is_running = False
+        with suppress(StopAsyncIteration):
+            await anext(self._lifespan)
         self._is_stopped = True
 
         await self._signal_manager.notify_async(ApplicationSignal.AFTER_STOP, self)
@@ -74,11 +97,16 @@ class Application(IApplication):
         if self._executor is None:
             self._executor = SyncExecutor()
 
+        self._lifespan = _wrap_sync_ctx_manager(self._lifespan_context)
+
         self._signal_manager.notify(ApplicationSignal.BEFORE_RUN, self)
 
         self._is_running = True
+        next(self._lifespan)
 
         self._signal_manager.notify(ApplicationSignal.AFTER_RUN, self)
+
+        set_application(self)
 
     def stop(self):
         if not self._is_running:
@@ -87,6 +115,10 @@ class Application(IApplication):
         self._signal_manager.notify(ApplicationSignal.BEFORE_STOP, self)
 
         self._is_running = False
+
+        with suppress(StopIteration):
+            next(self._lifespan)
+
         self._is_stopped = True
 
         self._signal_manager.notify(ApplicationSignal.AFTER_STOP, self)
@@ -114,9 +146,7 @@ class Application(IApplication):
             return self._handle_command(command=message, **depends)
         elif message.__type__ == MessageType.EVENT:
             return self._handle_event(event=message, **depends)
-        raise RuntimeError(
-            f"Only support command end event message handling. Got {message.__type__}"
-        )
+        raise RuntimeError(f"Only support command end event message handling. Got {message.__type__}")
 
     def _handle_command(self, command: IMessage, **depends):
         module = self._get_module_by_domain(command.__domain__)
@@ -135,6 +165,81 @@ class Application(IApplication):
         raise ValueError(f"Unregistered module for domain {domain}")
 
 
+async def _wrap_async_ctx_manager(context: AsyncContextManager):
+    async with context:
+        yield
+
+
+def _wrap_sync_ctx_manager(context: ContextManager):
+    with context:
+        yield
+
+
+class _DefaultLifespan:
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    async def __aenter__(self) -> None:
+        pass
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        pass
+
+    def __call__(self, mb: object):
+        return self
+
+
+_T = t.TypeVar("_T")
+
+
+class _AsyncLiftContextManager(t.AsyncContextManager[_T]):
+    def __init__(self, cm: t.ContextManager[_T]):
+        self._cm = cm
+
+    async def __aenter__(self) -> _T:
+        return self._cm.__enter__()
+
+    async def __aexit__(self, exc_type, exc_value, traceback) -> bool | None:
+        return self._cm.__exit__(exc_type, exc_value, traceback)
+
+
+def _wrap_gen_lifespan_context(
+    lifespan_context: t.Callable[[t.Any], t.Generator],
+) -> t.Callable[[t.Any], t.AsyncContextManager | t.ContextManager]:
+    manager = contextlib.contextmanager(lifespan_context)
+
+    @functools.wraps(manager)
+    def wrapper(mb: t.Any) -> _AsyncLiftContextManager:
+        return _AsyncLiftContextManager(manager(mb))
+
+    return wrapper
+
+
+def _build_lifespan(lifespan: Lifespan[IApplication] | None) -> Lifespan:
+    if lifespan is None:
+        return _DefaultLifespan()
+
+    elif inspect.isasyncgenfunction(lifespan):
+        warnings.warn(
+            "async generator function lifespans are deprecated, "
+            "use an @contextlib.asynccontextmanager function instead",
+            DeprecationWarning,
+        )
+        return contextlib.asynccontextmanager(lifespan)  # type: ignore[arg-type]
+    elif inspect.isgeneratorfunction(lifespan):
+        warnings.warn(
+            "generator function lifespans are deprecated, use an @contextlib.asynccontextmanager function instead",
+            DeprecationWarning,
+        )
+        return _wrap_gen_lifespan_context(lifespan)  # type: ignore[arg-type]
+
+    else:
+        return lifespan
+
+
 __context = None
 
 
@@ -143,5 +248,11 @@ def set_application(app: IApplication):
     __context = app
 
 
-def get_application():
+def get_application() -> t.Optional[IApplication]:
     return __context
+
+
+def get_running_application() -> IApplication:
+    if isinstance(__context, Application) and __context.is_running:
+        return __context
+    raise RuntimeError("No running application")

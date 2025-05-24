@@ -41,7 +41,7 @@ class RedisStreamGroupConsumer(IMessageConsumer):
         queue: INotificationQueue = None,
         event_factory: IEventFactory = None,
         ask_policy: IAskPolicy = None,
-        block_ms: int = None,
+        block_ms: int = 0,
     ):
         self._ask_policy = ask_policy or DefaultAskPolicy()
         self._event_factory = event_factory or PublishedEventFactory()

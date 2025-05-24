@@ -13,8 +13,8 @@ from pyddd.application import (
 from pyddd.domain import DomainCommand
 from pyddd.domain.message import (
     Message,
-    MessageType,
 )
+from pyddd.domain.abstractions import MessageType
 from pyddd.infrastructure.transport.core.abstractions import (
     IMessageConsumer,
     IEventFactory,
@@ -63,10 +63,10 @@ class TestStreamHandler:
         handler.bind("user:update")
         assert handler.read("user:update") == []
 
-        [redis.xadd("user:update", {"test_data": str(uuid.uuid4())}) for _ in range(10)]
+        [redis.xadd("user:update", {"test_data": str(uuid.uuid4())}) for _ in range(15)]
 
-        messages = handler.read("user:update")
-        assert len(messages) >= 10
+        messages = handler.read("user:update", 10)
+        assert len(messages) == 10
 
 
 class TestConsumer:

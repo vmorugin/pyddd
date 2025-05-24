@@ -4,6 +4,8 @@ from unittest.mock import (
 )
 
 import pytest
+
+from pyddd.application import Application
 from pyddd.domain import DomainEvent
 
 from pyddd.infrastructure.transport.asyncio.domain import (
@@ -23,11 +25,15 @@ class TestDefaultAskPolicy:
 
     @pytest.fixture
     def notification(self):
-        return Mock(spec=INotification)
+        notification = Mock(spec=INotification)
+        notification.reject = AsyncMock()
+        return notification
 
     @pytest.fixture
     def app(self):
-        return AsyncMock()
+        app = AsyncMock(spec=Application)
+        app.handle = AsyncMock(return_value=[True])
+        return app
 
     @pytest.fixture
     def domain_event(self):
@@ -42,9 +48,7 @@ class TestDefaultAskPolicy:
     def test_must_implement_interface(self, policy):
         assert isinstance(policy, IAskPolicy)
 
-    async def test_must_call_app_handle(
-        self, policy, notification, app, event_factory, domain_event
-    ):
+    async def test_must_call_app_handle(self, policy, notification, app, event_factory, domain_event):
         await policy.process(notification, event_factory=event_factory, application=app)
         app.handle.assert_called_with(domain_event)
 
@@ -52,9 +56,7 @@ class TestDefaultAskPolicy:
         await policy.process(notification, event_factory=event_factory, application=app)
         assert notification.ack.called
 
-    async def test_must_not_ask_if_error_build_message(
-        self, policy, notification, app, event_factory
-    ):
+    async def test_must_not_ask_if_error_build_message(self, policy, notification, app, event_factory):
         event_factory.build_event.side_effect = Exception()
         await policy.process(notification, event_factory=event_factory, application=app)
         assert not notification.ack.called

@@ -6,7 +6,7 @@ from pyddd.application.abstractions import (
     IModule,
     AnyCallable,
 )
-from pyddd.domain.message import IMessage
+from pyddd.domain.abstractions import IMessage
 from pyddd.infrastructure.transport.core.abstractions import PublisherProtocol
 
 

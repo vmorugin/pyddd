@@ -23,7 +23,7 @@ from pyddd.application.handler import (
     CommandHandler,
 )
 from pyddd.application.retry import none_retry
-from pyddd.domain.message import IMessage
+from pyddd.domain.abstractions import IMessage
 
 
 class Module(IModule, ISubscribe, IRegister):
@@ -72,9 +72,7 @@ class Module(IModule, ISubscribe, IRegister):
 
     def get_command_handler(self, command: IMessage):
         if command.__topic__ not in self._command_handlers:
-            raise RuntimeError(
-                f"Unregistered command {command.__topic__} in {self.__class__.__name__}:{self._domain}"
-            )
+            raise RuntimeError(f"Unregistered command {command.__topic__} in {self.__class__.__name__}:{self._domain}")
         return self._command_handlers[command.__topic__].resolve(command)
 
     def get_event_handlers(self, event: IMessage):

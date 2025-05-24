@@ -17,7 +17,8 @@ from pyddd.domain import (
     DomainCommand,
     DomainEvent,
 )
-from pyddd.domain.event import IEvent
+from pyddd.domain.abstractions import IEvent
+from pyddd.domain.types import FrozenJsonDict
 
 
 class ExampleCommand(DomainCommand, domain="test"): ...
@@ -253,6 +254,22 @@ class TestModule:
         handlers = module.get_event_handlers(ExampleEvent())
         assert len(handlers) == 1
         assert handlers[0]() is True
+
+    def test_could_handle_with_frozen_dict_type(self):
+        module = Module("test")
+
+        class TestCommand(DomainCommand, domain="test"):
+            foo: FrozenJsonDict
+
+            class Config:
+                arbitrary_types_allowed = True
+
+        @module.register
+        def foo(command: TestCommand):
+            return command.foo["result"]
+
+        handler = module.get_command_handler(TestCommand(foo=FrozenJsonDict({"result": True})))
+        assert handler() is True
 
     def test_must_not_return_handler_if_fail_condition(self):
         class FailCondition(ICondition):

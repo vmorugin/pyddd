@@ -4,7 +4,7 @@ import typing as t
 from enum import Enum
 
 from pyddd.domain.command import DomainCommand
-from pyddd.domain.message import IMessage
+from pyddd.domain.abstractions import IMessage
 
 R = t.TypeVar("R")
 AnyCallable = t.Callable[..., R]
@@ -104,6 +104,11 @@ class IApplication(abc.ABC):
 
     @abc.abstractmethod
     def unsubscribe(self, signal: ApplicationSignal, listener: SignalListener): ...
+
+
+_AppT = t.TypeVar("_AppT", bound=IApplication)
+
+Lifespan = t.Callable[[_AppT], t.ContextManager[None] | t.AsyncContextManager[None]]
 
 
 class ApplicationSignal(str, Enum):

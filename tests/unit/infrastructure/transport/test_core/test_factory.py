@@ -5,9 +5,9 @@ import uuid
 import pytest
 
 from pyddd.domain.message import (
-    IMessage,
     Message,
 )
+from pyddd.domain.abstractions import IMessage
 from pyddd.infrastructure.transport.core.abstractions import (
     INotification,
     IEventFactory,

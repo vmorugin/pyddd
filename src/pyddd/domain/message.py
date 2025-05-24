@@ -1,16 +1,22 @@
 import abc
 import datetime as dt
 import json
-from enum import Enum
 from typing import (
     Optional,
     Union,
+    Mapping,
+    TypeVar,
 )
 from uuid import (
     uuid4,
     UUID,
 )
 from importlib.metadata import version
+from pyddd.domain.abstractions import (
+    MessageType,
+    IMessageMeta,
+    IMessage,
+)
 
 pydantic_version = version("pydantic")
 
@@ -23,55 +29,7 @@ else:
     raise ImportError("Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x")
 
 
-class MessageType(str, Enum):
-    EVENT = "EVENT"
-    COMMAND = "COMMAND"
-
-
-class IMessageMeta(abc.ABCMeta):
-    @property
-    @abc.abstractmethod
-    def __domain__(cls) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def __message_name__(cls) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def __topic__(cls) -> str: ...
-
-
-class IMessage(abc.ABC, metaclass=IMessageMeta):
-    @property
-    @abc.abstractmethod
-    def __domain__(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def __message_name__(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def __topic__(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def __message_id__(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def __type__(self) -> MessageType: ...
-
-    @property
-    @abc.abstractmethod
-    def __timestamp__(self) -> dt.datetime: ...
-
-    @abc.abstractmethod
-    def to_dict(self) -> dict: ...
-
-    @abc.abstractmethod
-    def to_json(self) -> str: ...
+_T = TypeVar("_T", bound="BaseDomainMessage")
 
 
 class Message(IMessage):
@@ -145,6 +103,17 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     @property
     def __topic__(cls) -> str:
         return f"{cls._domain_name}.{cls._message_name}"
+
+    def load(  # type: ignore[misc]
+        cls: type[_T],
+        payload: Mapping | str | bytes,
+        reference: UUID | None = None,
+        timestamp: dt.datetime | None = None,
+    ) -> _T:
+        obj = cls.parse_obj(payload)
+        obj._reference = reference or UUID(str(obj.__message_id__))
+        obj._occurred_on = timestamp or obj.__timestamp__
+        return obj
 
 
 class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessageMeta):

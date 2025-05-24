@@ -40,21 +40,30 @@ class TestNotificationQueue:
         callback.assert_called_with(messages[0])
 
     async def test_queue_must_ignore_errors(self):
-        messages = [
-            Exception(),
-            Notification(
-                message_id=str(uuid.uuid4()),
-                name="test:stream",
-                payload={},
-            ),
-        ]
-        reader = FakeHandler(messages)
+        message = Notification(
+            message_id=str(uuid.uuid4()),
+            name="test:stream",
+            payload={},
+        )
+        reader = FakeHandler([message])
+        queue = NotificationQueue(message_handler=reader)
+        callback = AsyncMock()
+        await queue.consume(callback)
+        callback.assert_not_called()
+
+    async def test_not_call_message_if_not_bind(self):
+        message = Notification(
+            message_id=str(uuid.uuid4()),
+            name="test:stream",
+            payload={},
+        )
+        reader = FakeHandler([message])
         queue = NotificationQueue(message_handler=reader)
         await queue.bind("test:stream")
-        callback = AsyncMock(side_effect=[messages])
+        callback = AsyncMock(side_effect=[Exception(), message])
         await queue.consume(callback)
         await asyncio.sleep(0.01)
-        callback.assert_called_with(messages[-1])
+        callback.assert_called_with(message)
 
     async def test_must_not_wait_callback(self):
         async def endless_callback(*args, **kwargs):

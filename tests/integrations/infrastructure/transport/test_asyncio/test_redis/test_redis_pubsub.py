@@ -11,8 +11,8 @@ from pyddd.application import (
 from pyddd.domain import DomainCommand
 from pyddd.domain.message import (
     Message,
-    MessageType,
 )
+from pyddd.domain.abstractions import MessageType
 from pyddd.infrastructure.transport.asyncio.domain import (
     MessageConsumer,
     DefaultAskPolicy,
@@ -58,9 +58,7 @@ class TestWithPubSub:
         callback = Mock()
         event_factory = UniversalEventFactory()
         queue = PubSubNotificationQueue(pubsub=redis.pubsub())
-        consumer = MessageConsumer(
-            queue=queue, event_factory=event_factory, ask_policy=DefaultAskPolicy()
-        )
+        consumer = MessageConsumer(queue=queue, event_factory=event_factory, ask_policy=DefaultAskPolicy())
         app = Application()
         app.include(module)
         app.set_defaults(module.domain, callback=callback)
@@ -134,7 +132,7 @@ class TestPublisher:
         welcome_message = await pubsub.get_message()
         assert welcome_message is not None
 
-        message = await pubsub.get_message(ignore_subscribe_messages=True)
+        message = await pubsub.get_message()
         data = json.loads(message["data"])
         assert data == dict(
             full_event_name=event.__topic__,
@@ -149,7 +147,7 @@ class TestRedisPubsubConsumer:
         consumer = RedisPubSubConsumer(redis)
         assert isinstance(consumer, IMessageConsumer)
         assert isinstance(consumer.ask_policy, DefaultAskPolicy)
-        assert isinstance(consumer.event_factory, PublishedEventFactory)
+        assert isinstance(consumer.event_factory, UniversalEventFactory)
         assert isinstance(consumer.queue, PubSubNotificationQueue)
 
     async def test_could_publish_event(self, redis):

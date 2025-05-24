@@ -15,7 +15,7 @@ class NotificationQueue(INotificationQueue):
         *,
         batch_size: int = 50,
         delay_ms: int = 10,
-        logger_name: str = "notification.queue",
+        logger_name: str = "pyddd.transport.queue",
     ):
         self._handler = message_handler
         self._topics: set[str] = set()
@@ -47,7 +47,5 @@ class NotificationQueue(INotificationQueue):
                 for message in messages:
                     asyncio.create_task(callback(message))
             except Exception as exc:
-                self._logger.error(
-                    f"Unexpected error while pulling {topic} messages!", exc_info=exc
-                )
+                self._logger.error(f"Unexpected error while pulling {topic} messages!", exc_info=exc)
             await asyncio.sleep(self._delay_ms)

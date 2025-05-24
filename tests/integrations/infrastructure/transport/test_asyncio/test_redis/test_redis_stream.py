@@ -14,8 +14,8 @@ from pyddd.application import (
 from pyddd.domain import DomainCommand
 from pyddd.domain.message import (
     Message,
-    MessageType,
 )
+from pyddd.domain.abstractions import MessageType
 
 from pyddd.infrastructure.transport.asyncio.domain import (
     DefaultAskPolicy,
@@ -65,10 +65,10 @@ class TestStreamHandler:
         await handler.bind("user:update")
         assert await handler.read("user:update") == []
 
-        [await redis.xadd("user:update", {"test_data": str(uuid.uuid4())}) for _ in range(10)]
+        [await redis.xadd("user:update", {"test_data": str(uuid.uuid4())}) for _ in range(15)]
 
-        messages = await handler.read("user:update")
-        assert len(messages) >= 10
+        messages = await handler.read("user:update", limit=10)
+        assert len(messages) == 10
 
 
 class TestConsumer:
@@ -103,9 +103,7 @@ class TestConsumer:
 
         ask_policy = DefaultAskPolicy()
         queue = NotificationQueue(message_handler=redis_stream_handler)
-        consumer = MessageConsumer(
-            queue=queue, ask_policy=ask_policy, event_factory=UniversalEventFactory()
-        )
+        consumer = MessageConsumer(queue=queue, ask_policy=ask_policy, event_factory=UniversalEventFactory())
         consumer.set_application(app)
         consumer.subscribe("test:stream")
         await app.run_async()

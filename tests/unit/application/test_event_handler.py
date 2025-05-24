@@ -17,8 +17,10 @@ from pyddd.domain import (
     DomainEvent,
     DomainCommand,
 )
-from pyddd.domain.event import IEvent
-from pyddd.domain.message import IMessage
+from pyddd.domain.abstractions import (
+    IMessage,
+    IEvent,
+)
 
 
 class ExampleEvent(DomainEvent, domain="test"): ...
