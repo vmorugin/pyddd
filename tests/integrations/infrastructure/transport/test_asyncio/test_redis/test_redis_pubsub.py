@@ -111,6 +111,7 @@ class TestPublisher:
         assert welcome_message is not None
 
         message = await pubsub.get_message(ignore_subscribe_messages=True)
+        await asyncio.sleep(0.1)
         data = json.loads(message["data"])
         assert data == event.to_dict()
 
