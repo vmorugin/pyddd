@@ -1,6 +1,8 @@
 import dataclasses
 import typing as t
 from contextlib import suppress
+from functools import singledispatchmethod
+
 from redis import (
     Redis,
     ResponseError,
@@ -106,11 +108,11 @@ class GroupStreamHandler(IMessageHandler):
             for stream in streams:
                 message_id, payload = stream
                 message = Notification(
-                    message_id=message_id.decode(),
                     name=topic,
-                    payload={key.decode(): value.decode() for key, value in payload.items()},
-                    ask_func=self._ask(topic, message_id),
-                    reject_func=self._ask(topic, message_id),
+                    message_id=self._decode(message_id),
+                    payload={self._decode(key): self._decode(value) for key, value in payload.items()},
+                    ask_func=self._ask(topic, self._decode(message_id)),
+                    reject_func=self._ask(topic, self._decode(message_id)),
                 )
                 messages.append(message)
         tracker.track_messages(messages)
@@ -136,6 +138,18 @@ class GroupStreamHandler(IMessageHandler):
                 self._client.xack(topic, self._group_name, message_id)
 
         return _wrapper
+
+    @singledispatchmethod
+    def _decode(self, value: str | bytes) -> str:
+        raise NotImplementedError()
+
+    @_decode.register
+    def _(self, value: str) -> str:
+        return value
+
+    @_decode.register
+    def _(self, value: bytes) -> str:
+        return value.decode()
 
 
 class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
