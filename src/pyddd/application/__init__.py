@@ -2,6 +2,7 @@ from .application import (
     Application,
     set_application,
     get_application,
+    get_running_application,
 )
 from .module import Module
 from .executor import (
@@ -15,7 +16,7 @@ from .condition import (
     Not,
     Equal,
 )
-from .abstractions import IRetryStrategy
+from .abstractions import IRetryStrategy, IApplication, ICondition
 
 __all__ = [
     "Module",
@@ -30,4 +31,7 @@ __all__ = [
     "Application",
     "set_application",
     "get_application",
+    "get_running_application",
+    "ICondition",
+    "IApplication",
 ]

@@ -3,6 +3,7 @@ include:
     file:
       - '/jobs/dependency-track.yml'
       - '/jobs/defect-dojo.yml'
+      - '/jobs/uv-package-publish.yml'
 
 workflow:
   rules:
@@ -16,7 +17,7 @@ workflow:
 
 stages:
   - test
-  - deploy
+  - publish
   - scan
 
 variables:
@@ -70,18 +71,3 @@ Run Tests:
       uv pip install "pydantic${PROVIDER}"
   script:
     - uv run pytest
-
-Publish:
-  image: "${PGS_NEXUS_HOST}/${PYTHON_IMAGE_NAME}:${PYTHON_IMAGE_TAG}"
-  stage: deploy
-  variables:
-    PUBLISH_URL: "https://nexus.infra.myoffice.group/repository/private_cloud-pgs-pypi/"
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: on_success
-  before_script:
-    - python -m pip install uv
-  script:
-    - |
-      uv build
-      uv publish --publish-url $PUBLISH_URL -u $PGS_NEXUS_USER -p $PGS_NEXUS_PASS

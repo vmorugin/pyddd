@@ -1,5 +1,5 @@
 [project]
-version = "0.11.6"
+version = "0.11.12"
 name = "pyddd"
 description = "Domain-Driven Design for Python"
 readme = "readme.md"
@@ -8,6 +8,19 @@ dependencies = [
     "pydantic>=1.10.4,<3.0.0",
 ]
 license = "MIT"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+]
+
+[project.urls]
+Homepage = "https://github.com/vmorugin/pyddd"
+Issues = "https://github.com/vmorugin/pyddd/issues"
 
 [project.optional-dependencies]
 transport-redis = [
@@ -19,10 +32,6 @@ tenacity-retry = [
 backoff-retry = [
     "backoff>=2.0.0",
 ]
-
-[[tool.uv.index]]
-name = "NEXUS_MIRROR_PYPI"
-url = "https://nexus.infra.myoffice.group/repository/pypi.org/simple"
 
 [tool.uv]
 dev-dependencies = [
@@ -58,3 +67,8 @@ asyncio_default_fixture_loop_scope = "function"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyddd"]
+
+[[tool.uv.index]]
+name = "NEXUS_MIRROR_PYPI"
+url = "https://nexus.infra.myoffice.group/repository/pypi.org/simple"
+
