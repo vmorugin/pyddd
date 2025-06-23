@@ -1,5 +1,6 @@
 import json
 import time
+from time import sleep
 from unittest.mock import Mock
 
 import pytest
@@ -151,6 +152,7 @@ class TestPublisher:
         assert welcome_message is not None
 
         message = pubsub.get_message()
+        sleep(0.1)
         data = json.loads(message["data"])
         assert data == event.to_dict()
 

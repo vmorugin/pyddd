@@ -26,7 +26,7 @@ from pyddd.infrastructure.transport.core.event_factory import (
 from pyddd.infrastructure.transport.sync.domain import (
     DefaultAskPolicy,
     MessageConsumer,
-    Notification,
+    PublishedMessage,
     NotificationQueue,
 )
 from pyddd.infrastructure.transport.sync.redis.stream_group.consumer import (
@@ -56,7 +56,7 @@ class TestStreamHandler:
 
         messages = handler.read(topic="user:update")
         message = messages.pop()
-        assert isinstance(message, Notification)
+        assert isinstance(message, PublishedMessage)
         assert message.payload == payload
 
     def test_reader_could_read_ten_messages(self, redis, handler):
@@ -67,6 +67,19 @@ class TestStreamHandler:
 
         messages = handler.read("user:update", 10)
         assert len(messages) == 10
+
+    def test_could_work_with_decoded_response(self, redis, handler):
+        redis.connection_pool.connection_kwargs['decode_responses'] = True
+        payload = {"test_data": str(uuid.uuid4())}
+        handler.bind("user:update")
+        assert handler.read(topic="user:update") == []
+
+        redis.xadd("user:update", payload)
+
+        messages = handler.read(topic="user:update")
+        message = messages.pop()
+        assert isinstance(message, PublishedMessage)
+        assert message.payload == payload
 
 
 class TestConsumer:

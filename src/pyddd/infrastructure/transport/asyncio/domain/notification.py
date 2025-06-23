@@ -1,5 +1,5 @@
 from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
-    INotification,
+    IPublishedMessage,
     AskProtocol,
     RejectProtocol,
 )
@@ -9,7 +9,7 @@ async def _mock_ask(*args, **kwargs):
     return
 
 
-class Notification(INotification):
+class PublishedMessage(IPublishedMessage):
     def __init__(
         self,
         message_id: str,

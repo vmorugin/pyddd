@@ -1,6 +1,7 @@
 import dataclasses
 import typing as t
 from contextlib import suppress
+from functools import singledispatchmethod
 
 from redis import ResponseError
 from redis.asyncio import Redis
@@ -9,16 +10,16 @@ from pyddd.application.abstractions import IApplication
 from pyddd.infrastructure.transport.core.abstractions import (
     IMessageConsumer,
     IEventFactory,
-    INotificationTrackerFactory,
-    INotificationTracker,
-    INotification,
+    ITrackerFactory,
+    ITracker,
+    IPublishedMessage,
     INotificationTrackerStrategy,
 )
 from pyddd.infrastructure.transport.core.event_factory import (
     PublishedEventFactory,
 )
 from pyddd.infrastructure.transport.core.tracker_factory import (
-    NotificationTrackerFactory,
+    TrackerFactory,
 )
 from pyddd.infrastructure.transport.asyncio.domain import (
     INotificationQueue,
@@ -27,7 +28,7 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     NotificationQueue,
     MessageConsumer,
     IMessageHandler,
-    Notification,
+    PublishedMessage,
 )
 from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
 
@@ -51,7 +52,7 @@ class RedisStreamGroupConsumer(IMessageConsumer):
                 consumer_name=consumer_name,
                 client=redis,
                 block=block_ms,
-                tracker_factory=NotificationTrackerFactory(strategy=RedisStreamTrackerStrategy()),
+                tracker_factory=TrackerFactory(strategy=RedisStreamTrackerStrategy()),
             )
         )
         self._consumer = MessageConsumer(
@@ -85,7 +86,7 @@ class GroupStreamHandler(IMessageHandler):
         group_name: str,
         consumer_name: str,
         client: Redis,
-        tracker_factory: INotificationTrackerFactory,
+        tracker_factory: ITrackerFactory,
         block: t.Optional[int] = 0,
     ):
         self._group_name = group_name
@@ -93,9 +94,9 @@ class GroupStreamHandler(IMessageHandler):
         self._client = client
         self._block = block
         self._tracker_factory = tracker_factory
-        self._trackers: dict[str, INotificationTracker] = {}
+        self._trackers: dict[str, ITracker] = {}
 
-    async def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]:
+    async def read(self, topic: str, limit: int = None) -> t.Sequence[IPublishedMessage]:
         messages = []
         tracker = self._trackers[topic]
         response = await self._read_message(topic, tracker.last_recent_notification_id, limit)
@@ -103,12 +104,12 @@ class GroupStreamHandler(IMessageHandler):
             _, streams = items
             for stream in streams:
                 message_id, payload = stream
-                message = Notification(
-                    message_id=message_id.decode(),
+                message = PublishedMessage(
                     name=topic,
-                    payload={key.decode(): value.decode() for key, value in payload.items()},
-                    ask_func=self._ask(topic, message_id),
-                    reject_func=self._ask(topic, message_id),
+                    message_id=self._decode(message_id),
+                    payload={self._decode(key): self._decode(value) for key, value in payload.items()},
+                    ask_func=self._ask(topic, self._decode(message_id)),
+                    reject_func=self._ask(topic, self._decode(message_id)),
                 )
                 messages.append(message)
         tracker.track_messages(messages)
@@ -135,6 +136,18 @@ class GroupStreamHandler(IMessageHandler):
 
         return _wrapper
 
+    @singledispatchmethod
+    def _decode(self, value: str | bytes) -> str:
+        raise NotImplementedError()
+
+    @_decode.register
+    def _(self, value: str) -> str:
+        return value
+
+    @_decode.register
+    def _(self, value: bytes) -> str:
+        return value.decode()
+
 
 class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
     def create_tracker(self, track_key: str) -> NotificationTrackerState:
@@ -142,7 +155,7 @@ class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
         return tracker
 
     def track_most_recent_message(
-        self, tracker: NotificationTrackerState, *messages: INotification
+        self, tracker: NotificationTrackerState, *messages: IPublishedMessage
     ) -> NotificationTrackerState:
         if not messages:
             last_notification_id = ">"

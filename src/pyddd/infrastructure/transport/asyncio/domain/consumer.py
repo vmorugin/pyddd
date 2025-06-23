@@ -9,7 +9,7 @@ from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
     INotificationQueue,
     IAskPolicy,
     IEventFactory,
-    INotification,
+    IPublishedMessage,
 )
 from pyddd.infrastructure.transport.core.abstractions import IMessageConsumer
 
@@ -57,7 +57,7 @@ class MessageConsumer(IMessageConsumer):
         for task in self._tasks:
             task.cancel()
 
-    async def _ask_message(self, message: INotification):
+    async def _ask_message(self, message: IPublishedMessage):
         if self._application:
             await self._ask_policy.process(
                 notification=message,

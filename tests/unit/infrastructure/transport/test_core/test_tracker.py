@@ -2,13 +2,13 @@ import dataclasses
 
 import pytest
 from pyddd.infrastructure.transport.asyncio.domain import (
-    Notification,
+    PublishedMessage,
 )
 from pyddd.infrastructure.transport.core.abstractions import (
     INotificationTrackerStrategy,
 )
 from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
-from pyddd.infrastructure.transport.core.tracker import NotificationTracker
+from pyddd.infrastructure.transport.core.tracker import Tracker
 
 
 class TestNotificationTracker:
@@ -23,7 +23,7 @@ class TestNotificationTrackerEntity:
     def strategy(self):
         class CustomNotificationTrackerStrategy(INotificationTrackerStrategy):
             def track_most_recent_message(
-                self, tracker: NotificationTrackerState, *messages: Notification
+                self, tracker: NotificationTrackerState, *messages: PublishedMessage
             ) -> NotificationTrackerState:
                 return dataclasses.replace(tracker, last_recent_notification_id=">")
 
@@ -33,14 +33,14 @@ class TestNotificationTrackerEntity:
         return CustomNotificationTrackerStrategy()
 
     def test_must_create_with_default_strategy(self):
-        tracker = NotificationTracker(track_key="123")
+        tracker = Tracker(track_key="123")
         assert tracker.last_recent_notification_id is None
 
     def test_must_create_with_custom_strategy(self, strategy):
-        tracker = NotificationTracker(track_key="123", track_strategy=strategy)
+        tracker = Tracker(track_key="123", track_strategy=strategy)
         assert tracker.last_recent_notification_id == "0"
 
     def test_must_track_with_custom_strategy(self, strategy):
-        tracker = NotificationTracker(track_key="123", track_strategy=strategy)
+        tracker = Tracker(track_key="123", track_strategy=strategy)
         tracker.track_messages([])
         assert tracker.last_recent_notification_id == ">"

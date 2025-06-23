@@ -4,16 +4,16 @@ from unittest.mock import Mock
 
 from pyddd.infrastructure.transport.sync.domain import (
     IMessageHandler,
-    Notification,
+    PublishedMessage,
     NotificationQueue,
 )
 
 
 class FakeHandler(IMessageHandler):
-    def __init__(self, messages: list[Notification]):
+    def __init__(self, messages: list[PublishedMessage]):
         self._messages = iter(messages)
 
-    def read(self, topic: str, limit: int = None) -> list[Notification]:
+    def read(self, topic: str, limit: int = None) -> list[PublishedMessage]:
         return [message for message in self._messages if message.name == topic][:limit]
 
     def bind(self, topic: str):
@@ -23,7 +23,7 @@ class FakeHandler(IMessageHandler):
 class TestNotificationQueue:
     def test_consume_must_sent_message_to_callback(self):
         messages = [
-            Notification(
+            PublishedMessage(
                 message_id=str(uuid.uuid4()),
                 name="test:stream",
                 payload={},
@@ -41,7 +41,7 @@ class TestNotificationQueue:
         queue.stop_consume()
 
     def test_queue_must_ignore_errors(self):
-        message = Notification(
+        message = PublishedMessage(
             message_id=str(uuid.uuid4()),
             name="test:stream",
             payload={},
@@ -60,12 +60,12 @@ class TestNotificationQueue:
             time.sleep(1000)
 
         messages = [
-            Notification(
+            PublishedMessage(
                 message_id=str(uuid.uuid4()),
                 name="test:stream",
                 payload={},
             ),
-            Notification(
+            PublishedMessage(
                 message_id=str(uuid.uuid4()),
                 name="test:stream",
                 payload={},

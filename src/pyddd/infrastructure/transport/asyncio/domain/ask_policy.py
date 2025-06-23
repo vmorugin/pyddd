@@ -4,7 +4,7 @@ from pyddd.application.abstractions import IApplication
 from pyddd.infrastructure.transport.asyncio.domain.abstractions import (
     IAskPolicy,
     IEventFactory,
-    INotification,
+    IPublishedMessage,
 )
 
 
@@ -14,7 +14,7 @@ class DefaultAskPolicy(IAskPolicy):
 
     async def process(
         self,
-        notification: INotification,
+        notification: IPublishedMessage,
         event_factory: IEventFactory,
         application: IApplication,
     ):

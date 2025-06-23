@@ -20,7 +20,7 @@ from pyddd.domain.abstractions import MessageType
 from pyddd.infrastructure.transport.asyncio.domain import (
     DefaultAskPolicy,
     MessageConsumer,
-    Notification,
+    PublishedMessage,
     NotificationQueue,
 )
 from pyddd.infrastructure.transport.asyncio.redis.stream_group.consumer import (
@@ -58,7 +58,7 @@ class TestStreamHandler:
 
         messages = await handler.read(topic="user:update")
         message = messages.pop()
-        assert isinstance(message, Notification)
+        assert isinstance(message, PublishedMessage)
         assert message.payload == payload
 
     async def test_reader_could_read_ten_messages(self, redis, handler):
@@ -69,6 +69,19 @@ class TestStreamHandler:
 
         messages = await handler.read("user:update", limit=10)
         assert len(messages) == 10
+
+    async def test_could_work_with_decoded_response(self, redis, handler):
+        redis.connection_pool.connection_kwargs['decode_responses'] = True
+        payload = {"test_data": str(uuid.uuid4())}
+        await handler.bind("user:update")
+        assert await handler.read(topic="user:update") == []
+
+        await redis.xadd("user:update", payload)
+
+        messages = await handler.read(topic="user:update")
+        message = messages.pop()
+        assert isinstance(message, PublishedMessage)
+        assert message.payload == payload
 
 
 class TestConsumer:
