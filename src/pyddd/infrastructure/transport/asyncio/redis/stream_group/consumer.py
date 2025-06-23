@@ -13,7 +13,7 @@ from pyddd.infrastructure.transport.core.abstractions import (
     ITrackerFactory,
     ITracker,
     IPublishedMessage,
-    INotificationTrackerStrategy,
+    ITrackerStrategy,
 )
 from pyddd.infrastructure.transport.core.event_factory import (
     PublishedEventFactory,
@@ -30,7 +30,7 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     IMessageHandler,
     PublishedMessage,
 )
-from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
+from pyddd.infrastructure.transport.core.value_objects import TrackerState
 
 
 class RedisStreamGroupConsumer(IMessageConsumer):
@@ -99,7 +99,7 @@ class GroupStreamHandler(IMessageHandler):
     async def read(self, topic: str, limit: int = None) -> t.Sequence[IPublishedMessage]:
         messages = []
         tracker = self._trackers[topic]
-        response = await self._read_message(topic, tracker.last_recent_notification_id, limit)
+        response = await self._read_message(topic, tracker.last_recent_message_id, limit)
         for items in response:
             _, streams = items
             for stream in streams:
@@ -149,16 +149,16 @@ class GroupStreamHandler(IMessageHandler):
         return value.decode()
 
 
-class RedisStreamTrackerStrategy(INotificationTrackerStrategy):
-    def create_tracker(self, track_key: str) -> NotificationTrackerState:
-        tracker = NotificationTrackerState(track_key=track_key, last_recent_notification_id="0")
+class RedisStreamTrackerStrategy(ITrackerStrategy):
+    def create_tracker(self, track_key: str) -> TrackerState:
+        tracker = TrackerState(track_key=track_key, last_recent_message_id="0")
         return tracker
 
     def track_most_recent_message(
-        self, tracker: NotificationTrackerState, *messages: IPublishedMessage
-    ) -> NotificationTrackerState:
+        self, tracker: TrackerState, *messages: IPublishedMessage
+    ) -> TrackerState:
         if not messages:
             last_notification_id = ">"
         else:
             last_notification_id = messages[-1].message_id
-        return dataclasses.replace(tracker, last_recent_notification_id=last_notification_id)
+        return dataclasses.replace(tracker, last_recent_message_id=last_notification_id)

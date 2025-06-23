@@ -3,7 +3,7 @@ import typing as t
 
 from pyddd.application.abstractions import IApplication
 from pyddd.domain.abstractions import IMessage
-from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
+from pyddd.infrastructure.transport.core.value_objects import TrackerState
 
 
 class IPublishedMessage(abc.ABC):
@@ -37,7 +37,7 @@ class IEventFactory(abc.ABC):
 class ITracker(abc.ABC):
     @property
     @abc.abstractmethod
-    def last_recent_notification_id(self): ...
+    def last_recent_message_id(self): ...
 
     @abc.abstractmethod
     def track_messages(self, messages: t.Iterable[IPublishedMessage]): ...
@@ -56,16 +56,16 @@ class IMessageConsumer(abc.ABC):
     def set_application(self, application: IApplication): ...
 
 
-class INotificationTrackerStrategy(abc.ABC):
+class ITrackerStrategy(abc.ABC):
     @abc.abstractmethod
     def track_most_recent_message(
         self,
-        tracker: NotificationTrackerState,
+        tracker: TrackerState,
         *messages: IPublishedMessage,
-    ) -> NotificationTrackerState: ...
+    ) -> TrackerState: ...
 
     @abc.abstractmethod
-    def create_tracker(self, track_key: str) -> NotificationTrackerState: ...
+    def create_tracker(self, track_key: str) -> TrackerState: ...
 
 
 class PublisherProtocol(t.Protocol):
