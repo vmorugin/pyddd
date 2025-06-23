@@ -6,13 +6,13 @@ from .abstractions import (
 )
 from .ask_policy import DefaultAskPolicy
 from .consumer import MessageConsumer
-from .notification import Notification
+from .notification import PublishedMessage
 from .queue import NotificationQueue
 
 __all__ = [
     "DefaultAskPolicy",
     "MessageConsumer",
-    "Notification",
+    "PublishedMessage",
     "NotificationQueue",
     "IAskPolicy",
     "ICallback",

@@ -6,7 +6,7 @@ from pyddd.domain.abstractions import IMessage
 from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
 
 
-class INotification(abc.ABC):
+class IPublishedMessage(abc.ABC):
     @property
     @abc.abstractmethod
     def message_id(self) -> str: ...
@@ -28,24 +28,24 @@ class INotification(abc.ABC):
 
 class IEventFactory(abc.ABC):
     @abc.abstractmethod
-    def build_event(self, notification: INotification) -> IMessage: ...
+    def build_event(self, notification: IPublishedMessage) -> IMessage: ...
 
     @abc.abstractmethod
-    def build_notification(self, message: IMessage) -> INotification: ...
+    def build_published_message(self, message: IMessage) -> IPublishedMessage: ...
 
 
-class INotificationTracker(abc.ABC):
+class ITracker(abc.ABC):
     @property
     @abc.abstractmethod
     def last_recent_notification_id(self): ...
 
     @abc.abstractmethod
-    def track_messages(self, messages: t.Iterable[INotification]): ...
+    def track_messages(self, messages: t.Iterable[IPublishedMessage]): ...
 
 
-class INotificationTrackerFactory(abc.ABC):
+class ITrackerFactory(abc.ABC):
     @abc.abstractmethod
-    def create_tracker(self, track_key: str) -> INotificationTracker: ...
+    def create_tracker(self, track_key: str) -> ITracker: ...
 
 
 class IMessageConsumer(abc.ABC):
@@ -61,7 +61,7 @@ class INotificationTrackerStrategy(abc.ABC):
     def track_most_recent_message(
         self,
         tracker: NotificationTrackerState,
-        *messages: INotification,
+        *messages: IPublishedMessage,
     ) -> NotificationTrackerState: ...
 
     @abc.abstractmethod

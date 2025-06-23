@@ -2,8 +2,8 @@ import dataclasses
 import typing as t
 
 from pyddd.infrastructure.transport.core.abstractions import (
-    INotification,
-    INotificationTracker,
+    IPublishedMessage,
+    ITracker,
     INotificationTrackerStrategy,
 )
 from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
@@ -14,7 +14,7 @@ class DefaultNotificationTrackerStrategy(INotificationTrackerStrategy):
         return NotificationTrackerState(track_key=track_key, last_recent_notification_id=None)
 
     def track_most_recent_message(
-        self, tracker: NotificationTrackerState, *messages: INotification
+        self, tracker: NotificationTrackerState, *messages: IPublishedMessage
     ) -> NotificationTrackerState:
         if not messages:
             return tracker
@@ -22,7 +22,7 @@ class DefaultNotificationTrackerStrategy(INotificationTrackerStrategy):
         return dataclasses.replace(tracker, last_recent_notification_id=last_message.message_id)
 
 
-class NotificationTracker(INotificationTracker):
+class Tracker(ITracker):
     def __init__(
         self,
         track_key: str,
@@ -35,6 +35,6 @@ class NotificationTracker(INotificationTracker):
     def last_recent_notification_id(self):
         return self._tracker.last_recent_notification_id
 
-    def track_messages(self, messages: t.Iterable[INotification]):
+    def track_messages(self, messages: t.Iterable[IPublishedMessage]):
         tracker = self._strategy.track_most_recent_message(self._tracker, *messages)
         self._tracker = tracker

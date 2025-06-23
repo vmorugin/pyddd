@@ -9,7 +9,7 @@ from pyddd.infrastructure.transport.sync.redis.stream_group.consumer import (
     RedisStreamTrackerStrategy,
 )
 from pyddd.infrastructure.transport.core.tracker_factory import (
-    NotificationTrackerFactory,
+    TrackerFactory,
 )
 
 
@@ -35,5 +35,5 @@ def redis_stream_handler(redis, group_name, consumer_name):
         consumer_name=consumer_name,
         client=redis,
         block=None,
-        tracker_factory=NotificationTrackerFactory(strategy=RedisStreamTrackerStrategy()),
+        tracker_factory=TrackerFactory(strategy=RedisStreamTrackerStrategy()),
     )

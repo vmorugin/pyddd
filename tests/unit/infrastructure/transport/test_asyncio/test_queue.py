@@ -4,16 +4,16 @@ from unittest.mock import AsyncMock
 
 from pyddd.infrastructure.transport.asyncio.domain import (
     IMessageHandler,
-    Notification,
+    PublishedMessage,
     NotificationQueue,
 )
 
 
 class FakeHandler(IMessageHandler):
-    def __init__(self, messages: list[Notification]):
+    def __init__(self, messages: list[PublishedMessage]):
         self._messages = messages
 
-    async def read(self, topic: str, limit: int = None) -> list[Notification]:
+    async def read(self, topic: str, limit: int = None) -> list[PublishedMessage]:
         return self._messages
 
     async def bind(self, topic: str):
@@ -23,7 +23,7 @@ class FakeHandler(IMessageHandler):
 class TestNotificationQueue:
     async def test_consume_must_sent_message_to_callback(self):
         messages = [
-            Notification(
+            PublishedMessage(
                 message_id=str(uuid.uuid4()),
                 name="test:stream",
                 payload={},
@@ -40,7 +40,7 @@ class TestNotificationQueue:
         callback.assert_called_with(messages[0])
 
     async def test_queue_must_ignore_errors(self):
-        message = Notification(
+        message = PublishedMessage(
             message_id=str(uuid.uuid4()),
             name="test:stream",
             payload={},
@@ -52,7 +52,7 @@ class TestNotificationQueue:
         callback.assert_not_called()
 
     async def test_not_call_message_if_not_bind(self):
-        message = Notification(
+        message = PublishedMessage(
             message_id=str(uuid.uuid4()),
             name="test:stream",
             payload={},
@@ -70,12 +70,12 @@ class TestNotificationQueue:
             await asyncio.sleep(1000)
 
         messages = [
-            Notification(
+            PublishedMessage(
                 message_id=str(uuid.uuid4()),
                 name="test:stream",
                 payload={},
             ),
-            Notification(
+            PublishedMessage(
                 message_id=str(uuid.uuid4()),
                 name="test:stream",
                 payload={},

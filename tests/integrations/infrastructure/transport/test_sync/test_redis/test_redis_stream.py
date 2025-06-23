@@ -26,7 +26,7 @@ from pyddd.infrastructure.transport.core.event_factory import (
 from pyddd.infrastructure.transport.sync.domain import (
     DefaultAskPolicy,
     MessageConsumer,
-    Notification,
+    PublishedMessage,
     NotificationQueue,
 )
 from pyddd.infrastructure.transport.sync.redis.stream_group.consumer import (
@@ -56,7 +56,7 @@ class TestStreamHandler:
 
         messages = handler.read(topic="user:update")
         message = messages.pop()
-        assert isinstance(message, Notification)
+        assert isinstance(message, PublishedMessage)
         assert message.payload == payload
 
     def test_reader_could_read_ten_messages(self, redis, handler):
@@ -78,7 +78,7 @@ class TestStreamHandler:
 
         messages = handler.read(topic="user:update")
         message = messages.pop()
-        assert isinstance(message, Notification)
+        assert isinstance(message, PublishedMessage)
         assert message.payload == payload
 
 

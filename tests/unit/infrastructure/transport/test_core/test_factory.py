@@ -9,13 +9,13 @@ from pyddd.domain.message import (
 )
 from pyddd.domain.abstractions import IMessage
 from pyddd.infrastructure.transport.core.abstractions import (
-    INotification,
+    IPublishedMessage,
     IEventFactory,
 )
 from pyddd.infrastructure.transport.core.event_factory import (
     UniversalEventFactory,
     PublishedEventFactory,
-    UniversalNotification,
+    UniversalPublishedMessage,
 )
 from pyddd.infrastructure.transport.core.value_objects import PublishedEvent
 
@@ -29,7 +29,7 @@ class TestUniversalEventFactory:
         assert isinstance(factory, IEventFactory)
 
     def test_build_event(self, factory):
-        notification = UniversalNotification(
+        notification = UniversalPublishedMessage(
             message_id=str(uuid.uuid4()),
             full_name="test:domain:FakeNotificationName",
             payload={"some_random": str(uuid.uuid4())},
@@ -48,8 +48,8 @@ class TestUniversalEventFactory:
             full_name="test.domain.FakeMessage",
             payload=dict(some_random=str(uuid.uuid4())),
         )
-        notification = factory.build_notification(message)
-        assert isinstance(notification, INotification)
+        notification = factory.build_published_message(message)
+        assert isinstance(notification, IPublishedMessage)
         assert notification.name == "test.domain.FakeMessage"
         assert notification.payload == message.to_dict()
 
@@ -69,7 +69,7 @@ class TestPublishedEventDomainEventTranslator:
             payload=json.dumps(dict(result=True)),
             timestamp=str(datetime.datetime(2020, 1, 1, 1, 1, 25).timestamp()),
         )
-        notification = UniversalNotification(
+        notification = UniversalPublishedMessage(
             message_id=str(uuid.uuid4()),
             full_name="test:domain:FakeNotificationName",
             payload=published_event.__dict__,
@@ -95,6 +95,6 @@ class TestPublishedEventDomainEventTranslator:
             payload=event.to_json(),
             timestamp=str(event.__timestamp__.timestamp()),
         )
-        notification = factory.build_notification(event)
+        notification = factory.build_published_message(event)
         assert notification.name == event.__topic__
         assert notification.payload == published_event.__dict__

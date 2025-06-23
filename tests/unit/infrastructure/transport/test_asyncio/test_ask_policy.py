@@ -13,7 +13,7 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     IAskPolicy,
 )
 from pyddd.infrastructure.transport.core.abstractions import (
-    INotification,
+    IPublishedMessage,
     IEventFactory,
 )
 
@@ -25,7 +25,7 @@ class TestDefaultAskPolicy:
 
     @pytest.fixture
     def notification(self):
-        notification = Mock(spec=INotification)
+        notification = Mock(spec=IPublishedMessage)
         notification.reject = AsyncMock()
         return notification
 

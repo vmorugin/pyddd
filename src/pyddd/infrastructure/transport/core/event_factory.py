@@ -12,12 +12,12 @@ from pyddd.domain.abstractions import (
 
 from pyddd.infrastructure.transport.core.abstractions import (
     IEventFactory,
-    INotification,
+    IPublishedMessage,
 )
 from pyddd.infrastructure.transport.core.value_objects import PublishedEvent
 
 
-class UniversalNotification(INotification):
+class UniversalPublishedMessage(IPublishedMessage):
     def __init__(
         self,
         full_name: str,
@@ -48,15 +48,15 @@ class UniversalNotification(INotification):
 
 
 class UniversalEventFactory(IEventFactory):
-    def build_event(self, notification: INotification) -> Message:
+    def build_event(self, notification: IPublishedMessage) -> Message:
         return Message(
             full_name=f"{notification.name.replace(':', '.')}",
             message_type=MessageType.EVENT,
             payload=notification.payload,
         )
 
-    def build_notification(self, message: IMessage) -> INotification:
-        return UniversalNotification(
+    def build_published_message(self, message: IMessage) -> IPublishedMessage:
+        return UniversalPublishedMessage(
             full_name=message.__topic__,
             message_id=message.__message_id__,
             payload=message.to_dict(),
@@ -64,7 +64,7 @@ class UniversalEventFactory(IEventFactory):
 
 
 class PublishedEventFactory(IEventFactory):
-    def build_event(self, notification: INotification) -> Message:
+    def build_event(self, notification: IPublishedMessage) -> Message:
         published_event = PublishedEvent(**notification.payload)
         return Message(
             full_name=published_event.full_event_name,
@@ -74,8 +74,8 @@ class PublishedEventFactory(IEventFactory):
             occurred_on=dt.datetime.fromtimestamp(float(published_event.timestamp)),
         )
 
-    def build_notification(self, message: IMessage) -> INotification:
-        return UniversalNotification(
+    def build_published_message(self, message: IMessage) -> IPublishedMessage:
+        return UniversalPublishedMessage(
             full_name=message.__topic__,
             message_id=message.__message_id__,
             payload=PublishedEvent(
