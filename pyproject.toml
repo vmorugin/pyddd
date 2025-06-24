@@ -67,8 +67,3 @@ asyncio_default_fixture_loop_scope = "function"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyddd"]
-
-[[tool.uv.index]]
-name = "NEXUS_MIRROR_PYPI"
-url = "https://nexus.infra.myoffice.group/repository/pypi.org/simple"
-
