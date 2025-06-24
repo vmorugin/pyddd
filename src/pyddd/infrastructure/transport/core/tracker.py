@@ -13,9 +13,7 @@ class DefaultTrackerStrategy(ITrackerStrategy):
     def create_tracker(self, track_key: str) -> TrackerState:
         return TrackerState(track_key=track_key, last_recent_message_id=None)
 
-    def track_most_recent_message(
-        self, tracker: TrackerState, *messages: IPublishedMessage
-    ) -> TrackerState:
+    def track_most_recent_message(self, tracker: TrackerState, *messages: IPublishedMessage) -> TrackerState:
         if not messages:
             return tracker
         last_message = messages[-1]

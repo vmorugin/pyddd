@@ -1,7 +1,6 @@
 import dataclasses
 import typing as t
 from contextlib import suppress
-from functools import singledispatchmethod
 
 from redis import (
     Redis,
@@ -139,17 +138,13 @@ class GroupStreamHandler(IMessageHandler):
 
         return _wrapper
 
-    @singledispatchmethod
-    def _decode(self, value: str | bytes) -> str:
-        raise NotImplementedError()
-
-    @_decode.register
-    def _(self, value: str) -> str:
-        return value
-
-    @_decode.register
-    def _(self, value: bytes) -> str:
-        return value.decode()
+    @staticmethod
+    def _decode(value: str | bytes) -> str:
+        if isinstance(value, str):
+            return value
+        if isinstance(value, bytes):
+            return value.decode()
+        raise ValueError(f"Can not decode unexpected type {value}")
 
 
 class RedisStreamTrackerStrategy(ITrackerStrategy):
@@ -157,9 +152,7 @@ class RedisStreamTrackerStrategy(ITrackerStrategy):
         tracker = TrackerState(track_key=track_key, last_recent_message_id="0")
         return tracker
 
-    def track_most_recent_message(
-        self, tracker: TrackerState, *messages: IPublishedMessage
-    ) -> "TrackerState":
+    def track_most_recent_message(self, tracker: TrackerState, *messages: IPublishedMessage) -> "TrackerState":
         if not messages:
             last_notification_id = ">"
         else:

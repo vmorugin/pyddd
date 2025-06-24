@@ -9,6 +9,7 @@ TLockKey: t.TypeAlias = str | None
 
 TRepo = t.TypeVar("TRepo")
 
+
 class IRepository(abc.ABC):
     @abc.abstractmethod
     def commit(self): ...
