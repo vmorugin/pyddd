@@ -1,4 +1,4 @@
-import time
+import asyncio
 import uuid
 from unittest.mock import (
     Mock,
@@ -8,6 +8,7 @@ import pytest
 
 from pyddd.application import (
     Application,
+    AsyncExecutor,
     Module,
 )
 from pyddd.domain import DomainCommand
@@ -15,6 +16,19 @@ from pyddd.domain.message import (
     Message,
 )
 from pyddd.domain.abstractions import MessageType
+
+from pyddd.infrastructure.transport.asyncio.domain import (
+    DefaultAskPolicy,
+    MessageConsumer,
+    PublishedMessage,
+    NotificationQueue,
+)
+from pyddd.infrastructure.transport.asyncio.redis.stream_group.consumer import (
+    RedisStreamGroupConsumer,
+)
+from pyddd.infrastructure.transport.asyncio.redis.stream_group.publisher import (
+    RedisStreamPublisher,
+)
 from pyddd.infrastructure.transport.core.abstractions import (
     IMessageConsumer,
     IEventFactory,
@@ -23,18 +37,6 @@ from pyddd.infrastructure.transport.core.event_factory import (
     UniversalEventFactory,
     PublishedEventFactory,
 )
-from pyddd.infrastructure.transport.sync.domain import (
-    DefaultAskPolicy,
-    MessageConsumer,
-    Notification,
-    NotificationQueue,
-)
-from pyddd.infrastructure.transport.sync.redis.stream_group.consumer import (
-    RedisStreamGroupConsumer,
-)
-from pyddd.infrastructure.transport.sync.redis.stream_group.publisher import (
-    RedisStreamPublisher,
-)
 
 
 class TestStreamHandler:
@@ -42,43 +44,43 @@ class TestStreamHandler:
     def handler(self, redis_stream_handler):
         return redis_stream_handler
 
-    def test_reader_first_read_can_be_none(self, handler):
-        handler.bind("user:update")
-        messages = handler.read("user:update")
+    async def test_reader_first_read_can_be_none(self, handler):
+        await handler.bind("user:update")
+        messages = await handler.read("user:update")
         assert messages == []
 
-    def test_reader_must_get_new_messages(self, handler, redis):
+    async def test_reader_must_get_new_messages(self, handler, redis):
         payload = {"test_data": str(uuid.uuid4())}
-        handler.bind("user:update")
-        assert handler.read(topic="user:update") == []
+        await handler.bind("user:update")
+        assert await handler.read(topic="user:update") == []
 
-        redis.xadd("user:update", payload)
+        await redis.xadd("user:update", payload)
 
-        messages = handler.read(topic="user:update")
+        messages = await handler.read(topic="user:update")
         message = messages.pop()
-        assert isinstance(message, Notification)
+        assert isinstance(message, PublishedMessage)
         assert message.payload == payload
 
-    def test_reader_could_read_ten_messages(self, redis, handler):
-        handler.bind("user:update")
-        assert handler.read("user:update") == []
+    async def test_reader_could_read_ten_messages(self, redis, handler):
+        await handler.bind("user:update")
+        assert await handler.read("user:update") == []
 
-        [redis.xadd("user:update", {"test_data": str(uuid.uuid4())}) for _ in range(15)]
+        [await redis.xadd("user:update", {"test_data": str(uuid.uuid4())}) for _ in range(15)]
 
-        messages = handler.read("user:update", 10)
+        messages = await handler.read("user:update", limit=10)
         assert len(messages) == 10
 
-    def test_could_work_with_decoded_response(self, redis, handler):
-        redis.connection_pool.connection_kwargs['decode_responses'] = True
+    async def test_could_work_with_decoded_response(self, redis, handler):
+        redis.connection_pool.connection_kwargs["decode_responses"] = True
         payload = {"test_data": str(uuid.uuid4())}
-        handler.bind("user:update")
-        assert handler.read(topic="user:update") == []
+        await handler.bind("user:update")
+        assert await handler.read(topic="user:update") == []
 
-        redis.xadd("user:update", payload)
+        await redis.xadd("user:update", payload)
 
-        messages = handler.read(topic="user:update")
+        messages = await handler.read(topic="user:update")
         message = messages.pop()
-        assert isinstance(message, Notification)
+        assert isinstance(message, PublishedMessage)
         assert message.payload == payload
 
 
@@ -87,7 +89,7 @@ class TestConsumer:
     def handler(self, redis_stream_handler):
         return redis_stream_handler
 
-    def test_message_consumer(self, redis, redis_stream_handler):
+    async def test_message_consumer(self, redis, redis_stream_handler):
         module = Module("test")
 
         class ExampleCommand1(DomainCommand, domain="test"):
@@ -98,35 +100,32 @@ class TestConsumer:
 
         @module.subscribe("test.stream")
         @module.register
-        def callback_1(cmd: ExampleCommand1, callback):
+        async def callback_1(cmd: ExampleCommand1, callback):
             return callback()
 
         @module.subscribe("test.stream")
         @module.register
-        def callback_2(cmd: ExampleCommand2, callback):
+        async def callback_2(cmd: ExampleCommand2, callback):
             return callback()
 
-        app = Application()
+        app = Application(executor=AsyncExecutor())
         app.include(module)
 
         callback = Mock()
         app.set_defaults("test", callback=callback)
 
-        consumer = MessageConsumer(
-            queue=NotificationQueue(message_handler=redis_stream_handler),
-            ask_policy=DefaultAskPolicy(),
-            event_factory=UniversalEventFactory(),
-        )
+        ask_policy = DefaultAskPolicy()
+        queue = NotificationQueue(message_handler=redis_stream_handler)
+        consumer = MessageConsumer(queue=queue, ask_policy=ask_policy, event_factory=UniversalEventFactory())
         consumer.set_application(app)
         consumer.subscribe("test:stream")
-        app.run()
+        await app.run_async()
 
-        [redis.xadd("test:stream", {"foo": "true"}) for _ in range(5)]
-        [redis.xadd("test:stream", {"bar": "true"}) for _ in range(5)]
+        [await redis.xadd("test:stream", {"foo": "true"}) for _ in range(5)]
+        [await redis.xadd("test:stream", {"bar": "true"}) for _ in range(5)]
 
-        time.sleep(0.1)
-
-        app.stop()
+        await asyncio.sleep(0.1)
+        await app.stop_async()
 
         assert callback.call_count == 10
 
@@ -139,7 +138,7 @@ class TestRedisStreamConsumer:
         assert isinstance(consumer.event_factory, PublishedEventFactory)
         assert isinstance(consumer.queue, NotificationQueue)
 
-    def test_could_publish_event(self, redis):
+    async def test_could_publish_event(self, redis):
         module = Module("test")
 
         class ExampleCommand(DomainCommand, domain="test"):
@@ -152,7 +151,7 @@ class TestRedisStreamConsumer:
 
         callback = Mock()
         consumer = RedisStreamGroupConsumer(
-            redis=redis,
+            redis,
             group_name=str(uuid.uuid4()),
             consumer_name=str(uuid.uuid4()),
             event_factory=UniversalEventFactory(),
@@ -162,13 +161,13 @@ class TestRedisStreamConsumer:
         app.set_defaults(module.domain, callback=callback)
         consumer.set_application(app)
         consumer.subscribe("test:stream")
-        app.run()
+        await app.run_async()
 
-        [redis.xadd("test:stream", {"bar": "true"}) for _ in range(5)]
+        [await redis.xadd("test:stream", {"bar": "true"}) for _ in range(5)]
 
-        time.sleep(0.1)
+        await asyncio.sleep(0.1)
 
-        app.stop()
+        await app.stop_async()
 
         assert callback.call_count == 5
 
@@ -188,7 +187,7 @@ class TestPublisher:
 
         return _wrapper
 
-    def test_publish_event_universal_factory(self, redis, get_publisher, app):
+    async def test_publish_event_universal_factory(self, redis, get_publisher, app):
         unique_name = str(uuid.uuid4())
         event = Message(
             message_type=MessageType.EVENT,
@@ -198,11 +197,11 @@ class TestPublisher:
         publisher = get_publisher(event_factory=UniversalEventFactory())
         publisher.register(event.__topic__)
 
-        redis.xgroup_create(name=event.__topic__, groupname=unique_name, mkstream=True)
-        app.run()
-        app.handle(event)
+        await redis.xgroup_create(name=event.__topic__, groupname=unique_name, mkstream=True)
+        await app.run_async()
+        await app.handle(event)
 
-        messages = redis.xreadgroup(
+        messages = await redis.xreadgroup(
             groupname=unique_name,
             consumername=unique_name,
             streams={event.__topic__: ">"},
@@ -211,7 +210,7 @@ class TestPublisher:
         message_id, payload = streams[0]
         assert {key.decode(): value.decode() for key, value in payload.items()} == event.to_dict()
 
-    def test_publish_event_with_published_factory(self, redis, get_publisher, app):
+    async def test_publish_event_with_published_factory(self, redis, get_publisher, app):
         unique_name = str(uuid.uuid4())
         event = Message(
             message_type=MessageType.EVENT,
@@ -221,11 +220,11 @@ class TestPublisher:
         publisher = get_publisher()
         publisher.register(event.__topic__)
 
-        redis.xgroup_create(name=event.__topic__, groupname=unique_name, mkstream=True)
-        app.run()
-        app.handle(event)
+        await redis.xgroup_create(name=event.__topic__, groupname=unique_name, mkstream=True)
+        await app.run_async()
+        await app.handle(event)
 
-        messages = redis.xreadgroup(
+        messages = await redis.xreadgroup(
             groupname=unique_name,
             consumername=unique_name,
             streams={event.__topic__: ">"},

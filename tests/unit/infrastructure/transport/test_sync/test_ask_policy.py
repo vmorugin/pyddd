@@ -7,7 +7,7 @@ import pytest
 from pyddd.application.abstractions import IApplication
 from pyddd.domain import DomainEvent
 from pyddd.infrastructure.transport.core.abstractions import (
-    INotification,
+    IPublishedMessage,
     IEventFactory,
 )
 
@@ -24,7 +24,7 @@ class TestDefaultAskPolicy:
 
     @pytest.fixture
     def notification(self):
-        return Mock(spec=INotification)
+        return Mock(spec=IPublishedMessage)
 
     @pytest.fixture
     def app(self):

@@ -3,14 +3,14 @@ import typing as t
 
 from pyddd.application.abstractions import IApplication
 from pyddd.infrastructure.transport.core.abstractions import (
-    INotification,
+    IPublishedMessage,
     IEventFactory,
 )
 
 
 class IMessageHandler(abc.ABC):
     @abc.abstractmethod
-    def read(self, topic: str, limit: int = None) -> t.Sequence[INotification]: ...
+    def read(self, topic: str, limit: int = None) -> t.Sequence[IPublishedMessage]: ...
 
     @abc.abstractmethod
     def bind(self, topic: str): ...
@@ -20,14 +20,14 @@ class IAskPolicy(abc.ABC):
     @abc.abstractmethod
     def process(
         self,
-        notification: INotification,
+        notification: IPublishedMessage,
         event_factory: IEventFactory,
         application: IApplication,
     ): ...
 
 
 class ICallback(t.Protocol):
-    def __call__(self, message: INotification): ...
+    def __call__(self, message: IPublishedMessage): ...
 
 
 class INotificationQueue(abc.ABC):

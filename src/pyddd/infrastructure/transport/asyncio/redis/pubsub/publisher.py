@@ -42,7 +42,7 @@ class RedisPubSubPublisher:
         app.include(self._module)
 
     async def _publish(self, message: IMessage):
-        notification = self._event_factory.build_notification(message)
+        notification = self._event_factory.build_publishing_message(message)
         try:
             await self._client.publish(
                 channel=message.__topic__,

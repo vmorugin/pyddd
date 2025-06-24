@@ -3,10 +3,10 @@ import typing as t
 
 from pyddd.application.abstractions import IApplication
 from pyddd.domain.abstractions import IMessage
-from pyddd.infrastructure.transport.core.value_objects import NotificationTrackerState
+from pyddd.infrastructure.transport.core.value_objects import TrackerState
 
 
-class INotification(abc.ABC):
+class IPublishingMessage(abc.ABC):
     @property
     @abc.abstractmethod
     def message_id(self) -> str: ...
@@ -19,6 +19,8 @@ class INotification(abc.ABC):
     @abc.abstractmethod
     def payload(self) -> dict: ...
 
+
+class IPublishedMessage(IPublishingMessage, abc.ABC):
     @abc.abstractmethod
     def ack(self): ...
 
@@ -28,24 +30,24 @@ class INotification(abc.ABC):
 
 class IEventFactory(abc.ABC):
     @abc.abstractmethod
-    def build_event(self, notification: INotification) -> IMessage: ...
+    def build_event(self, notification: IPublishingMessage) -> IMessage: ...
 
     @abc.abstractmethod
-    def build_notification(self, message: IMessage) -> INotification: ...
+    def build_publishing_message(self, message: IMessage) -> IPublishingMessage: ...
 
 
-class INotificationTracker(abc.ABC):
+class ITracker(abc.ABC):
     @property
     @abc.abstractmethod
-    def last_recent_notification_id(self): ...
+    def last_recent_message_id(self): ...
 
     @abc.abstractmethod
-    def track_messages(self, messages: t.Iterable[INotification]): ...
+    def track_messages(self, messages: t.Iterable[IPublishedMessage]): ...
 
 
-class INotificationTrackerFactory(abc.ABC):
+class ITrackerFactory(abc.ABC):
     @abc.abstractmethod
-    def create_tracker(self, track_key: str) -> INotificationTracker: ...
+    def create_tracker(self, track_key: str) -> ITracker: ...
 
 
 class IMessageConsumer(abc.ABC):
@@ -56,16 +58,16 @@ class IMessageConsumer(abc.ABC):
     def set_application(self, application: IApplication): ...
 
 
-class INotificationTrackerStrategy(abc.ABC):
+class ITrackerStrategy(abc.ABC):
     @abc.abstractmethod
     def track_most_recent_message(
         self,
-        tracker: NotificationTrackerState,
-        *messages: INotification,
-    ) -> NotificationTrackerState: ...
+        tracker: TrackerState,
+        *messages: IPublishedMessage,
+    ) -> TrackerState: ...
 
     @abc.abstractmethod
-    def create_tracker(self, track_key: str) -> NotificationTrackerState: ...
+    def create_tracker(self, track_key: str) -> TrackerState: ...
 
 
 class PublisherProtocol(t.Protocol):

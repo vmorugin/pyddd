@@ -1,14 +1,14 @@
 from pyddd.infrastructure.transport.core.abstractions import (
-    INotificationTrackerFactory,
-    INotificationTrackerStrategy,
-    INotificationTracker,
+    ITrackerFactory,
+    ITrackerStrategy,
+    ITracker,
 )
-from pyddd.infrastructure.transport.core.tracker import NotificationTracker
+from pyddd.infrastructure.transport.core.tracker import Tracker
 
 
-class NotificationTrackerFactory(INotificationTrackerFactory):
-    def __init__(self, strategy: INotificationTrackerStrategy):
+class TrackerFactory(ITrackerFactory):
+    def __init__(self, strategy: ITrackerStrategy):
         self._strategy = strategy
 
-    def create_tracker(self, track_key: str) -> INotificationTracker:
-        return NotificationTracker(track_key=track_key, track_strategy=self._strategy)
+    def create_tracker(self, track_key: str) -> ITracker:
+        return Tracker(track_key=track_key, track_strategy=self._strategy)

@@ -9,7 +9,7 @@ from pyddd.infrastructure.transport.sync.domain.abstractions import (
     INotificationQueue,
     IAskPolicy,
     IEventFactory,
-    INotification,
+    IPublishedMessage,
 )
 
 
@@ -53,7 +53,7 @@ class MessageConsumer(IMessageConsumer):
 
     def _after_stop_handler(self, _signal: ApplicationSignal, _app: IApplication): ...
 
-    def _ask_message(self, message: INotification):
+    def _ask_message(self, message: IPublishedMessage):
         if self._application:
             self._ask_policy.process(
                 notification=message,

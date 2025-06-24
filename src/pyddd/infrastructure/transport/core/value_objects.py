@@ -13,6 +13,6 @@ class PublishedEvent(ValueObject):
 
 
 @dataclasses.dataclass(frozen=True)
-class NotificationTrackerState(ValueObject):
+class TrackerState(ValueObject):
     track_key: str
-    last_recent_notification_id: t.Optional[str]
+    last_recent_message_id: t.Optional[str]

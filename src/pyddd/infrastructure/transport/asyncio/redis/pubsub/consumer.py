@@ -19,7 +19,7 @@ from pyddd.infrastructure.transport.asyncio.domain import (
     DefaultAskPolicy,
     MessageConsumer,
     ICallback,
-    Notification,
+    PublishedMessage,
 )
 
 
@@ -85,7 +85,7 @@ class PubSubNotificationQueue(INotificationQueue):
             try:
                 async for message in self._pubsub.listen():
                     if message["type"] == "message":
-                        notification = Notification(
+                        notification = PublishedMessage(
                             message_id=str(uuid.uuid4()),
                             name=message["channel"].decode(),
                             payload=json.loads(message["data"]),
