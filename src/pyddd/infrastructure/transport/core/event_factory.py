@@ -12,12 +12,12 @@ from pyddd.domain.abstractions import (
 
 from pyddd.infrastructure.transport.core.abstractions import (
     IEventFactory,
-    IPublishedMessage,
+    IPublishingMessage,
 )
 from pyddd.infrastructure.transport.core.value_objects import PublishedEvent
 
 
-class UniversalPublishedMessage(IPublishedMessage):
+class UniversalPublishingMessage(IPublishingMessage):
     def __init__(
         self,
         full_name: str,
@@ -40,23 +40,17 @@ class UniversalPublishedMessage(IPublishedMessage):
     def payload(self) -> dict:
         return self._payload
 
-    def ack(self):
-        raise NotImplementedError()
-
-    def reject(self, requeue: bool):
-        raise NotImplementedError()
-
 
 class UniversalEventFactory(IEventFactory):
-    def build_event(self, notification: IPublishedMessage) -> Message:
+    def build_event(self, notification: IPublishingMessage) -> Message:
         return Message(
             full_name=f"{notification.name.replace(':', '.')}",
             message_type=MessageType.EVENT,
             payload=notification.payload,
         )
 
-    def build_published_message(self, message: IMessage) -> IPublishedMessage:
-        return UniversalPublishedMessage(
+    def build_publishing_message(self, message: IMessage) -> IPublishingMessage:
+        return UniversalPublishingMessage(
             full_name=message.__topic__,
             message_id=message.__message_id__,
             payload=message.to_dict(),
@@ -64,7 +58,7 @@ class UniversalEventFactory(IEventFactory):
 
 
 class PublishedEventFactory(IEventFactory):
-    def build_event(self, notification: IPublishedMessage) -> Message:
+    def build_event(self, notification: IPublishingMessage) -> Message:
         published_event = PublishedEvent(**notification.payload)
         return Message(
             full_name=published_event.full_event_name,
@@ -74,8 +68,8 @@ class PublishedEventFactory(IEventFactory):
             occurred_on=dt.datetime.fromtimestamp(float(published_event.timestamp)),
         )
 
-    def build_published_message(self, message: IMessage) -> IPublishedMessage:
-        return UniversalPublishedMessage(
+    def build_publishing_message(self, message: IMessage) -> IPublishingMessage:
+        return UniversalPublishingMessage(
             full_name=message.__topic__,
             message_id=message.__message_id__,
             payload=PublishedEvent(

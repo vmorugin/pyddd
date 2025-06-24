@@ -71,7 +71,7 @@ class TestStreamHandler:
         assert len(messages) == 10
 
     async def test_could_work_with_decoded_response(self, redis, handler):
-        redis.connection_pool.connection_kwargs['decode_responses'] = True
+        redis.connection_pool.connection_kwargs["decode_responses"] = True
         payload = {"test_data": str(uuid.uuid4())}
         await handler.bind("user:update")
         assert await handler.read(topic="user:update") == []

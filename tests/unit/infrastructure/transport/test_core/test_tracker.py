@@ -22,9 +22,7 @@ class TestNotificationTrackerEntity:
     @pytest.fixture
     def strategy(self):
         class CustomTrackerStrategy(ITrackerStrategy):
-            def track_most_recent_message(
-                self, tracker: TrackerState, *messages: PublishedMessage
-            ) -> TrackerState:
+            def track_most_recent_message(self, tracker: TrackerState, *messages: PublishedMessage) -> TrackerState:
                 return dataclasses.replace(tracker, last_recent_message_id=">")
 
             def create_tracker(self, track_key: str) -> TrackerState:

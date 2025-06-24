@@ -110,6 +110,7 @@ class TestPublisher:
         welcome_message = await pubsub.get_message()
         assert welcome_message is not None
 
+        await asyncio.sleep(0.01)
         message = await pubsub.get_message(ignore_subscribe_messages=True)
         data = json.loads(message["data"])
         assert data == event.to_dict()
@@ -132,6 +133,7 @@ class TestPublisher:
         welcome_message = await pubsub.get_message()
         assert welcome_message is not None
 
+        await asyncio.sleep(0.01)
         message = await pubsub.get_message()
         data = json.loads(message["data"])
         assert data == dict(

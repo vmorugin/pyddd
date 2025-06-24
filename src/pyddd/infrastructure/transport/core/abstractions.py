@@ -6,7 +6,7 @@ from pyddd.domain.abstractions import IMessage
 from pyddd.infrastructure.transport.core.value_objects import TrackerState
 
 
-class IPublishedMessage(abc.ABC):
+class IPublishingMessage(abc.ABC):
     @property
     @abc.abstractmethod
     def message_id(self) -> str: ...
@@ -19,6 +19,8 @@ class IPublishedMessage(abc.ABC):
     @abc.abstractmethod
     def payload(self) -> dict: ...
 
+
+class IPublishedMessage(IPublishingMessage, abc.ABC):
     @abc.abstractmethod
     def ack(self): ...
 
@@ -28,10 +30,10 @@ class IPublishedMessage(abc.ABC):
 
 class IEventFactory(abc.ABC):
     @abc.abstractmethod
-    def build_event(self, notification: IPublishedMessage) -> IMessage: ...
+    def build_event(self, notification: IPublishingMessage) -> IMessage: ...
 
     @abc.abstractmethod
-    def build_published_message(self, message: IMessage) -> IPublishedMessage: ...
+    def build_publishing_message(self, message: IMessage) -> IPublishingMessage: ...
 
 
 class ITracker(abc.ABC):

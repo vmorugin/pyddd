@@ -6,8 +6,12 @@ from pyddd.application.abstractions import (
     IModule,
     AnyCallable,
 )
-from pyddd.domain.abstractions import IMessage
-from pyddd.infrastructure.transport.core.abstractions import PublisherProtocol
+from pyddd.domain.abstractions import (
+    IMessage,
+)
+from pyddd.infrastructure.transport.core.abstractions import (
+    PublisherProtocol,
+)
 
 
 class EventPublisherModule(IModule):

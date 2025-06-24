@@ -51,7 +51,7 @@ class RedisStreamPublisher:
         app.include(self._module)
 
     def _publish(self, message: IMessage):
-        notification = self._event_factory.build_published_message(message)
+        notification = self._event_factory.build_publishing_message(message)
         try:
             self._client.xadd(name=message.__topic__, fields=notification.payload)
         except Exception as exc:

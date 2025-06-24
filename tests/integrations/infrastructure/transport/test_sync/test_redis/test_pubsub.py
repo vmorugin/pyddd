@@ -151,8 +151,8 @@ class TestPublisher:
         welcome_message = pubsub.get_message()
         assert welcome_message is not None
 
-        message = pubsub.get_message()
         sleep(0.1)
+        message = pubsub.get_message()
         data = json.loads(message["data"])
         assert data == event.to_dict()
 
