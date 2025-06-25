@@ -1,3 +1,4 @@
+import abc
 import datetime as dt
 import json
 from dataclasses import dataclass
@@ -9,11 +10,10 @@ from pyddd.domain.abstractions import (
     Version,
 )
 from pyddd.domain.message import Message
-from pyddd.infrastructure.persistence.abstractions import IStoredEvent
 
 
 @dataclass(kw_only=True, eq=True, frozen=True, slots=True)
-class StoredEvent(IStoredEvent):
+class StoredEvent:
     event_id: int
     body: str
     full_name: str
@@ -21,7 +21,21 @@ class StoredEvent(IStoredEvent):
     version: int
 
 
-class Converter:
+class IEventStore(abc.ABC):
+    @abc.abstractmethod
+    def stored_events_between(self, low_stored_event_id: int, high_stored_event_id: int) -> list[StoredEvent]: ...
+
+    @abc.abstractmethod
+    def stored_events_since(self, stored_event_id: int) -> list[StoredEvent]: ...
+
+    @abc.abstractmethod
+    def append(self, event: IEvent) -> StoredEvent: ...
+
+    @abc.abstractmethod
+    def count_stored_events(self) -> int: ...
+
+
+class EventStoreTranslator:
     @classmethod
     def domain_event_to_stored_event(cls, domain_event: IEvent, stored_event_id: int) -> StoredEvent:
         return StoredEvent(
