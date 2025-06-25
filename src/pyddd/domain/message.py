@@ -93,9 +93,9 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     _message_name: str
 
     def __new__(mcs, name, bases, namespace, domain: Optional[str] = None, version: int = 1):
-        cls = super().__new__(mcs, name, bases, namespace)
+        cls: "BaseDomainMessageMeta" = super().__new__(mcs, name, bases, namespace)  # type: ignore[assignment]
         if domain is not None:
-            cls._domain_name = DomainName(domain)  # type: ignore[attr-defined]
+            cls._domain_name = DomainName(domain)
         cls._version = Version(version)
         return cls
 

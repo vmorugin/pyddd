@@ -63,11 +63,11 @@ class TestDomainEvent:
 
     def test_event_without_domain(self):
         with pytest.raises(ValueError):
+
             class ExampleEvent(DomainEvent): ...
 
     def test_could_create_with_version(self):
-        class VersionedEvent(DomainEvent, domain="test", version=2):
-            ...
+        class VersionedEvent(DomainEvent, domain="test", version=2): ...
 
         assert VersionedEvent.__version__ == Version(2)
 
@@ -93,6 +93,7 @@ class TestDomainCommand:
 
     def test_command_without_domain(self):
         with pytest.raises(ValueError):
+
             class ExampleCommand(DomainCommand): ...
 
     def test_load_from_dict(self):
@@ -109,7 +110,6 @@ class TestDomainCommand:
         assert isinstance(command.__message_id__, str)
 
     def test_could_create_with_version(self):
-        class VersionedCommand(DomainCommand, domain="test", version=2):
-            ...
+        class VersionedCommand(DomainCommand, domain="test", version=2): ...
 
         assert VersionedCommand.__version__ == Version(2)
