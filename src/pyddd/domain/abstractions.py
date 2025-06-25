@@ -12,6 +12,7 @@ class EntityUid(ValueObject, UUID): ...
 
 
 IdType = t.TypeVar("IdType")
+Version = t.NewType("Version", int)
 
 
 class IEntity(t.Generic[IdType], abc.ABC):
@@ -37,6 +38,10 @@ class IMessageMeta(abc.ABCMeta):
     @property
     @abc.abstractmethod
     def __topic__(cls) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def __version__(cls) -> Version: ...
 
     @abc.abstractmethod
     def load(
@@ -87,6 +92,10 @@ class IMessage(abc.ABC, metaclass=IMessageMeta):
     @property
     @abc.abstractmethod
     def __timestamp__(self) -> dt.datetime: ...
+
+    @property
+    @abc.abstractmethod
+    def __version__(self) -> Version: ...
 
     @abc.abstractmethod
     def to_dict(self) -> dict: ...
