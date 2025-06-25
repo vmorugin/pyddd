@@ -5,7 +5,7 @@ from pyddd.domain import (
     DomainName,
 )
 from pyddd.infrastructure.persistence.event_store import (
-    Converter,
+    EventStoreTranslator,
     StoredEvent,
 )
 
@@ -31,7 +31,7 @@ def test_stored_event_attributes():
 
 def test_domain_event_to_stored_event():
     domain_event = FakeDomainEvent(name="str")
-    stored_event = Converter.domain_event_to_stored_event(domain_event=domain_event, stored_event_id=1)
+    stored_event = EventStoreTranslator.domain_event_to_stored_event(domain_event=domain_event, stored_event_id=1)
     assert stored_event.full_name == "test.domain.FakeDomainEvent"
     assert stored_event.body == '{"name":"str"}'
     assert stored_event.occurred_on == domain_event.__timestamp__
@@ -46,7 +46,7 @@ def test_stored_event_to_domain_event():
         full_name="test.domain.TestEventStored",
         version=2,
     )
-    domain_event = Converter.stored_event_to_domain_event(stored_event=stored_event)
+    domain_event = EventStoreTranslator.stored_event_to_domain_event(stored_event=stored_event)
     assert domain_event.__timestamp__ == stored_event.occurred_on
     assert domain_event.to_json() == stored_event.body
     assert domain_event.__topic__ == stored_event.full_name

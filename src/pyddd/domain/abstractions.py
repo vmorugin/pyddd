@@ -125,3 +125,14 @@ class IRootEntity(IEntity[IdType], abc.ABC):
 
     @abc.abstractmethod
     def collect_events(self) -> list[IEvent]: ...
+
+
+EventT = t.TypeVar("EventT", bound=IMessage)
+
+
+class IDomainEventSubscriber(t.Generic[EventT], abc.ABC):
+    @abc.abstractmethod
+    def handle(self, event: EventT): ...
+
+    @abc.abstractmethod
+    def subscribed_to_type(self) -> type[EventT]: ...
