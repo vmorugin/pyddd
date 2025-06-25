@@ -20,11 +20,13 @@ def test_stored_event_attributes():
         event_id=123,
         occurred_on=dt.datetime(2020, 1, 1, 1, 1, 1),
         full_name="test.domain.TestEventStored",
+        version=1,
     )
     assert event.body == "{}"
     assert event.event_id == 123
     assert event.occurred_on == dt.datetime(2020, 1, 1, 1, 1, 1)
     assert event.full_name == "test.domain.TestEventStored"
+    assert event.version == 1
 
 
 def test_domain_event_to_stored_event():
@@ -42,8 +44,10 @@ def test_stored_event_to_domain_event():
         event_id=1,
         occurred_on=dt.datetime(2020, 1, 1, 1, 1, 1),
         full_name="test.domain.TestEventStored",
+        version=2,
     )
     domain_event = Converter.stored_event_to_domain_event(stored_event=stored_event)
     assert domain_event.__timestamp__ == stored_event.occurred_on
     assert domain_event.to_json() == stored_event.body
     assert domain_event.__topic__ == stored_event.full_name
+    assert domain_event.__version__ == stored_event.version

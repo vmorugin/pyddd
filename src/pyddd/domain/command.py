@@ -8,8 +8,8 @@ from pyddd.domain.abstractions import (
 
 
 class _DomainCommandMeta(BaseDomainMessageMeta):
-    def __init__(cls, name, bases, namespace, *, domain: str = None):
-        super().__init__(name, bases, namespace, domain=domain)
+    def __init__(cls, name, bases, namespace, *, domain: str = None, version: int = 1):
+        super().__init__(name, bases, namespace, domain=domain, version=version)
         if domain is None and cls.__module__ != __name__:
             try:
                 _ = cls._domain_name
