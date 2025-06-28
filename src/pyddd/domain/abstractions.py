@@ -20,6 +20,10 @@ class IEntity(t.Generic[IdType], abc.ABC):
     @abc.abstractmethod
     def __reference__(self) -> IdType: ...
 
+    @property
+    @abc.abstractmethod
+    def __version__(self) -> Version: ...
+
 
 class MessageType(str, Enum):
     EVENT = "EVENT"

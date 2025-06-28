@@ -7,6 +7,7 @@ from pyddd.domain.abstractions import (
     IEvent,
     IEntity,
     IRootEntity,
+    Version,
 )
 
 pydantic_version = version("pydantic")
@@ -23,19 +24,25 @@ else:
 
 
 class _EntityMeta(ModelMetaclass):
-    def __call__(cls, *args, __reference__: IdType = None, **kwargs):
+    def __call__(cls, *args, __reference__: IdType = None, __version__: int = 1, **kwargs):
         instance = super().__call__(*args, **kwargs)
         if not hasattr(instance, "_reference"):
             instance._reference = __reference__ or EntityUid(str(uuid.uuid4()))
+        instance._version = Version(__version__)
         return instance
 
 
 class Entity(IEntity[IdType], BaseModel, t.Generic[IdType], metaclass=_EntityMeta):
     _reference: IdType = PrivateAttr()
+    _version: Version = PrivateAttr()
 
     @property
     def __reference__(self) -> IdType:
         return self._reference
+
+    @property
+    def __version__(self) -> Version:
+        return self._version
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__reference__ == other.__reference__
@@ -45,8 +52,8 @@ class Entity(IEntity[IdType], BaseModel, t.Generic[IdType], metaclass=_EntityMet
 
 
 class _RootEntityMeta(_EntityMeta):
-    def __call__(cls, *args, __reference__: IdType = None, **kwargs):
-        instance = super().__call__(*args, __reference__=__reference__, **kwargs)
+    def __call__(cls, *args, __reference__: IdType = None, __version__: int = 1, **kwargs):
+        instance = super().__call__(*args, __reference__=__reference__, __version__=__version__, **kwargs)
         instance._events = []
         return instance
 
