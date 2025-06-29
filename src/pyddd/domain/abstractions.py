@@ -11,6 +11,7 @@ class ValueObject: ...
 class EntityUid(ValueObject, UUID): ...
 
 
+MessageTopic: t.TypeAlias = str
 IdType = t.TypeVar("IdType")
 Version = t.NewType("Version", int)
 
@@ -41,7 +42,7 @@ class IMessageMeta(abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def __topic__(cls) -> str: ...
+    def __topic__(cls) -> MessageTopic: ...
 
     @property
     @abc.abstractmethod
@@ -83,7 +84,7 @@ class IMessage(abc.ABC, metaclass=IMessageMeta):
 
     @property
     @abc.abstractmethod
-    def __topic__(self) -> str: ...
+    def __topic__(self) -> MessageTopic: ...
 
     @property
     @abc.abstractmethod

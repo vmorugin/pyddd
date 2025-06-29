@@ -4,15 +4,11 @@ from pyddd.application.handler import (
 )
 from pyddd.domain import (
     DomainCommand,
-    DomainEvent,
 )
 from pyddd.domain.types import FrozenJsonDict
 
 
-class ExampleCommand(DomainCommand, domain="test"): ...
-
-
-class ExampleEvent(DomainEvent, domain="test"): ...
+class ExampleCommand(DomainCommand, domain="test.command-handler"): ...
 
 
 class TestCommandHandler:

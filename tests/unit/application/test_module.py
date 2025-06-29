@@ -16,21 +16,29 @@ from pyddd.application.abstractions import (
 from pyddd.domain import (
     DomainCommand,
     DomainEvent,
+    DomainName,
 )
 from pyddd.domain.abstractions import IEvent
 from pyddd.domain.types import FrozenJsonDict
 
+__domain__ = DomainName("test.module")
 
-class ExampleCommand(DomainCommand, domain="test"): ...
+
+class ExampleCommand(DomainCommand, domain=__domain__): ...
 
 
-class ExampleEvent(DomainEvent, domain="test"): ...
+class ExampleEvent(DomainEvent, domain=__domain__): ...
 
 
 class TestModule:
     def test_must_implement_interface(self):
-        module = Module("")
+        module = Module("test")
         assert isinstance(module, IModule)
+
+    @pytest.mark.parametrize("domain", (None, "", "..test.", "_@?domain"))
+    def test_must_raise_error_if_incorrect_domain(self, domain):
+        with pytest.raises(ValueError):
+            Module(domain)
 
     def test_register_as_decorator(self):
         module = Module("test")
@@ -74,14 +82,14 @@ class TestModule:
 
         module = Module("domain")
         module.register(foo)
-        with pytest.raises(ValueError, match="Already registered command 'test.ExampleCommand'"):
+        with pytest.raises(ValueError, match="Already registered command 'test.module.ExampleCommand'"):
             module.register(foo)
 
     def test_handler_unregistered_command_must_fail(self):
         module = Module("domain")
         with pytest.raises(
             RuntimeError,
-            match="Unregistered command test.ExampleCommand in Module:domain",
+            match="Unregistered command test.module.ExampleCommand in Module:domain",
         ):
             module.get_command_handler(ExampleCommand())
 
@@ -97,9 +105,9 @@ class TestModule:
         assert handler() == "bzz"
 
     def test_handle_events(self):
-        class ExampleCommand2(DomainCommand, domain="test"): ...
+        class ExampleCommand2(DomainCommand, domain=__domain__): ...
 
-        module = Module(domain="test")
+        module = Module(domain=__domain__)
 
         @module.subscribe(ExampleEvent.__topic__)
         @module.register
@@ -119,11 +127,11 @@ class TestModule:
         assert mock.call_count == 2
 
     def test_could_subscribe_with_two_events_to_one_command(self):
-        class ExampleEvent1(DomainEvent, domain="test"): ...
+        class ExampleEvent1(DomainEvent, domain=__domain__): ...
 
-        class ExampleEvent2(DomainEvent, domain="test"): ...
+        class ExampleEvent2(DomainEvent, domain=__domain__): ...
 
-        module = Module(domain="test")
+        module = Module(domain=__domain__)
 
         @module.subscribe(ExampleEvent1.__topic__)
         @module.subscribe(ExampleEvent2.__topic__)
@@ -142,9 +150,9 @@ class TestModule:
         assert handlers[0]() == 1
 
     def test_must_return_results_when_handle_events(self):
-        class ExampleCommand2(DomainCommand, domain="test"): ...
+        class ExampleCommand3(DomainCommand, domain=__domain__): ...
 
-        module = Module(domain="test", executor=SyncExecutor())
+        module = Module(domain=__domain__, executor=SyncExecutor())
 
         @module.subscribe(ExampleEvent.__topic__)
         @module.register
@@ -153,7 +161,7 @@ class TestModule:
 
         @module.subscribe(ExampleEvent.__topic__)
         @module.register
-        def bzz(command: ExampleCommand2, callback):
+        def bzz(command: ExampleCommand3, callback):
             return 2
 
         mock = Mock()
@@ -163,17 +171,17 @@ class TestModule:
         assert [h() for h in handlers] == [1, 2]
 
     def test_can_subscribe_with_converter(self):
-        class ExampleCommandWithParam(DomainCommand, domain="test"):
+        class ExampleCommandWithParam(DomainCommand, domain=__domain__):
             reference: str
 
-        class ExampleEventWithParam(DomainEvent, domain="test"):
+        class ExampleEventWithParam(DomainEvent, domain=__domain__):
             param_id: str
 
         def foo(command: ExampleCommandWithParam, callback):
             assert isinstance(command, ExampleCommandWithParam)
             callback(reference=command.reference)
 
-        module = Module(domain="test")
+        module = Module(domain=__domain__)
         mock = Mock()
         module.set_defaults(dict(callback=mock))
         module.register(foo)
@@ -185,16 +193,16 @@ class TestModule:
         mock.assert_called_with(reference="123")
 
     def test_can_subscribe_with_different_converters(self):
-        class ExampleCommandWithReferenceParam(DomainCommand, domain="test"):
+        class ExampleCommandWithReferenceParam(DomainCommand, domain=__domain__):
             reference: str
 
-        class ExampleEventWithFooParam(DomainEvent, domain="test"):
+        class ExampleEventWithFooParam(DomainEvent, domain=__domain__):
             foo: str
 
-        class ExampleEventWithBarParam(DomainEvent, domain="test"):
+        class ExampleEventWithBarParam(DomainEvent, domain=__domain__):
             bar: str
 
-        module = Module(domain="test")
+        module = Module(domain=__domain__)
 
         @module.subscribe(
             ExampleEventWithFooParam.__topic__,
@@ -223,12 +231,12 @@ class TestModule:
         mock.assert_called_with(reference=bar_event.bar)
 
     def test_must_fail_when_get_command_handler_not_existed(self):
-        module = Module("...")
+        module = Module("test")
         with pytest.raises(RuntimeError):
             module.get_command_handler(ExampleCommand())
 
     def test_must_fail_when_get_command_handler_but_got_event(self):
-        module = Module("...")
+        module = Module("test")
 
         @module.subscribe(ExampleEvent.__topic__)
         @module.register
@@ -239,12 +247,12 @@ class TestModule:
             module.get_command_handler(ExampleEvent())
 
     def test_must_return_empty_list_when_get_unregistered_event_handlers(self):
-        module = Module("...")
+        module = Module("test")
         handlers = module.get_event_handlers(ExampleEvent())
         assert handlers == []
 
     def test_must_returns_list_event_handlers_when_registered(self):
-        module = Module("...")
+        module = Module("test")
 
         @module.subscribe(ExampleEvent.__topic__)
         @module.register
@@ -256,9 +264,9 @@ class TestModule:
         assert handlers[0]() is True
 
     def test_could_handle_with_frozen_dict_type(self):
-        module = Module("test")
+        module = Module(__domain__)
 
-        class TestCommand(DomainCommand, domain="test"):
+        class TestCommand(DomainCommand, domain=__domain__):
             foo: FrozenJsonDict
 
             class Config:

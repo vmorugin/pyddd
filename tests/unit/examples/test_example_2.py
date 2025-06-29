@@ -16,15 +16,19 @@ from pyddd.domain import (
     IRootEntity,
     DomainCommand,
     DomainEvent,
+    DomainName,
 )
 from pyddd.domain.entity import RootEntity
 
+__pet_domain__ = DomainName("async.pet")
+__greet_domain__ = DomainName("async.greet")
 
-class CreatePet(DomainCommand, domain="pet"):
+
+class CreatePet(DomainCommand, domain=__pet_domain__):
     name: str
 
 
-class PetCreated(DomainEvent, domain="pet"):
+class PetCreated(DomainEvent, domain=__pet_domain__):
     reference: str
     name: str
 
@@ -52,7 +56,7 @@ class IPetRepository(IRepository, abc.ABC):
     async def get(self, name: str) -> Pet: ...
 
 
-pet_module = Module("pet")
+pet_module = Module(__pet_domain__)
 
 
 @pet_module.register
@@ -62,12 +66,12 @@ async def create_pet(cmd: CreatePet, repository: IPetRepository):
     return pet.__reference__
 
 
-class CreateGreetLogCommand(DomainCommand, domain="greet"):
+class CreateGreetLogCommand(DomainCommand, domain=__greet_domain__):
     pet_id: str
     name: str
 
 
-class SayGreetCommand(DomainCommand, domain="greet"):
+class SayGreetCommand(DomainCommand, domain=__greet_domain__):
     pet_id: str
 
 
@@ -97,10 +101,10 @@ class IPetGreetRepo(IRepository, abc.ABC):
     async def get_by_pet_id(self, pet_id: str) -> PerGreetJournal: ...
 
 
-greet_module = Module("greet")
+greet_module = Module(__greet_domain__)
 
 
-@greet_module.subscribe("pet.PetCreated", converter=lambda x: {"pet_id": x["reference"], "name": x["name"]})
+@greet_module.subscribe(str(PetCreated.__topic__), converter=lambda x: {"pet_id": x["reference"], "name": x["name"]})
 @greet_module.register
 async def register_pet(cmd: CreateGreetLogCommand, repository: IPetGreetRepo):
     journal = await repository.get_by_pet_id(cmd.pet_id)
@@ -155,8 +159,8 @@ async def test():
     app = Application(executor=AsyncExecutor())
     app.include(greet_module)
     app.include(pet_module)
-    app.set_defaults("pet", repository=InMemoryPetRepo({}))
-    app.set_defaults("greet", repository=InMemoryGreetRepo({}))
+    app.set_defaults(__pet_domain__, repository=InMemoryPetRepo({}))
+    app.set_defaults(__greet_domain__, repository=InMemoryGreetRepo({}))
 
     # set app_globally
     set_application(app)

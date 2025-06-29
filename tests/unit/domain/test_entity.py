@@ -7,7 +7,12 @@ from pyddd.domain.abstractions import (
     IdType,
     Version,
 )
-from pyddd.domain import DomainEvent
+from pyddd.domain import (
+    DomainEvent,
+    DomainName,
+)
+
+__domain__ = DomainName("test.entity")
 
 
 class TestEntity:
@@ -66,7 +71,7 @@ class TestRootEntity:
     def test_can_register_events(self):
         class SomeRootEntity(RootEntity[int]): ...
 
-        class ExampleEvent(DomainEvent, domain="test"): ...
+        class ExampleEvent(DomainEvent, domain=__domain__): ...
 
         entity = SomeRootEntity()
 

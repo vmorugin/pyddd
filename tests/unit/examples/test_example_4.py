@@ -12,15 +12,16 @@ from pyddd.application import (
 from pyddd.domain import (
     DomainCommand,
     DomainEvent,
+    DomainName,
 )
 from pyddd.domain.entity import (
     RootEntity,
 )
 
-product_domain = "product"
+__product_domain__ = DomainName("async.products")
 
 
-class ProductCreated(DomainEvent, domain=product_domain):
+class ProductCreated(DomainEvent, domain=__product_domain__):
     reference: str
 
 
@@ -42,15 +43,15 @@ class Product(RootEntity):
         self.stock = stock
 
 
-class CreateProduct(DomainCommand, domain=product_domain):
+class CreateProduct(DomainCommand, domain=__product_domain__):
     sku: str
 
 
-class ActualizeProduct(DomainCommand, domain=product_domain):
+class ActualizeProduct(DomainCommand, domain=__product_domain__):
     product_id: str
 
 
-module = Module(product_domain)
+module = Module(__product_domain__)
 
 
 class IRepository(abc.ABC):
@@ -107,7 +108,7 @@ class PriceAdapter(IProductStorageAdapter):
         return random.randint(1, 5)
 
 
-@module.subscribe("product.ProductCreated", converter=lambda x: {"product_id": str(x["reference"])})
+@module.subscribe(str(ProductCreated.__topic__), converter=lambda x: {"product_id": str(x["reference"])})
 @module.register
 async def actualize_product(
     cmd: ActualizeProduct,
@@ -127,7 +128,7 @@ async def test():
     app = Application()
     app.include(module)
     repository = ImMemoryProductRepository({})
-    app.set_defaults(product_domain, repository=repository, price_adapter=PriceAdapter())
+    app.set_defaults(__product_domain__, repository=repository, price_adapter=PriceAdapter())
     set_application(app)
     await app.run_async()
 

@@ -23,12 +23,13 @@ from pyddd.application.handler import (
     CommandHandler,
 )
 from pyddd.application.retry import none_retry
+from pyddd.domain import DomainName
 from pyddd.domain.abstractions import IMessage
 
 
 class Module(IModule, ISubscribe, IRegister):
     def __init__(self, domain: str, executor: IExecutor = None, logger_name: str = "pyddd.module"):
-        self._domain = domain
+        self._domain = DomainName(domain)
         self._executor = executor or SyncExecutor()
         self._defaults: dict[str, t.Any] = {}
         self._event_handlers: dict[str, list[EventHandler]] = defaultdict(list)

@@ -16,17 +16,20 @@ from pyddd.application.abstractions import (
 from pyddd.domain import (
     DomainEvent,
     DomainCommand,
+    DomainName,
 )
 from pyddd.domain.abstractions import (
     IMessage,
     IEvent,
 )
 
+__domain__ = DomainName("test.event-handler")
 
-class ExampleEvent(DomainEvent, domain="test"): ...
+
+class ExampleEvent(DomainEvent, domain=__domain__): ...
 
 
-class ExampleCommand(DomainCommand, domain="test"): ...
+class ExampleCommand(DomainCommand, domain=__domain__): ...
 
 
 class FakeCommandHandler(ICommandHandler):
@@ -70,10 +73,10 @@ class TestEventHandler:
         assert mock.called
 
     def test_must_returns_result(self):
-        class CustomEvent(DomainEvent, domain="test"):
+        class CustomEvent(DomainEvent, domain=__domain__):
             id: str
 
-        class CustomCommand(DomainCommand, domain="test"):
+        class CustomCommand(DomainCommand, domain=__domain__):
             id: str
 
         callback = Mock(return_value="12")
@@ -88,18 +91,18 @@ class TestEventHandler:
         assert func() == "123"
 
     def test_must_resolve_with_converter(self):
-        class CustomCommand(DomainCommand, domain="test"):
-            reference: str
-
-        class CustomEvent(DomainEvent, domain="test"):
+        class CustomConvertEvent(DomainEvent, domain=__domain__):
             id: str
 
-        def callback(cmd: CustomCommand):
+        class CustomConvertCommand(DomainCommand, domain=__domain__):
+            reference: str
+
+        def callback(cmd: CustomConvertCommand):
             return cmd.reference
 
-        handler = EventHandler(FakeCommandHandler(CustomCommand, callback))
+        handler = EventHandler(FakeCommandHandler(CustomConvertCommand, callback))
         handler.set_converter(lambda x: {"reference": x["id"]})
-        func = handler.resolve(CustomEvent(id="123"))
+        func = handler.resolve(CustomConvertEvent(id="123"))
         result = func()
         assert result == "123"
 

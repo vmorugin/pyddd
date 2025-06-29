@@ -8,7 +8,10 @@ from pyddd.application import (
     Application,
     Module,
 )
-from pyddd.domain import DomainCommand
+from pyddd.domain import (
+    DomainCommand,
+    DomainName,
+)
 from pyddd.domain.message import (
     Message,
 )
@@ -153,9 +156,10 @@ class TestRedisPubsubConsumer:
         assert isinstance(consumer.queue, PubSubNotificationQueue)
 
     async def test_could_publish_event(self, redis):
-        module = Module("test")
+        domain = DomainName("async.test.redis-pubsub-consumer")
+        module = Module(domain)
 
-        class ExampleCommand(DomainCommand, domain="test"):
+        class ExampleCommand(DomainCommand, domain=domain):
             bar: str
 
         @module.subscribe("test.stream")

@@ -1,6 +1,7 @@
 import abc
 import datetime as dt
 import json
+from contextlib import suppress
 from typing import (
     Optional,
     Union,
@@ -19,6 +20,7 @@ from pyddd.domain.abstractions import (
     IMessageMeta,
     IMessage,
     Version,
+    MessageTopic,
 )
 
 pydantic_version = package_version("pydantic")
@@ -31,8 +33,26 @@ elif pydantic_version.startswith("1"):
 else:
     raise ImportError("Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x")
 
-
 _T = TypeVar("_T", bound="BaseDomainMessage")
+
+
+class _DomainMessagesCollection:
+    def __init__(self):
+        self._collection: dict[MessageTopic, IMessageMeta] = dict()
+
+    def register(self, message_cls: IMessageMeta):
+        topic = str(message_cls.__topic__)
+        if topic in self._collection:
+            raise ValueError(f"Message {topic} already registered.")
+        self._collection[topic] = message_cls
+
+    def get_class(self, topic: MessageTopic) -> IMessageMeta:
+        if topic not in self._collection:
+            raise ValueError(f"Could not find message {topic}")
+        return self._collection[topic]
+
+
+_domain_message_collection = _DomainMessagesCollection()
 
 
 class Message(IMessage):
@@ -77,8 +97,8 @@ class Message(IMessage):
         return self._version
 
     @property
-    def __topic__(self) -> str:
-        return f"{self._domain}.{self._name}"
+    def __topic__(self) -> MessageTopic:
+        return MessageTopic(f"{self._domain}.{self._name}")
 
     def to_dict(self) -> dict:
         return json.loads(self._payload)
@@ -103,6 +123,9 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
         super().__init__(name, bases, namespace, domain=domain, version=Version(version))
         cls._message_name = name
 
+        with suppress(AttributeError):
+            _domain_message_collection.register(cls)
+
     @property
     def __domain__(cls) -> str:
         return cls._domain_name
@@ -112,8 +135,8 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
         return cls._message_name
 
     @property
-    def __topic__(cls) -> str:
-        return f"{cls._domain_name}.{cls._message_name}"
+    def __topic__(cls) -> MessageTopic:
+        return MessageTopic(f"{cls._domain_name}.{cls._message_name}")
 
     @property
     def __version__(cls) -> Version:
@@ -148,8 +171,8 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
         return str(self.__class__.__message_name__)
 
     @property
-    def __topic__(self) -> str:
-        return str(self.__class__.__topic__)
+    def __topic__(self) -> MessageTopic:
+        return MessageTopic(self.__class__.__topic__)
 
     @property
     def __message_id__(self) -> str:
@@ -168,3 +191,7 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
 
     def to_json(self) -> str:
         return self.json()
+
+
+def get_message_class(topic: MessageTopic) -> IMessageMeta:
+    return _domain_message_collection.get_class(topic)
