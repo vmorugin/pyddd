@@ -3,9 +3,7 @@ from pyddd.domain.message import (
     BaseDomainMessage,
     BaseDomainMessageMeta,
 )
-from pyddd.domain.abstractions import (
-    IEvent,
-)
+from pyddd.domain.abstractions import IEvent, IRootEntity
 
 
 class _DomainEventMeta(BaseDomainMessageMeta):
@@ -18,4 +16,12 @@ class _DomainEventMeta(BaseDomainMessageMeta):
                 raise ValueError(f"required set domain name for '{cls.__module__}.{cls.__name__}'")
 
 
-class DomainEvent(BaseDomainMessage, IEvent, metaclass=_DomainEventMeta): ...
+class DomainEvent(BaseDomainMessage, IEvent, metaclass=_DomainEventMeta):
+    def mutate(self, aggregate: t.Optional[IRootEntity]) -> t.Optional[IRootEntity]:
+        assert aggregate is not None
+
+        self.apply(aggregate)
+
+        return aggregate
+
+    def apply(self, aggregate: IRootEntity) -> None: ...

@@ -1,6 +1,9 @@
+import uuid
+
 from pyddd.domain.entity import (
     Entity,
     RootEntity,
+    increment_version,
 )
 from pyddd.domain.abstractions import (
     EntityUid,
@@ -13,6 +16,9 @@ from pyddd.domain import (
 )
 
 __domain__ = DomainName("test.entity")
+
+
+class ExampleEvent(DomainEvent, domain=__domain__): ...
 
 
 class TestEntity:
@@ -71,8 +77,6 @@ class TestRootEntity:
     def test_can_register_events(self):
         class SomeRootEntity(RootEntity[int]): ...
 
-        class ExampleEvent(DomainEvent, domain=__domain__): ...
-
         entity = SomeRootEntity()
 
         event = ExampleEvent()
@@ -113,4 +117,54 @@ class TestRootEntity:
         class SomeRootEntity(RootEntity[int]): ...
 
         entity = SomeRootEntity(__version__=2)
+        assert entity.__version__ == Version(2)
+
+    def test_could_increment_version(self):
+        class SomeRootEntity(RootEntity[int]): ...
+
+        entity = SomeRootEntity()
+        increment_version(entity)
+        assert entity.__version__ == Version(2)
+
+    def test_could_be_event_sourced(self):
+        class SomeRootEntity(RootEntity[int]):
+            name: str
+
+            @classmethod
+            def create(cls, name: str) -> "SomeRootEntity":
+                created = EntityCreated(name=name, reference=str(uuid.uuid4()))
+                obj = created.mutate(None)
+                obj._events.append(created)
+                return obj
+
+            def rename(self, name: str):
+                self.register_event(EntityRenamed(name=name))
+
+        class EntityCreated(DomainEvent, domain=__domain__):
+            reference: str
+            name: str
+
+            def mutate(self, aggregate: None) -> SomeRootEntity:
+                obj = SomeRootEntity(name=self.name, __reference__=self.reference)
+                return obj
+
+        class EntityRenamed(DomainEvent, domain=__domain__):
+            name: str
+
+            def apply(self, aggregate: SomeRootEntity) -> None:
+                aggregate.name = self.name
+
+        entity = SomeRootEntity.create(name="before")
+        entity.rename("after")
+        assert entity.name == "after"
+        events = entity.collect_events()
+        assert len(events) == 2
+
+        new = None
+        for event in events:
+            new = event.mutate(new)
+
+        assert new == entity
+        assert new.name == entity.name
+
         assert entity.__version__ == Version(2)

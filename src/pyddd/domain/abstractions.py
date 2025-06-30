@@ -117,6 +117,11 @@ class IEvent(IMessage, abc.ABC):
     def __type__(self) -> MessageType:
         return MessageType.EVENT
 
+    @abc.abstractmethod
+    def mutate(self, aggregate: t.Optional["IRootEntity"]) -> t.Optional["IRootEntity"]: ...
+
+    def apply(self, aggregate: "IRootEntity") -> None: ...
+
 
 class ICommand(IMessage, abc.ABC):
     @property

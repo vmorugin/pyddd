@@ -62,7 +62,13 @@ class RootEntity(IRootEntity[IdType], Entity, t.Generic[IdType], metaclass=_Root
     _events: list[IEvent] = PrivateAttr()
     _reference: IdType = PrivateAttr()
 
+    @property
+    def __reference__(self) -> IdType:
+        return self._reference
+
     def register_event(self, event: IEvent):
+        event.apply(self)
+        increment_version(self)
         self._events.append(event)
 
     def collect_events(self) -> list[IEvent]:
@@ -70,6 +76,6 @@ class RootEntity(IRootEntity[IdType], Entity, t.Generic[IdType], metaclass=_Root
         self._events.clear()
         return events
 
-    @property
-    def __reference__(self) -> IdType:
-        return self._reference
+
+def increment_version(entity: RootEntity):
+    entity._version = Version(entity.__version__ + 1)
