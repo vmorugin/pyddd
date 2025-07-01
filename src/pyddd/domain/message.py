@@ -93,10 +93,6 @@ class Message(IMessage):
         return self._name
 
     @property
-    def __version__(self) -> Version:
-        return self._version
-
-    @property
     def __topic__(self) -> MessageTopic:
         return MessageTopic(f"{self._domain}.{self._name}")
 
@@ -109,18 +105,16 @@ class Message(IMessage):
 
 class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     _domain_name: DomainName
-    _version: Version
     _message_name: str
 
-    def __new__(mcs, name, bases, namespace, domain: Optional[str] = None, version: int = 1):
+    def __new__(mcs, name, bases, namespace, domain: Optional[str] = None):
         cls: "BaseDomainMessageMeta" = super().__new__(mcs, name, bases, namespace)  # type: ignore[assignment]
         if domain is not None:
             cls._domain_name = DomainName(domain)
-        cls._version = Version(version)
         return cls
 
-    def __init__(cls, name, bases, namespace, *, domain: Optional[str] = None, version: int = 1):
-        super().__init__(name, bases, namespace, domain=domain, version=Version(version))
+    def __init__(cls, name, bases, namespace, *, domain: Optional[str] = None):
+        super().__init__(name, bases, namespace, domain=domain)
         cls._message_name = name
 
         with suppress(AttributeError):
@@ -138,10 +132,6 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     def __topic__(cls) -> MessageTopic:
         return MessageTopic(f"{cls._domain_name}.{cls._message_name}")
 
-    @property
-    def __version__(cls) -> Version:
-        return cls._version
-
     def load(  # type: ignore[misc]
         cls: type[_T],
         payload: Mapping | str | bytes,
@@ -157,7 +147,6 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
 class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessageMeta):
     _occurred_on: dt.datetime = PrivateAttr(default_factory=lambda: dt.datetime.utcnow())
     _reference: UUID = PrivateAttr(default_factory=uuid4)
-    _version: Version = PrivateAttr(default=Version(1))
 
     class Config:
         frozen = True
@@ -181,10 +170,6 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
     @property
     def __timestamp__(self) -> dt.datetime:
         return self._occurred_on
-
-    @property
-    def __version__(self) -> Version:
-        return self._version
 
     def to_dict(self) -> dict:
         return self.dict()

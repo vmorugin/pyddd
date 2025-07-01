@@ -4,10 +4,10 @@ from importlib.metadata import version
 from pyddd.domain.abstractions import (
     EntityUid,
     IdType,
-    IEvent,
     IEntity,
     IRootEntity,
     Version,
+    IEvent,
 )
 
 pydantic_version = version("pydantic")
@@ -51,6 +51,10 @@ class Entity(IEntity[IdType], BaseModel, t.Generic[IdType], metaclass=_EntityMet
         return hash(self._reference)
 
 
+def increment_version(entity: Entity):
+    entity._version = Version(entity.__version__ + 1)
+
+
 class _RootEntityMeta(_EntityMeta):
     def __call__(cls, *args, __reference__: IdType = None, __version__: int = 1, **kwargs):
         instance = super().__call__(*args, __reference__=__reference__, __version__=__version__, **kwargs)
@@ -58,7 +62,7 @@ class _RootEntityMeta(_EntityMeta):
         return instance
 
 
-class RootEntity(IRootEntity[IdType], Entity, t.Generic[IdType], metaclass=_RootEntityMeta):
+class RootEntity(IRootEntity[IdType, IEvent], Entity, metaclass=_RootEntityMeta):
     _events: list[IEvent] = PrivateAttr()
     _reference: IdType = PrivateAttr()
 
@@ -67,15 +71,9 @@ class RootEntity(IRootEntity[IdType], Entity, t.Generic[IdType], metaclass=_Root
         return self._reference
 
     def register_event(self, event: IEvent):
-        event.apply(self)
-        increment_version(self)
         self._events.append(event)
 
-    def collect_events(self) -> list[IEvent]:
+    def collect_events(self) -> t.Iterable[IEvent]:
         events = list(self._events)
         self._events.clear()
         return events
-
-
-def increment_version(entity: RootEntity):
-    entity._version = Version(entity.__version__ + 1)

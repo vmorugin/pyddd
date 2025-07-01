@@ -3,12 +3,14 @@ from pyddd.domain.message import (
     BaseDomainMessage,
     BaseDomainMessageMeta,
 )
-from pyddd.domain.abstractions import IEvent, IRootEntity
+from pyddd.domain.abstractions import (
+    IEvent,
+)
 
 
 class _DomainEventMeta(BaseDomainMessageMeta):
-    def __init__(cls, name, bases, namespace, *, domain: t.Optional[str] = None, version: int = 1):
-        super().__init__(name, bases, namespace, domain=domain, version=version)
+    def __init__(cls, name, bases, namespace, *, domain: t.Optional[str] = None):
+        super().__init__(name, bases, namespace, domain=domain)
         if domain is None and cls.__module__ != __name__:
             try:
                 _ = cls.__domain__
@@ -16,12 +18,4 @@ class _DomainEventMeta(BaseDomainMessageMeta):
                 raise ValueError(f"required set domain name for '{cls.__module__}.{cls.__name__}'")
 
 
-class DomainEvent(BaseDomainMessage, IEvent, metaclass=_DomainEventMeta):
-    def mutate(self, aggregate: t.Optional[IRootEntity]) -> t.Optional[IRootEntity]:
-        assert aggregate is not None
-
-        self.apply(aggregate)
-
-        return aggregate
-
-    def apply(self, aggregate: IRootEntity) -> None: ...
+class DomainEvent(BaseDomainMessage, IEvent, metaclass=_DomainEventMeta): ...
