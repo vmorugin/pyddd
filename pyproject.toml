@@ -17,6 +17,15 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries",
 ]
+keywords=[
+    "ddd",
+    "ddd python",
+    "domain driven design",
+    "domain-driven design",
+    "event driven",
+    "cqrs",
+    "cqs",
+]
 
 [project.urls]
 Homepage = "https://github.com/vmorugin/pyddd"
@@ -42,6 +51,7 @@ dev-dependencies = [
     "tenacity>=9.0.0",
     "backoff>=2.0.0",
     "ruff>=0.11.5",
+    "psycopg[binary, pool]>=3",
 ]
 
 [build-system]

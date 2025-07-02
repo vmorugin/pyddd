@@ -4,9 +4,10 @@ import pytest
 
 from pyddd.domain import SourcedDomainEvent
 from pyddd.domain.abstractions import (
-    SnapshotABC,
     Version,
+    IdType,
 )
+from pyddd.domain.event_sourcing import SnapshotABC
 from pyddd.infrastructure.persistence.abstractions import IEventStore
 from pyddd.infrastructure.persistence.event_store import OptimisticConcurrencyError
 from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryEventStore
@@ -15,7 +16,7 @@ from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryEvent
 class ExampleEvent(SourcedDomainEvent, domain="test.event-store"): ...
 
 
-class ExampleSnapshot(SnapshotABC):
+class ExampleSnapshot(SnapshotABC, domain="test.event-store"):
     def __init__(self, state: bytes, reference: str, version: int):
         self._state = state
         self._reference = reference
@@ -33,6 +34,10 @@ class ExampleSnapshot(SnapshotABC):
     def __entity_version__(self) -> int:
         return self._version
 
+    @classmethod
+    def load(cls, state: bytes, entity_reference: IdType, entity_version: int) -> "SnapshotABC":
+        return cls(state=state, reference=entity_reference, version=entity_version)
+
 
 class TestInMemoryEventStore:
     @pytest.fixture
@@ -46,7 +51,7 @@ class TestInMemoryEventStore:
     def test_must_impl(self, store):
         assert isinstance(store, IEventStore)
 
-    def test_could_create_stream(self, store, stream_name):
+    def test_could_get_empty_stream(self, store, stream_name):
         assert list(store.get_from_stream(stream_name, 0, 100)) == []
 
     def test_could_append_to_stream(self, store, stream_name):

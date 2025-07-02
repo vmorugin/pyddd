@@ -1,7 +1,6 @@
 from pyddd.domain.entity import (
     Entity,
     RootEntity,
-    increment_version,
 )
 from pyddd.domain.abstractions import (
     EntityUid,
@@ -121,5 +120,5 @@ class TestRootEntity:
         class SomeRootEntity(RootEntity[int]): ...
 
         entity = SomeRootEntity()
-        increment_version(entity)
+        entity.increment_version()
         assert entity.__version__ == Version(2)

@@ -2,10 +2,11 @@ import abc
 import typing as t
 from contextlib import AbstractAsyncContextManager
 from typing import ContextManager
+
 from pyddd.domain.abstractions import (
     ISourcedEvent,
-    SnapshotABC,
 )
+from pyddd.domain.event_sourcing import SnapshotABC
 
 TLock = t.TypeVar("TLock")
 TLockKey: t.TypeAlias = str | None
@@ -79,7 +80,12 @@ class IEventStore(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_from_stream(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[ISourcedEvent]:
+    def get_from_stream(
+        self,
+        stream_name: str,
+        from_version: int,
+        to_version: int,
+    ) -> t.Union[t.Iterable[ISourcedEvent], t.Awaitable[t.Iterable[ISourcedEvent]]]:
         """
         Get Events from stream sorted by version, from and to included.
         Raise events if not created.
@@ -92,7 +98,10 @@ class IEventStore(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_last_snapshot(self, stream_name: str) -> t.Optional[SnapshotABC]:
+    def get_last_snapshot(
+        self,
+        stream_name: str,
+    ) -> t.Union[t.Optional[SnapshotABC], t.Awaitable[t.Optional[SnapshotABC]]]:
         """
         Find latest snapshot from stream.
         """

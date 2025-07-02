@@ -135,11 +135,12 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     def load(  # type: ignore[misc]
         cls: type[_T],
         payload: Mapping | str | bytes,
-        reference: UUID | None = None,
+        message_id: UUID | None = None,
         timestamp: dt.datetime | None = None,
+        **kwargs,
     ) -> _T:
         obj = cls.parse_obj(payload)
-        obj._reference = reference or UUID(str(obj.__message_id__))
+        obj._reference = message_id or UUID(str(obj.__message_id__))
         obj._occurred_on = timestamp or obj.__timestamp__
         return obj
 

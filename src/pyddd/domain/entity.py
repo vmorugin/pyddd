@@ -44,15 +44,14 @@ class Entity(IEntity[IdType], BaseModel, t.Generic[IdType], metaclass=_EntityMet
     def __version__(self) -> Version:
         return self._version
 
+    def increment_version(self):
+        self._version += 1
+
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__reference__ == other.__reference__
 
     def __hash__(self):
         return hash(self._reference)
-
-
-def increment_version(entity: Entity):
-    entity._version = Version(entity.__version__ + 1)
 
 
 class _RootEntityMeta(_EntityMeta):

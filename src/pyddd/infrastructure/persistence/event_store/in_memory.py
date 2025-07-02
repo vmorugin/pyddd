@@ -2,8 +2,8 @@ import typing as t
 
 from pyddd.domain.abstractions import (
     ISourcedEvent,
-    SnapshotABC,
 )
+from pyddd.domain.event_sourcing import SnapshotABC
 from pyddd.infrastructure.persistence.abstractions import IEventStore
 from pyddd.infrastructure.persistence.event_store import OptimisticConcurrencyError
 
