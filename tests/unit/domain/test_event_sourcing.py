@@ -10,6 +10,7 @@ from pyddd.domain.abstractions import (
     Version,
     SnapshotABC,
 )
+from pyddd.domain.entity import increment_version
 from pyddd.domain.event_sourcing import EventSourcedEntity
 
 __domain__ = DomainName("test.event-sourcing")
@@ -26,11 +27,11 @@ class SomeRootEntitySnapshot(SnapshotABC):
         return json.dumps(self.__dict__).encode()
 
     @property
-    def __reference__(self):
+    def __entity_reference__(self):
         return self.reference
 
     @property
-    def __version__(self) -> int:
+    def __entity_version__(self) -> int:
         return self.version
 
 
@@ -80,6 +81,11 @@ class EntityRenamed(SourcedDomainEvent, domain=__domain__):
 
 
 class TestEventSourcedEntity:
+    def test_entity_has_init_version(self):
+        entity = SomeRootEntity(name="before")
+        increment_version(entity)
+        assert entity.__init_version__ == Version(1)
+
     def test_could_be_restored_from_events(self):
         entity = SomeRootEntity.create(name="before")
         entity.rename("after")

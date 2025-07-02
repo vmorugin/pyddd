@@ -158,18 +158,27 @@ class SnapshotABC(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def __reference__(self): ...
+    def __entity_reference__(self): ...
 
     @property
     @abc.abstractmethod
-    def __version__(self) -> int: ...
+    def __entity_version__(self) -> int: ...
 
 
 class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
+    @property
+    @abc.abstractmethod
+    def __init_version__(self) -> Version:
+        """
+        The version stored when init aggregate.
+        Not modified when trigger_event.
+        """
+
     @abc.abstractmethod
     def trigger_event(self, event_type: type[EventT]):
         """
         Apply event and update the entity state.
+        Increase __version__ by 1.
         """
 
     def snapshot(self) -> SnapshotABC:

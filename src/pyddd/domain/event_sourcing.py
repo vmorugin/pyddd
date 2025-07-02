@@ -21,6 +21,7 @@ from pyddd.domain.message import (
 
 _SourcedEntityT = t.TypeVar("_SourcedEntityT", bound=IEventSourcedEntity)
 
+
 class _SourcedDomainEventMeta(BaseDomainMessageMeta, ISourcedEventMeta):
     def __init__(cls, name, bases, namespace, *, domain: t.Optional[str] = None):
         super().__init__(name, bases, namespace, domain=domain)
@@ -70,12 +71,18 @@ class _EventSourcedEntityMeta(_EntityMeta):
     def __call__(cls, *args, __reference__: IdType = None, __version__: int = 1, **kwargs):
         instance = super().__call__(*args, __reference__=__reference__, __version__=__version__, **kwargs)
         instance._events = []
+        instance._init_version = Version(__version__)
         return instance
 
 
 class EventSourcedEntity(IEventSourcedEntity[IdType, SourcedDomainEvent], Entity, metaclass=_EventSourcedEntityMeta):
     _events: list[SourcedDomainEvent] = PrivateAttr()
     _reference: IdType = PrivateAttr()
+    _init_version: Version = PrivateAttr()
+
+    @property
+    def __init_version__(self) -> Version:
+        return self._init_version
 
     @classmethod
     def _create(cls, event_type: ISourcedEventMeta, reference: IdType, **params):

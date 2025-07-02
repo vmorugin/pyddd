@@ -82,7 +82,6 @@ module = Module(__domain__)
 
 
 class IAccountRepository(abc.ABC):
-
     @abc.abstractmethod
     def save(self, entity: Account): ...
 
@@ -90,8 +89,7 @@ class IAccountRepository(abc.ABC):
     def get(self, account_id: AccountId): ...
 
 
-class BaseCommand(DomainCommand, domain=__domain__):
-    ...
+class BaseCommand(DomainCommand, domain=__domain__): ...
 
 
 class CreateAccountCommand(BaseCommand):
@@ -146,7 +144,7 @@ class InMemoryAccountRepository(IAccountRepository):
 
 def test_account():
     app = Application()
-    event_store = InMemoryEventStore({})
+    event_store = InMemoryEventStore()
     repository = InMemoryAccountRepository(event_store)
     app.set_defaults(__domain__, repository=repository)
     app.include(module)
