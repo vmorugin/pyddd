@@ -11,7 +11,10 @@ from pyddd.application import (
     AsyncExecutor,
     Module,
 )
-from pyddd.domain import DomainCommand
+from pyddd.domain import (
+    DomainCommand,
+    DomainName,
+)
 from pyddd.domain.message import (
     Message,
 )
@@ -90,12 +93,13 @@ class TestConsumer:
         return redis_stream_handler
 
     async def test_message_consumer(self, redis, redis_stream_handler):
-        module = Module("test")
+        domain = DomainName("test.async.stream.consumer")
+        module = Module(domain)
 
-        class ExampleCommand1(DomainCommand, domain="test"):
+        class ExampleCommand1(DomainCommand, domain=domain):
             bar: str
 
-        class ExampleCommand2(DomainCommand, domain="test"):
+        class ExampleCommand2(DomainCommand, domain=domain):
             foo: str
 
         @module.subscribe("test.stream")
@@ -112,7 +116,7 @@ class TestConsumer:
         app.include(module)
 
         callback = Mock()
-        app.set_defaults("test", callback=callback)
+        app.set_defaults(domain, callback=callback)
 
         ask_policy = DefaultAskPolicy()
         queue = NotificationQueue(message_handler=redis_stream_handler)
@@ -139,9 +143,10 @@ class TestRedisStreamConsumer:
         assert isinstance(consumer.queue, NotificationQueue)
 
     async def test_could_publish_event(self, redis):
-        module = Module("test")
+        domain = DomainName("async.test.redis-stream-consumer")
+        module = Module(domain)
 
-        class ExampleCommand(DomainCommand, domain="test"):
+        class ExampleCommand(DomainCommand, domain=domain):
             bar: str
 
         @module.subscribe("test.stream")

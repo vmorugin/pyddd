@@ -10,7 +10,10 @@ from pyddd.application import (
     Application,
     Module,
 )
-from pyddd.domain import DomainCommand
+from pyddd.domain import (
+    DomainCommand,
+    DomainName,
+)
 from pyddd.domain.message import (
     Message,
 )
@@ -35,6 +38,8 @@ from pyddd.infrastructure.transport.sync.redis.stream_group.consumer import (
 from pyddd.infrastructure.transport.sync.redis.stream_group.publisher import (
     RedisStreamPublisher,
 )
+
+__domain__ = DomainName("test.sync.redis-stream")
 
 
 class TestStreamHandler:
@@ -88,12 +93,12 @@ class TestConsumer:
         return redis_stream_handler
 
     def test_message_consumer(self, redis, redis_stream_handler):
-        module = Module("test")
+        module = Module(__domain__)
 
-        class ExampleCommand1(DomainCommand, domain="test"):
+        class ExampleCommand1(DomainCommand, domain=__domain__):
             bar: str
 
-        class ExampleCommand2(DomainCommand, domain="test"):
+        class ExampleCommand2(DomainCommand, domain=__domain__):
             foo: str
 
         @module.subscribe("test.stream")
@@ -110,7 +115,7 @@ class TestConsumer:
         app.include(module)
 
         callback = Mock()
-        app.set_defaults("test", callback=callback)
+        app.set_defaults(__domain__, callback=callback)
 
         consumer = MessageConsumer(
             queue=NotificationQueue(message_handler=redis_stream_handler),
@@ -140,9 +145,9 @@ class TestRedisStreamConsumer:
         assert isinstance(consumer.queue, NotificationQueue)
 
     def test_could_publish_event(self, redis):
-        module = Module("test")
+        module = Module(__domain__)
 
-        class ExampleCommand(DomainCommand, domain="test"):
+        class ExampleCommand(DomainCommand, domain=__domain__):
             bar: str
 
         @module.subscribe("test.stream")

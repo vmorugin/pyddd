@@ -1,4 +1,7 @@
 from unittest.mock import Mock
+
+import pytest
+
 from pyddd.application.handler import (
     CommandHandler,
 )
@@ -9,10 +12,7 @@ from pyddd.domain import (
 from pyddd.domain.types import FrozenJsonDict
 
 
-class ExampleCommand(DomainCommand, domain="test"): ...
-
-
-class ExampleEvent(DomainEvent, domain="test"): ...
+class ExampleCommand(DomainCommand, domain="test.command-handler"): ...
 
 
 class TestCommandHandler:
@@ -77,3 +77,12 @@ class TestCommandHandler:
         func = handler.resolve(TestCommand(foo=FrozenJsonDict({"success": True})))
         result = func()
         assert result is True
+
+    def test_could_not_register_with_event(self):
+        class TestEvent(DomainEvent, domain="test"): ...
+
+        def foo(command: TestEvent):
+            return command.foo["success"]
+
+        with pytest.raises(AttributeError):
+            CommandHandler(foo)

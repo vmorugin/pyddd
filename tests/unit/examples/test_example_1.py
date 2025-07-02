@@ -16,15 +16,19 @@ from pyddd.domain import (
     IRootEntity,
     DomainCommand,
     DomainEvent,
+    DomainName,
 )
 from pyddd.domain.entity import RootEntity
 
+__pet_domain__ = DomainName("pet")
+__greet_domain__ = DomainName("greet")
 
-class CreatePet(DomainCommand, domain="pet"):
+
+class CreatePet(DomainCommand, domain=__pet_domain__):
     name: str
 
 
-class PetCreated(DomainEvent, domain="pet"):
+class PetCreated(DomainEvent, domain=__pet_domain__):
     pet_id: str
     name: str
 
@@ -52,7 +56,7 @@ class IPetRepository(IRepository, abc.ABC):
     def get(self, name: str) -> Pet: ...
 
 
-pet_module = Module("pet")
+pet_module = Module(__pet_domain__)
 
 
 @pet_module.register
@@ -62,12 +66,12 @@ def create_pet(cmd: CreatePet, repository: IPetRepository):
     return pet.__reference__
 
 
-class InsertGreetLogCommand(DomainCommand, domain="greet"):
+class InsertGreetLogCommand(DomainCommand, domain=__greet_domain__):
     pet_id: str
     name: str
 
 
-class SayGreetCommand(DomainCommand, domain="greet"):
+class SayGreetCommand(DomainCommand, domain=__greet_domain__):
     pet_id: str
 
 
@@ -98,10 +102,10 @@ class IPetGreetRepo(IRepository, abc.ABC):
     def get_by_pet_id(self, pet_id: str) -> PerGreetJournal: ...
 
 
-greet_module = Module("greet")
+greet_module = Module(__greet_domain__)
 
 
-@greet_module.subscribe("pet.PetCreated")
+@greet_module.subscribe(str(PetCreated.__topic__))
 @greet_module.register
 def register_pet(cmd: InsertGreetLogCommand, repository: IPetGreetRepo):
     journal = repository.get_by_pet_id(cmd.pet_id)
@@ -157,8 +161,8 @@ def test():
     app = Application()
     app.include(greet_module)
     app.include(pet_module)
-    app.set_defaults("pet", repository=InMemoryPetRepo({}))
-    app.set_defaults("greet", repository=InMemoryGreetRepo({}))
+    app.set_defaults(__pet_domain__, repository=InMemoryPetRepo({}))
+    app.set_defaults(__greet_domain__, repository=InMemoryGreetRepo({}))
 
     # set app_globally
     set_application(app)

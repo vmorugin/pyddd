@@ -1,16 +1,26 @@
 from pyddd.domain.entity import (
     Entity,
     RootEntity,
+    increment_version,
 )
 from pyddd.domain.abstractions import (
     EntityUid,
     IdType,
+    Version,
 )
-from pyddd.domain import DomainEvent
+from pyddd.domain import (
+    DomainEvent,
+    DomainName,
+)
+
+__domain__ = DomainName("test.entity")
+
+
+class ExampleEvent(DomainEvent, domain=__domain__): ...
 
 
 class TestEntity:
-    def test_entity(self):
+    def test_entity_eq(self):
         class SomeEntity(Entity[str]): ...
 
         entity = SomeEntity(__reference__="123")
@@ -41,23 +51,38 @@ class TestEntity:
         entity = SomeEntity()
         assert isinstance(entity.__reference__, EntityUid)
 
+    def test_entity_has_version(self):
+        class SomeEntity(Entity): ...
+
+        entity = SomeEntity()
+        assert entity.__version__ == Version(1)
+
+    def test_could_construct_version(self):
+        class SomeEntity(Entity): ...
+
+        entity = SomeEntity(__version__=2)
+        assert entity.__version__ == Version(2)
+
 
 class TestRootEntity:
-    def test_root(self):
+    def test_root_entity_eq(self):
         class SomeRootEntity(RootEntity[int]): ...
-
-        class ExampleEvent(DomainEvent, domain="test"): ...
 
         entity = SomeRootEntity(__reference__=123)
         assert entity == SomeRootEntity(__reference__=123)
         assert entity.__reference__ == 123
+
+    def test_can_register_events(self):
+        class SomeRootEntity(RootEntity[int]): ...
+
+        entity = SomeRootEntity()
 
         event = ExampleEvent()
         entity.register_event(event)
         assert entity.collect_events() == [event]
         assert entity.collect_events() == []
 
-    def test_entityn_eq(self):
+    def test_entity_neq(self):
         class SomeEntity(RootEntity[str]): ...
 
         assert SomeEntity() != SomeEntity()
@@ -79,3 +104,22 @@ class TestRootEntity:
 
         entity = SomeRootEntity(reference=1234)
         assert entity.__reference__ == entity.reference == 1234
+
+    def test_entity_has_version(self):
+        class SomeRootEntity(RootEntity[int]): ...
+
+        entity = SomeRootEntity()
+        assert entity.__version__ == Version(1)
+
+    def test_could_construct_with_version(self):
+        class SomeRootEntity(RootEntity[int]): ...
+
+        entity = SomeRootEntity(__version__=2)
+        assert entity.__version__ == Version(2)
+
+    def test_could_increment_version(self):
+        class SomeRootEntity(RootEntity[int]): ...
+
+        entity = SomeRootEntity()
+        increment_version(entity)
+        assert entity.__version__ == Version(2)

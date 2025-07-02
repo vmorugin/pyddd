@@ -4,9 +4,10 @@ from importlib.metadata import version
 from pyddd.domain.abstractions import (
     EntityUid,
     IdType,
-    IEvent,
     IEntity,
     IRootEntity,
+    Version,
+    IEvent,
 )
 
 pydantic_version = version("pydantic")
@@ -23,19 +24,25 @@ else:
 
 
 class _EntityMeta(ModelMetaclass):
-    def __call__(cls, *args, __reference__: IdType = None, **kwargs):
+    def __call__(cls, *args, __reference__: IdType = None, __version__: int = 1, **kwargs):
         instance = super().__call__(*args, **kwargs)
         if not hasattr(instance, "_reference"):
             instance._reference = __reference__ or EntityUid(str(uuid.uuid4()))
+        instance._version = Version(__version__)
         return instance
 
 
 class Entity(IEntity[IdType], BaseModel, t.Generic[IdType], metaclass=_EntityMeta):
     _reference: IdType = PrivateAttr()
+    _version: Version = PrivateAttr()
 
     @property
     def __reference__(self) -> IdType:
         return self._reference
+
+    @property
+    def __version__(self) -> Version:
+        return self._version
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__reference__ == other.__reference__
@@ -44,25 +51,29 @@ class Entity(IEntity[IdType], BaseModel, t.Generic[IdType], metaclass=_EntityMet
         return hash(self._reference)
 
 
+def increment_version(entity: Entity):
+    entity._version = Version(entity.__version__ + 1)
+
+
 class _RootEntityMeta(_EntityMeta):
-    def __call__(cls, *args, __reference__: IdType = None, **kwargs):
-        instance = super().__call__(*args, __reference__=__reference__, **kwargs)
+    def __call__(cls, *args, __reference__: IdType = None, __version__: int = 1, **kwargs):
+        instance = super().__call__(*args, __reference__=__reference__, __version__=__version__, **kwargs)
         instance._events = []
         return instance
 
 
-class RootEntity(IRootEntity[IdType], Entity, t.Generic[IdType], metaclass=_RootEntityMeta):
+class RootEntity(IRootEntity[IdType, IEvent], Entity, metaclass=_RootEntityMeta):
     _events: list[IEvent] = PrivateAttr()
     _reference: IdType = PrivateAttr()
-
-    def register_event(self, event: IEvent):
-        self._events.append(event)
-
-    def collect_events(self) -> list[IEvent]:
-        events = list(self._events)
-        self._events.clear()
-        return events
 
     @property
     def __reference__(self) -> IdType:
         return self._reference
+
+    def register_event(self, event: IEvent):
+        self._events.append(event)
+
+    def collect_events(self) -> t.Iterable[IEvent]:
+        events = list(self._events)
+        self._events.clear()
+        return events

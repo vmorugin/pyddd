@@ -9,7 +9,10 @@ from pyddd.application import (
     Application,
     Module,
 )
-from pyddd.domain import DomainCommand
+from pyddd.domain import (
+    DomainCommand,
+    DomainName,
+)
 from pyddd.domain.message import (
     Message,
 )
@@ -34,15 +37,17 @@ from pyddd.infrastructure.transport.sync.redis.pubsub.publisher import (
     RedisPubSubPublisher,
 )
 
+__domain__ = DomainName("test.sync.redis-pubsub")
+
 
 class TestWithPubSub:
     def test_with_pubsub(self, redis):
-        module = Module("test")
+        module = Module(__domain__)
 
-        class ExampleCommand1(DomainCommand, domain="test"):
+        class ExampleCommand1(DomainCommand, domain=__domain__):
             bar: str
 
-        class ExampleCommand2(DomainCommand, domain="test"):
+        class ExampleCommand2(DomainCommand, domain=__domain__):
             foo: str
 
         @module.subscribe("another.stream")
@@ -90,9 +95,9 @@ class TestRedisPubsubConsumer:
         assert isinstance(consumer.queue, PubSubNotificationQueue)
 
     def test_could_publish_event(self, redis):
-        module = Module("test")
+        module = Module(__domain__)
 
-        class ExampleCommand(DomainCommand, domain="test"):
+        class ExampleCommand(DomainCommand, domain=__domain__):
             bar: str
 
         @module.subscribe("test.stream")
