@@ -1,7 +1,7 @@
 import abc
+import sys
 import typing as t
 import uuid
-from collections import defaultdict
 
 import pytest
 
@@ -11,14 +11,20 @@ from pyddd.application import (
 )
 from pyddd.domain import (
     DomainName,
+    DomainCommand,
 )
 from pyddd.domain.abstractions import (
     IdType,
 )
-from pyddd.domain.event_sourcing import EventSourcedEntity, SourcedDomainEvent
-from unit.examples.test_example_5 import BaseCommand
+from pyddd.domain.event_sourcing import (
+    EventSourcedEntity,
+    SourcedDomainEvent,
+)
+from pyddd.infrastructure.persistence.abstractions import IEventStore
 
 __domain__ = DomainName("balance")
+
+from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryEventStore
 
 
 class AccountId(str): ...
@@ -76,6 +82,7 @@ module = Module(__domain__)
 
 
 class IAccountRepository(abc.ABC):
+
     @abc.abstractmethod
     def save(self, entity: Account): ...
 
@@ -83,16 +90,20 @@ class IAccountRepository(abc.ABC):
     def get(self, account_id: AccountId): ...
 
 
-class CreateAccountCommand(BaseCommand, domain=__domain__):
+class BaseCommand(DomainCommand, domain=__domain__):
+    ...
+
+
+class CreateAccountCommand(BaseCommand):
     owner_id: str
 
 
-class DepositAccountCommand(BaseCommand, domain=__domain__):
+class DepositAccountCommand(BaseCommand):
     account_id: str
     amount: int
 
 
-class WithdrawAccountCommand(BaseCommand, domain=__domain__):
+class WithdrawAccountCommand(BaseCommand):
     account_id: str
     amount: int
 
@@ -119,23 +130,24 @@ def withdraw_account(cmd: WithdrawAccountCommand, repository: IAccountRepository
 
 
 class InMemoryAccountRepository(IAccountRepository):
-    def __init__(self):
-        self._streams: dict[str, list[SourcedDomainEvent]] = defaultdict(list)
+    def __init__(self, store: IEventStore):
+        self._store = store
 
     def save(self, entity: Account):
-        self._streams[entity.__reference__].extend(entity.collect_events())
+        self._store.append_to_stream(str(entity.__reference__), entity.collect_events())
 
     def get(self, account_id: AccountId) -> Account:
-        events = self._streams[account_id]
+        stream = self._store.get_from_stream(str(account_id), 0, sys.maxsize)
         account: t.Optional[Account] = None
-        for event in events:
+        for event in stream:
             account = event.mutate(account)
         return account
 
 
 def test_account():
     app = Application()
-    repository = InMemoryAccountRepository()
+    event_store = InMemoryEventStore({})
+    repository = InMemoryAccountRepository(event_store)
     app.set_defaults(__domain__, repository=repository)
     app.include(module)
     app.run()
