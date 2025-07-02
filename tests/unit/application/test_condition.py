@@ -16,7 +16,7 @@ from pyddd.domain.message import (
 from pyddd.domain.abstractions import MessageType
 
 
-class ExampleEvent(DomainEvent, domain="test"): ...
+class ExampleEvent(DomainEvent, domain="test.conditions"): ...
 
 
 def test_always_true_to_none_condition():

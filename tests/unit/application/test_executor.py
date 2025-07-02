@@ -10,13 +10,16 @@ from pyddd.application.abstractions import IExecutor
 from pyddd.domain import (
     DomainCommand,
     DomainEvent,
+    DomainName,
 )
 
+__domain__ = DomainName("test.executor")
 
-class ExampleCommand(DomainCommand, domain="test"): ...
+
+class ExampleCommand(DomainCommand, domain=__domain__): ...
 
 
-class ExampleEvent(DomainEvent, domain="test"): ...
+class ExampleEvent(DomainEvent, domain=__domain__): ...
 
 
 class TestSyncExecutor:

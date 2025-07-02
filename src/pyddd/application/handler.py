@@ -16,7 +16,6 @@ from pyddd.application.abstractions import (
 from pyddd.application.exceptions import FailedHandlerCondition
 from pyddd.application.retry import none_retry
 from pyddd.domain.abstractions import (
-    IMessageMeta,
     IMessage,
 )
 from pyddd.domain.command import DomainCommand
@@ -84,6 +83,6 @@ class CommandHandler(ICommandHandler):
     @staticmethod
     def _get_command_param(func, signature: inspect.Signature):
         for name, param in signature.parameters.items():
-            if isinstance(param.annotation, IMessageMeta):
+            if issubclass(param.annotation, DomainCommand):
                 return param
         raise AttributeError(f"Can not find command param for {func} with params {signature}")

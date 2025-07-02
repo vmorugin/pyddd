@@ -26,6 +26,8 @@ class DomainName(str):
         return super().__new__(cls, value)
 
     def __init__(self, value: str):
+        if not isinstance(value, str):
+            raise ValueError(f"Domain name must be subclass of string. Got {value}")
         items = value.rsplit(".", maxsplit=1)
         is_subdomain = len(items) != 1
         self._validate(items[1] if is_subdomain else items[0])
