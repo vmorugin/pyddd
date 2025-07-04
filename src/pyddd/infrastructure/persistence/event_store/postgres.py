@@ -52,7 +52,7 @@ class PostgresDatastore:
         host: str = "localhost",
         port: str | int = "5432",
         user: str = "postgres",
-        password: str = "root",
+        password: str = "postgres",
         *,
         connect_timeout: float = 5.0,
         idle_in_transaction_session_timeout: float = 0,
@@ -222,6 +222,17 @@ class PostgresEventRecorder(IEventRecorder):
             )
 
 
+class NullSnapshotRecorder(ISnapshotRecorder):
+    def insert_snapshot(self, stream_name: str, snapshot: SnapshotABC) -> None:
+        raise NotImplementedError("Not implemented for NullSnapshotRecorder")
+
+    def select_latest(self, stream_name: str) -> t.Optional[SnapshotABC]:
+        raise NotImplementedError("Not implemented for NullSnapshotRecorder")
+
+    def create_table(self) -> None:
+        pass
+
+
 class PostgresSnapshotRecorder(ISnapshotRecorder):
     def __init__(self, datastore: PostgresDatastore, snapshots_table_name: str):
         self._check_identifier_length(snapshots_table_name)
@@ -272,8 +283,8 @@ class PostgresSnapshotRecorder(ISnapshotRecorder):
 class PostgresEventStore(IEventStore):
     def __init__(
         self,
-        events_recorder: PostgresEventRecorder,
-        snapshots_recorder: PostgresSnapshotRecorder,
+        events_recorder: IEventRecorder,
+        snapshots_recorder: ISnapshotRecorder = NullSnapshotRecorder(),
     ):
         self._events = events_recorder
         self._snapshots = snapshots_recorder
