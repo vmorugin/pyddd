@@ -8,15 +8,15 @@ from pyddd.domain import (
 )
 from pyddd.domain.abstractions import (
     Version,
-    SnapshotABC,
+    IdType,
 )
-from pyddd.domain.event_sourcing import EventSourcedEntity
+from pyddd.domain.event_sourcing import EventSourcedEntity, SnapshotABC
 
 __domain__ = DomainName("test.event-sourcing")
 
 
 @dataclasses.dataclass(frozen=True)
-class SomeRootEntitySnapshot(SnapshotABC):
+class SomeRootEntitySnapshot(SnapshotABC, domain=__domain__):
     reference: str
     version: int
     name: str
@@ -26,12 +26,17 @@ class SomeRootEntitySnapshot(SnapshotABC):
         return json.dumps(self.__dict__).encode()
 
     @property
-    def __reference__(self):
+    def __entity_reference__(self):
         return self.reference
 
     @property
-    def __version__(self) -> int:
+    def __entity_version__(self) -> int:
         return self.version
+
+    @classmethod
+    def load(cls, state: bytes, entity_reference: IdType, entity_version: int):
+        data = json.loads(state.decode())
+        return cls(reference=entity_reference, version=entity_version, name=data["name"])
 
 
 class SomeRootEntity(EventSourcedEntity[str]):
@@ -80,6 +85,11 @@ class EntityRenamed(SourcedDomainEvent, domain=__domain__):
 
 
 class TestEventSourcedEntity:
+    def test_entity_has_init_version(self):
+        entity = SomeRootEntity(name="before")
+        entity.increment_version()
+        assert entity.__init_version__ == Version(1)
+
     def test_could_be_restored_from_events(self):
         entity = SomeRootEntity.create(name="before")
         entity.rename("after")
@@ -108,3 +118,8 @@ class TestEventSourcedEntity:
         events = list(entity.collect_events())
         event = events.pop()
         assert event.__entity_version__ == 2
+
+
+def test_could_get_class_by_name():
+    cls = SnapshotABC.get_by_name(str(SomeRootEntitySnapshot.__topic__))
+    assert cls is SomeRootEntitySnapshot

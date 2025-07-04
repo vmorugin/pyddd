@@ -25,6 +25,9 @@ class IEntity(t.Generic[IdType], abc.ABC):
     @abc.abstractmethod
     def __version__(self) -> Version: ...
 
+    @abc.abstractmethod
+    def increment_version(self): ...
+
 
 EntityT = t.TypeVar("EntityT", bound=IEntity)
 
@@ -50,9 +53,10 @@ class IMessageMeta(abc.ABCMeta):
     @abc.abstractmethod
     def load(
         cls,
-        payload: t.Mapping | str | bytes,
+        payload: t.Mapping,
         message_id: UUID | None = None,
         timestamp: dt.datetime | None = None,
+        **kwargs,
     ) -> "IMessage":
         """
         Constructs a new message object.
@@ -127,7 +131,7 @@ class ISourcedEvent(IEvent, abc.ABC, metaclass=ISourcedEventMeta):
 
     @property
     @abc.abstractmethod
-    def __entity_reference__(self): ...
+    def __entity_reference__(self) -> str: ...
 
     @property
     @abc.abstractmethod
@@ -151,28 +155,34 @@ class ICanStoreEvents(t.Generic[EventT], abc.ABC):
 class IRootEntity(IEntity[IdType], ICanStoreEvents[EventT], abc.ABC): ...
 
 
-class SnapshotABC(abc.ABC):
+class SnapshotProtocol(t.Protocol):
     @property
-    @abc.abstractmethod
     def __state__(self) -> bytes: ...
 
     @property
-    @abc.abstractmethod
-    def __reference__(self): ...
+    def __entity_reference__(self) -> str: ...
 
     @property
-    @abc.abstractmethod
-    def __version__(self) -> int: ...
+    def __entity_version__(self) -> int: ...
 
 
 class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
+    @property
+    @abc.abstractmethod
+    def __init_version__(self) -> Version:
+        """
+        The version stored when init aggregate.
+        Not modified when trigger_event.
+        """
+
     @abc.abstractmethod
     def trigger_event(self, event_type: type[EventT]):
         """
         Apply event and update the entity state.
+        Increase __version__ by 1.
         """
 
-    def snapshot(self) -> SnapshotABC:
+    def snapshot(self) -> SnapshotProtocol:
         """
         Create snapshot of specific aggregate.
         Need to implement for event-sourcing.
@@ -180,7 +190,7 @@ class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
         raise NotImplementedError("Not implemented")
 
     @classmethod
-    def from_snapshot(cls, snapshot: SnapshotABC) -> "IEventSourcedEntity[IdType, EventT]":
+    def from_snapshot(cls, snapshot: SnapshotProtocol) -> "IEventSourcedEntity[IdType, EventT]":
         """
         Load entity from specific snapshot
         """

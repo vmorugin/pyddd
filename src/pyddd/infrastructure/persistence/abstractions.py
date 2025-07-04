@@ -3,6 +3,11 @@ import typing as t
 from contextlib import AbstractAsyncContextManager
 from typing import ContextManager
 
+from pyddd.domain.abstractions import (
+    ISourcedEvent,
+)
+from pyddd.domain.event_sourcing import SnapshotABC
+
 TLock = t.TypeVar("TLock")
 TLockKey: t.TypeAlias = str | None
 
@@ -62,3 +67,41 @@ class ILockerContextT(ContextManager[TLock], AbstractAsyncContextManager[TLock],
 class ILocker(t.Generic[TLock], abc.ABC):
     @abc.abstractmethod
     def __call__(self, __lock_key: TLockKey = None, /) -> ILockerContextT: ...
+
+
+class IEventStore(abc.ABC):
+    @abc.abstractmethod
+    def append_to_stream(
+        self, stream_name: str, events: t.Iterable[ISourcedEvent], expected_version: t.Optional[int] = None
+    ):
+        """
+        Add events to existed stream.
+        Expected version - optimistic lock checker, implemented by repository.
+        """
+
+    @abc.abstractmethod
+    def get_from_stream(
+        self,
+        stream_name: str,
+        from_version: int,
+        to_version: int,
+    ) -> t.Union[t.Iterable[ISourcedEvent], t.Awaitable[t.Iterable[ISourcedEvent]]]:
+        """
+        Get Events from stream sorted by version, from and to included.
+        Raise events if not created.
+        """
+
+    @abc.abstractmethod
+    def add_snapshot(self, stream_name: str, snapshot: SnapshotABC):
+        """
+        Add snapshot to stream.
+        """
+
+    @abc.abstractmethod
+    def get_last_snapshot(
+        self,
+        stream_name: str,
+    ) -> t.Union[t.Optional[SnapshotABC], t.Awaitable[t.Optional[SnapshotABC]]]:
+        """
+        Find latest snapshot from stream.
+        """
