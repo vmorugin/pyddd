@@ -10,7 +10,6 @@ from psycopg import (
     Connection,
     Cursor,
 )
-from psycopg.errors import UniqueViolation
 from psycopg.rows import (
     dict_row,
     DictRow,
@@ -22,10 +21,14 @@ from psycopg.sql import (
 
 from pyddd.domain.abstractions import (
     ISourcedEvent,
+    SnapshotProtocol,
 )
-from pyddd.domain.event_sourcing import SnapshotABC
+from pyddd.domain.event_sourcing import Snapshot
 from pyddd.domain.message import get_message_class
-from pyddd.infrastructure.persistence.abstractions import IEventStore
+from pyddd.infrastructure.persistence.abstractions import (
+    IEventStore,
+    ISnapshotStore,
+)
 from pyddd.infrastructure.persistence.event_store import OptimisticConcurrencyError
 
 
@@ -52,7 +55,7 @@ class PostgresDatastore:
         host: str = "localhost",
         port: str | int = "5432",
         user: str = "postgres",
-        password: str = "root",
+        password: str = "postgres",
         *,
         connect_timeout: float = 5.0,
         idle_in_transaction_session_timeout: float = 0,
@@ -143,7 +146,7 @@ class PostgresDatastore:
 MAX_IDENTIFIER_LEN = 63
 
 
-class IRecorder(abc.ABC):
+class ICanCreateTable(abc.ABC):
     @abc.abstractmethod
     def create_table(self) -> None:
         """
@@ -151,35 +154,7 @@ class IRecorder(abc.ABC):
         """
 
 
-class IEventRecorder(IRecorder, abc.ABC):
-    @abc.abstractmethod
-    def insert_events(self, stream_name: str, events: t.Iterable[ISourcedEvent]) -> None:
-        """
-        Insert an event into the event store.
-        """
-
-    @abc.abstractmethod
-    def select_events(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[ISourcedEvent]:
-        """
-        Select events from the event store for a specific entity.
-        """
-
-
-class ISnapshotRecorder(IRecorder, abc.ABC):
-    @abc.abstractmethod
-    def insert_snapshot(self, stream_name: str, snapshot: SnapshotABC) -> None:
-        """
-        Insert a snapshot into the snapshot store.
-        """
-
-    @abc.abstractmethod
-    def select_latest(self, stream_name: str) -> t.Optional[SnapshotABC]:
-        """
-        Select the last snapshot for a specific entity.
-        """
-
-
-class PostgresEventRecorder(IEventRecorder):
+class PostgresEventStore(IEventStore, ICanCreateTable):
     def __init__(self, datastore: PostgresDatastore, events_table_name: str):
         self._check_identifier_length(events_table_name)
         self._datastore = datastore
@@ -191,8 +166,11 @@ class PostgresEventRecorder(IEventRecorder):
             msg = f"Identifier too long: {table_name}. Max length is {MAX_IDENTIFIER_LEN} characters."
             raise ValueError(msg)
 
-    def insert_events(self, stream_name: str, events: t.Iterable[ISourcedEvent]) -> None:
+    def append_to_stream(
+        self, stream_name: str, events: t.Iterable[ISourcedEvent], expected_version: int = None
+    ) -> None:
         with self._datastore.cursor() as cur:
+            self._optimistic_concurrency_check(cur, stream_name=stream_name, expected_version=expected_version)
             cur.executemany(
                 Statements.INSERT_EVENTS.format(
                     schema=Identifier(self._datastore.schema),
@@ -201,14 +179,14 @@ class PostgresEventRecorder(IEventRecorder):
                 (Converter.event_to_dict(event) for event in events),
             )
 
-    def select_events(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[ISourcedEvent]:
+    def get_from_stream(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[ISourcedEvent]:
         with self._datastore.cursor() as cur:
             cur.execute(
                 Statements.SELECT_EVENTS.format(
                     schema=Identifier(self._datastore.schema),
                     table=Identifier(self._events_table),
                 ),
-                {"entity_id": stream_name, "from_version": from_version, "to_version": to_version},
+                {"stream_id": stream_name, "from_version": from_version, "to_version": to_version},
             )
             yield from (Converter.event_from_dict(row) for row in cur)
 
@@ -221,8 +199,39 @@ class PostgresEventRecorder(IEventRecorder):
                 )
             )
 
+    def _optimistic_concurrency_check(
+        self,
+        cursor: Cursor[dict[str, t.Any]],
+        stream_name: str,
+        expected_version: t.Optional[int] = None,
+    ):
+        cursor.execute(
+            Statements.SELECT_MAX_VERSION.format(
+                schema=Identifier(self._datastore.schema),
+                table=Identifier(self._events_table),
+            ),
+            {"stream_id": stream_name},
+        )
+        row = cursor.fetchone()
+        version = row["max"] if row else None
+        if version != expected_version and expected_version is not None:
+            raise OptimisticConcurrencyError(
+                f"Conflict version of stream {stream_name}. Expected {expected_version} got {version}"
+            )
 
-class PostgresSnapshotRecorder(ISnapshotRecorder):
+
+class NullSnapshotStore(ISnapshotStore, ICanCreateTable):
+    def add_snapshot(self, stream_name: str, snapshot: SnapshotProtocol) -> None:
+        raise NotImplementedError("Not implemented for NullSnapshotStore")
+
+    def get_last_snapshot(self, stream_name: str) -> t.Optional[SnapshotProtocol]:
+        return None
+
+    def create_table(self) -> None:
+        pass
+
+
+class PostgresSnapshotStore(ISnapshotStore, ICanCreateTable):
     def __init__(self, datastore: PostgresDatastore, snapshots_table_name: str):
         self._check_identifier_length(snapshots_table_name)
         self._datastore = datastore
@@ -234,7 +243,7 @@ class PostgresSnapshotRecorder(ISnapshotRecorder):
             msg = f"Identifier too long: {table_name}. Max length is {MAX_IDENTIFIER_LEN} characters."
             raise ValueError(msg)
 
-    def insert_snapshot(self, stream_name: str, snapshot: SnapshotABC) -> None:
+    def add_snapshot(self, stream_name: str, snapshot: SnapshotProtocol) -> None:
         with self._datastore.get_connection() as conn:
             conn.execute(
                 Statements.INSERT_SNAPSHOT.format(
@@ -244,7 +253,7 @@ class PostgresSnapshotRecorder(ISnapshotRecorder):
                 Converter.snapshot_to_dict(snapshot),
             )
 
-    def select_latest(self, stream_name: str) -> t.Optional[SnapshotABC]:
+    def get_last_snapshot(self, stream_name: str) -> t.Optional[Snapshot]:
         with self._datastore.get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -252,7 +261,7 @@ class PostgresSnapshotRecorder(ISnapshotRecorder):
                         schema=Identifier(self._datastore.schema),
                         table=Identifier(self._snapshots_table),
                     ),
-                    {"entity_id": stream_name},
+                    {"stream_id": stream_name},
                 )
                 row: t.Optional[DictRow] = cur.fetchone()
                 if row:
@@ -269,39 +278,12 @@ class PostgresSnapshotRecorder(ISnapshotRecorder):
             )
 
 
-class PostgresEventStore(IEventStore):
-    def __init__(
-        self,
-        events_recorder: PostgresEventRecorder,
-        snapshots_recorder: PostgresSnapshotRecorder,
-    ):
-        self._events = events_recorder
-        self._snapshots = snapshots_recorder
-
-    def append_to_stream(
-        self, stream_name: str, events: t.Iterable[ISourcedEvent], expected_version: t.Optional[int] = None
-    ):
-        try:
-            self._events.insert_events(stream_name=stream_name, events=events)
-        except UniqueViolation:
-            raise OptimisticConcurrencyError(f"Conflict version of stream {stream_name}.")
-
-    def get_from_stream(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[ISourcedEvent]:
-        return self._events.select_events(stream_name=stream_name, from_version=from_version, to_version=to_version)
-
-    def add_snapshot(self, stream_name: str, snapshot: SnapshotABC):
-        self._snapshots.insert_snapshot(stream_name, snapshot)
-
-    def get_last_snapshot(self, stream_name: str) -> t.Optional[SnapshotABC]:
-        return self._snapshots.select_latest(stream_name)
-
-
 class Converter:
     @classmethod
     def event_to_dict(cls, event: ISourcedEvent) -> dict:
         return {
-            "entity_id": event.__entity_reference__,
-            "entity_version": event.__entity_version__,
+            "stream_id": event.__entity_reference__,
+            "version": event.__entity_version__,
             "correlation_id": event.__message_id__,
             "topic": event.__topic__,
             "state": event.to_json(),
@@ -313,8 +295,8 @@ class Converter:
         entity_type = get_message_class(data["topic"])
         event = entity_type.load(
             payload=json.loads(data["state"]),
-            entity_reference=data["entity_id"],
-            entity_version=data["entity_version"],
+            entity_reference=data["stream_id"],
+            entity_version=data["version"],
             message_id=data["correlation_id"],
             timestamp=data["created_at"],
         )
@@ -322,24 +304,21 @@ class Converter:
         return event
 
     @classmethod
-    def snapshot_to_dict(cls, snapshot: SnapshotABC) -> dict:
+    def snapshot_to_dict(cls, snapshot: SnapshotProtocol) -> dict:
         return {
-            "entity_id": snapshot.__entity_reference__,
-            "entity_version": snapshot.__entity_version__,
+            "stream_id": snapshot.__entity_reference__,
+            "version": snapshot.__entity_version__,
             "state": snapshot.__state__,
-            "topic": snapshot.__topic__,
             "created_at": dt.datetime.now(dt.timezone.utc),
         }
 
     @classmethod
-    def snapshot_from_dict(cls, data: dict) -> SnapshotABC:
-        entity_type = SnapshotABC.get_by_name(data["topic"])
-        snapshot = entity_type.load(
+    def snapshot_from_dict(cls, data: dict) -> Snapshot:
+        snapshot = Snapshot(
             state=data["state"],
-            entity_reference=data["entity_id"],
-            entity_version=data["entity_version"],
+            reference=data["stream_id"],
+            version=data["version"],
         )
-        assert isinstance(snapshot, SnapshotABC)
         return snapshot
 
 
@@ -347,14 +326,14 @@ class Statements:
     CREATE_EVENT_TABLE = SQL(
         """
         CREATE TABLE IF NOT EXISTS {schema}.{table} (
-            entity_id VARCHAR NOT NULL,
-            entity_version BIGINT NOT NULL,
+            stream_id VARCHAR NOT NULL,
+            version BIGINT NOT NULL,
             topic TEXT,
             state BYTEA,
             notification_id BIGSERIAL,
             correlation_id UUID NOT NULL,
             created_at TIMESTAMPTZ,
-            PRIMARY KEY (entity_id, entity_version)
+            PRIMARY KEY (stream_id, version)
         ) WITH (
                     autovacuum_enabled = true,
                     autovacuum_vacuum_threshold = 100000000,
@@ -371,12 +350,11 @@ class Statements:
     CREATE_SNAPSHOT_TABLE = SQL(
         """
         CREATE TABLE IF NOT EXISTS {schema}.{table} (
-            entity_id VARCHAR NOT NULL,
-            entity_version BIGINT NOT NULL,
-            topic TEXT NOT NULL,
+            stream_id VARCHAR NOT NULL,
+            version BIGINT NOT NULL,
             state BYTEA NOT NULL,
             created_at TIMESTAMPTZ NOT NULL,
-            PRIMARY KEY (entity_id, entity_version)
+            PRIMARY KEY (stream_id, version)
         ) WITH (
                     autovacuum_enabled = true,
                     autovacuum_vacuum_threshold = 100000000,
@@ -390,33 +368,40 @@ class Statements:
     INSERT_EVENTS = SQL(
         """
         INSERT INTO {schema}.{table} 
-        (entity_id, entity_version, correlation_id, topic, state, created_at)
-        VALUES (%(entity_id)s, %(entity_version)s, %(correlation_id)s, %(topic)s, %(state)s, %(created_at)s)
+        (stream_id, version, correlation_id, topic, state, created_at)
+        VALUES (%(stream_id)s, %(version)s, %(correlation_id)s, %(topic)s, %(state)s, %(created_at)s)
         """
     )
 
     SELECT_EVENTS = SQL(
         """
-        SELECT entity_id, entity_version, topic, state, created_at, correlation_id
+        SELECT stream_id, version, topic, state, created_at, correlation_id
         FROM {schema}.{table}
-        WHERE entity_id = %(entity_id)s AND entity_version BETWEEN %(from_version)s AND %(to_version)s
+        WHERE stream_id = %(stream_id)s AND version BETWEEN %(from_version)s AND %(to_version)s
+        """
+    )
+
+    SELECT_MAX_VERSION = SQL(
+        """
+        SELECT max(version) FROM {schema}.{table}
+        WHERE stream_id = %(stream_id)s
         """
     )
 
     INSERT_SNAPSHOT = SQL(
         """
         INSERT INTO {schema}.{table} 
-        (entity_id, entity_version, topic, state, created_at)
-        VALUES (%(entity_id)s, %(entity_version)s, %(topic)s, %(state)s, %(created_at)s)
+        (stream_id, version, state, created_at)
+        VALUES (%(stream_id)s, %(version)s, %(state)s, %(created_at)s)
         """
     )
 
     SELECT_LATEST_SNAPSHOT = SQL(
         """
-        SELECT entity_id, entity_version, state, topic, created_at
+        SELECT stream_id, version, state, created_at
         FROM {schema}.{table}
-        WHERE entity_id = %(entity_id)s
-        ORDER BY entity_version DESC
+        WHERE stream_id = %(stream_id)s
+        ORDER BY version DESC
         LIMIT 1
         """
     )

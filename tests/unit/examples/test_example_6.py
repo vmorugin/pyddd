@@ -24,7 +24,7 @@ from pyddd.infrastructure.persistence.abstractions import IEventStore
 
 __domain__ = DomainName("balance")
 
-from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryEventStore
+from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryStore
 
 
 class AccountId(str): ...
@@ -144,7 +144,7 @@ class InMemoryAccountRepository(IAccountRepository):
 
 def test_account():
     app = Application()
-    event_store = InMemoryEventStore()
+    event_store = InMemoryStore()
     repository = InMemoryAccountRepository(event_store)
     app.set_defaults(__domain__, repository=repository)
     app.include(module)

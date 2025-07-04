@@ -1,4 +1,4 @@
 from .exceptions import OptimisticConcurrencyError, EventStoreError
-from .in_memory import InMemoryEventStore
+from .in_memory import InMemoryStore
 
-__all__ = ["OptimisticConcurrencyError", "EventStoreError", "InMemoryEventStore"]
+__all__ = ["OptimisticConcurrencyError", "EventStoreError", "InMemoryStore"]

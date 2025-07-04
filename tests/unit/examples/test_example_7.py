@@ -1,7 +1,7 @@
-import abc
-import sys
+import json
 import typing as t
 import uuid
+from uuid import NAMESPACE_URL
 
 import pytest
 
@@ -15,16 +15,22 @@ from pyddd.domain import (
 )
 from pyddd.domain.abstractions import (
     IdType,
+    SnapshotProtocol,
 )
 from pyddd.domain.event_sourcing import (
     EventSourcedEntity,
     SourcedDomainEvent,
+    Snapshot,
 )
-from pyddd.infrastructure.persistence.abstractions import IEventStore
 
 __domain__ = DomainName("balance.example")
 
-from pyddd.infrastructure.persistence.event_store import InMemoryEventStore
+from pyddd.infrastructure.persistence.abstractions import IESRepository
+from pyddd.infrastructure.persistence.event_store import InMemoryStore
+
+from pyddd.infrastructure.persistence.event_store.repository import (
+    EventSourcedRepository,
+)
 
 
 class AccountId(str): ...
@@ -35,8 +41,12 @@ class Account(EventSourcedEntity[AccountId]):
     balance: int
 
     @classmethod
+    def generate_id(cls, owner_id: str) -> AccountId:
+        return AccountId(uuid.uuid5(NAMESPACE_URL, f"account/{owner_id}"))
+
+    @classmethod
     def create(cls, owner_id: str) -> "Account":
-        return cls._create(AccountCreated, reference=AccountId(uuid.uuid4()), owner_id=owner_id)
+        return cls._create(AccountCreated, reference=cls.generate_id(owner_id), owner_id=owner_id)
 
     def deposit(self, amount: int):
         if amount <= 0:
@@ -47,6 +57,23 @@ class Account(EventSourcedEntity[AccountId]):
         if self.balance - amount < 0:
             raise ValueError("Not enough money for withdraw")
         self.trigger_event(Withdrew, amount=amount)
+
+    def snapshot(self) -> SnapshotProtocol:
+        return Snapshot(
+            reference=self.__reference__,
+            version=int(self.__version__),
+            state=self.json().encode(),
+        )
+
+    @classmethod
+    def from_snapshot(cls, snapshot: SnapshotProtocol) -> "Account":
+        state = json.loads(snapshot.__state__)
+        return cls(
+            __reference__=snapshot.__entity_reference__,
+            __version__=snapshot.__entity_version__,
+            owner_id=state["owner_id"],
+            balance=state["balance"],
+        )
 
 
 class BaseAccountEvent(SourcedDomainEvent, domain=__domain__): ...
@@ -81,14 +108,6 @@ class Withdrew(BaseAccountEvent):
 module = Module(__domain__)
 
 
-class IAccountRepository(abc.ABC):
-    @abc.abstractmethod
-    def save(self, entity: Account): ...
-
-    @abc.abstractmethod
-    def get(self, account_id: AccountId): ...
-
-
 class BaseCommand(DomainCommand, domain=__domain__): ...
 
 
@@ -107,59 +126,52 @@ class WithdrawAccountCommand(BaseCommand):
 
 
 @module.register
-def create_account(cmd: CreateAccountCommand, repository: IAccountRepository):
-    account = Account.create(owner_id=cmd.owner_id)
-    repository.save(account)
+def create_account(cmd: CreateAccountCommand, repository: IESRepository[Account]):
+    account_id = Account.generate_id(cmd.owner_id)
+    account = repository.find_by(account_id)
+    if account is None:
+        account = Account.create(owner_id=cmd.owner_id)
+        repository.add(account)
+        repository.commit()
     return account.__reference__
 
 
 @module.register
-def deposit_account(cmd: DepositAccountCommand, repository: IAccountRepository):
-    account = repository.get(AccountId(cmd.account_id))
+def deposit_account(cmd: DepositAccountCommand, repository: IESRepository[Account]):
+    account = repository.find_by(AccountId(cmd.account_id))
     account.deposit(cmd.amount)
-    repository.save(account)
+    repository.commit()
 
 
 @module.register
-def withdraw_account(cmd: WithdrawAccountCommand, repository: IAccountRepository):
-    account = repository.get(AccountId(cmd.account_id))
+def withdraw_account(cmd: WithdrawAccountCommand, repository: IESRepository[Account]):
+    account = repository.find_by(AccountId(cmd.account_id))
     account.withdraw(cmd.amount)
-    repository.save(account)
-
-
-class AccountRepository(IAccountRepository):
-    def __init__(self, store: IEventStore):
-        self._store = store
-
-    def save(self, entity: Account):
-        self._store.append_to_stream(str(entity.__reference__), entity.collect_events())
-
-    def get(self, account_id: AccountId) -> Account:
-        stream = self._store.get_from_stream(str(account_id), 0, sys.maxsize)
-        account: t.Optional[Account] = None
-        for event in stream:
-            account = event.mutate(account)
-        return account
+    repository.commit()
 
 
 def test_account():
     app = Application()
-    event_store = InMemoryEventStore()
-    repository = AccountRepository(event_store)
+    store = InMemoryStore()
+    repository = EventSourcedRepository(
+        event_store=store,
+        snapshot_store=store,
+        entity_cls=Account,
+        snapshot_interval=2,
+    )
     app.set_defaults(__domain__, repository=repository)
     app.include(module)
     app.run()
-
     account_id = app.handle(CreateAccountCommand(owner_id="123"))
 
-    account = repository.get(account_id)
+    account = repository.find_by(account_id)
 
     assert account.owner_id == "123"
     assert account.balance == 0
 
     app.handle(DepositAccountCommand(account_id=account_id, amount=200))
 
-    account = repository.get(account_id)
+    account = repository.find_by(account_id)
     assert account.balance == 200
 
     with pytest.raises(ValueError):
@@ -167,12 +179,12 @@ def test_account():
 
     app.handle(WithdrawAccountCommand(account_id=account_id, amount=100))
 
-    account = repository.get(account_id)
+    account = repository.find_by(account_id)
     assert account.balance == 100
 
     app.handle(WithdrawAccountCommand(account_id=account_id, amount=100))
 
-    account = repository.get(account_id)
+    account = repository.find_by(account_id)
     assert account.balance == 0
 
     with pytest.raises(ValueError):

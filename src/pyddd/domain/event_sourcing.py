@@ -1,17 +1,17 @@
-import abc
+import json
 import typing as t
 import datetime as dt
 from uuid import UUID
 
 from pydantic import PrivateAttr
 
-from pyddd.domain.types import DomainName
 from pyddd.domain.abstractions import (
     ISourcedEvent,
     IdType,
     Version,
     ISourcedEventMeta,
     IEventSourcedEntity,
+    SnapshotProtocol,
 )
 from pyddd.domain.entity import (
     Entity,
@@ -22,7 +22,26 @@ from pyddd.domain.message import (
     BaseDomainMessageMeta,
 )
 
-_SourcedEntityT = t.TypeVar("_SourcedEntityT", bound=IEventSourcedEntity)
+SourcedEntityT = t.TypeVar("SourcedEntityT", bound=IEventSourcedEntity)
+
+
+class Snapshot:
+    def __init__(self, state: bytes, reference: str, version: int):
+        self._state = state
+        self._reference = reference
+        self._version = version
+
+    @property
+    def __state__(self) -> bytes:
+        return self._state
+
+    @property
+    def __entity_reference__(self) -> str:
+        return self._reference
+
+    @property
+    def __entity_version__(self) -> int:
+        return self._version
 
 
 class SourcedDomainEventMeta(BaseDomainMessageMeta, ISourcedEventMeta):
@@ -74,7 +93,7 @@ class SourcedDomainEvent(BaseDomainMessage, ISourcedEvent, metaclass=SourcedDoma
     def __entity_version__(self) -> Version:
         return self._entity_version
 
-    def mutate(self, entity: t.Optional[_SourcedEntityT]) -> _SourcedEntityT:
+    def mutate(self, entity: t.Optional[SourcedEntityT]) -> SourcedEntityT:
         assert entity is not None
 
         next_version = entity.__version__ + 1
@@ -86,65 +105,7 @@ class SourcedDomainEvent(BaseDomainMessage, ISourcedEvent, metaclass=SourcedDoma
 
         return entity
 
-    def apply(self, entity: _SourcedEntityT) -> None: ...
-
-
-class SnapshotMeta(abc.ABCMeta):
-    _registry: dict[str, "SnapshotMeta"] = {}
-    _domain_name: DomainName
-
-    def __new__(mcls, name: str, bases: tuple, namespace, domain: str = None, **kwargs):
-        cls = super().__new__(mcls, name, bases, namespace)
-        if cls.__module__ != __name__:
-            if domain is None:
-                raise ValueError("Required to set domain name for snapshot class")
-            cls._domain_name = DomainName(domain)
-            mcls._registry[cls.__topic__] = cls
-        return cls
-
-    @property
-    def __domain__(cls) -> str:
-        return cls._domain_name
-
-    def get_by_name(cls, name: str) -> "type[SnapshotABC]":
-        snapshot_cls = cls._registry[name]
-        assert issubclass(snapshot_cls, SnapshotABC)
-        return snapshot_cls
-
-    @property
-    def __topic__(cls) -> str:
-        """
-        Get the name of the snapshot class.
-        """
-        return f"{cls._domain_name}.{cls.__name__}"
-
-
-class SnapshotABC(abc.ABC, metaclass=SnapshotMeta):
-    @property
-    @abc.abstractmethod
-    def __state__(self) -> bytes: ...
-
-    @property
-    @abc.abstractmethod
-    def __entity_reference__(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def __entity_version__(self) -> int: ...
-
-    @property
-    def __topic__(self) -> str:
-        """
-        Get the topic of the snapshot.
-        """
-        return f"{self.__class__.__topic__}"
-
-    @classmethod
-    @abc.abstractmethod
-    def load(cls, state: bytes, entity_reference: IdType, entity_version: int) -> "SnapshotABC":
-        """
-        Load a snapshot from its state.
-        """
+    def apply(self, entity: SourcedEntityT) -> None: ...
 
 
 class _EventSourcedEntityMeta(_EntityMeta):
@@ -188,3 +149,19 @@ class EventSourcedEntity(IEventSourcedEntity[IdType, SourcedDomainEvent], Entity
         events = self._events
         self._events = []
         yield from events
+
+    def snapshot(self) -> SnapshotProtocol:
+        return Snapshot(
+            reference=self.__reference__,
+            version=int(self.__version__),
+            state=self.json().encode(),
+        )
+
+    @classmethod
+    def from_snapshot(cls, snapshot: SnapshotProtocol):
+        state = json.loads(snapshot.__state__)
+        return cls(
+            __reference__=snapshot.__entity_reference__,
+            __version__=Version(snapshot.__entity_version__),
+            **state,
+        )

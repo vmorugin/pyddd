@@ -5,8 +5,10 @@ from typing import ContextManager
 
 from pyddd.domain.abstractions import (
     ISourcedEvent,
+    SnapshotProtocol,
+    IdType,
 )
-from pyddd.domain.event_sourcing import SnapshotABC
+from pyddd.domain.event_sourcing import SourcedEntityT
 
 TLock = t.TypeVar("TLock")
 TLockKey: t.TypeAlias = str | None
@@ -85,14 +87,16 @@ class IEventStore(abc.ABC):
         stream_name: str,
         from_version: int,
         to_version: int,
-    ) -> t.Union[t.Iterable[ISourcedEvent], t.Awaitable[t.Iterable[ISourcedEvent]]]:
+    ) -> t.Iterable[ISourcedEvent]:
         """
         Get Events from stream sorted by version, from and to included.
         Raise events if not created.
         """
 
+
+class ISnapshotStore(abc.ABC):
     @abc.abstractmethod
-    def add_snapshot(self, stream_name: str, snapshot: SnapshotABC):
+    def add_snapshot(self, stream_name: str, snapshot: SnapshotProtocol):
         """
         Add snapshot to stream.
         """
@@ -101,7 +105,15 @@ class IEventStore(abc.ABC):
     def get_last_snapshot(
         self,
         stream_name: str,
-    ) -> t.Union[t.Optional[SnapshotABC], t.Awaitable[t.Optional[SnapshotABC]]]:
+    ) -> t.Optional[SnapshotProtocol]:
         """
         Find latest snapshot from stream.
         """
+
+
+class IESRepository(IRepository, t.Generic[SourcedEntityT], abc.ABC):
+    @abc.abstractmethod
+    def find_by(self, entity_id: IdType) -> t.Optional[SourcedEntityT]: ...
+
+    @abc.abstractmethod
+    def add(self, entity: SourcedEntityT): ...

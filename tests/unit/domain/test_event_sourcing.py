@@ -1,4 +1,3 @@
-import dataclasses
 import json
 import uuid
 
@@ -8,35 +7,14 @@ from pyddd.domain import (
 )
 from pyddd.domain.abstractions import (
     Version,
-    IdType,
+    SnapshotProtocol,
 )
-from pyddd.domain.event_sourcing import EventSourcedEntity, SnapshotABC
+from pyddd.domain.event_sourcing import (
+    EventSourcedEntity,
+    Snapshot,
+)
 
 __domain__ = DomainName("test.event-sourcing")
-
-
-@dataclasses.dataclass(frozen=True)
-class SomeRootEntitySnapshot(SnapshotABC, domain=__domain__):
-    reference: str
-    version: int
-    name: str
-
-    @property
-    def __state__(self) -> bytes:
-        return json.dumps(self.__dict__).encode()
-
-    @property
-    def __entity_reference__(self):
-        return self.reference
-
-    @property
-    def __entity_version__(self) -> int:
-        return self.version
-
-    @classmethod
-    def load(cls, state: bytes, entity_reference: IdType, entity_version: int):
-        data = json.loads(state.decode())
-        return cls(reference=entity_reference, version=entity_version, name=data["name"])
 
 
 class SomeRootEntity(EventSourcedEntity[str]):
@@ -49,19 +27,20 @@ class SomeRootEntity(EventSourcedEntity[str]):
     def rename(self, name: str):
         self.trigger_event(EntityRenamed, name=name)
 
-    def snapshot(self) -> SomeRootEntitySnapshot:
-        return SomeRootEntitySnapshot(
+    def snapshot(self) -> SnapshotProtocol:
+        return Snapshot(
             reference=self.__reference__,
             version=int(self.__version__),
-            name=self.name,
+            state=self.json().encode(),
         )
 
     @classmethod
-    def from_snapshot(cls, snapshot: SomeRootEntitySnapshot):
+    def from_snapshot(cls, snapshot: SnapshotProtocol):
+        state = json.loads(snapshot.__state__)
         return cls(
-            __reference__=snapshot.reference,
-            __version__=Version(snapshot.version),
-            name=snapshot.name,
+            __reference__=snapshot.__entity_reference__,
+            __version__=Version(snapshot.__entity_version__),
+            name=state["name"],
         )
 
 
@@ -118,8 +97,3 @@ class TestEventSourcedEntity:
         events = list(entity.collect_events())
         event = events.pop()
         assert event.__entity_version__ == 2
-
-
-def test_could_get_class_by_name():
-    cls = SnapshotABC.get_by_name(str(SomeRootEntitySnapshot.__topic__))
-    assert cls is SomeRootEntitySnapshot
