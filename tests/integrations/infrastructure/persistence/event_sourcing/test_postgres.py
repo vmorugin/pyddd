@@ -7,7 +7,11 @@ import pytest
 from psycopg.errors import DuplicateDatabase
 
 from pyddd.domain import SourcedDomainEvent
-from pyddd.domain.abstractions import Version
+from pyddd.domain.abstractions import (
+    Version,
+    IdType,
+)
+from pyddd.domain.event_sourcing import SnapshotABC
 from pyddd.infrastructure.persistence.abstractions import IEventStore
 from pyddd.infrastructure.persistence.event_store import OptimisticConcurrencyError
 from pyddd.infrastructure.persistence.event_store.postgres import (
@@ -18,7 +22,29 @@ from pyddd.infrastructure.persistence.event_store.postgres import (
     IEventRecorder,
     ISnapshotRecorder,
 )
-from unit.infrastructure.persistence.test_event_store import ExampleSnapshot
+
+
+class ExampleSnapshot(SnapshotABC, domain="test.event-store-postgres"):
+    def __init__(self, state: bytes, reference: str, version: int):
+        self._state = state
+        self._reference = reference
+        self._version = version
+
+    @property
+    def __state__(self) -> bytes:
+        return self._state
+
+    @property
+    def __entity_reference__(self):
+        return self._reference
+
+    @property
+    def __entity_version__(self) -> int:
+        return self._version
+
+    @classmethod
+    def load(cls, state: bytes, entity_reference: IdType, entity_version: int) -> "SnapshotABC":
+        return cls(state=state, reference=entity_reference, version=entity_version)
 
 
 @pytest.fixture
