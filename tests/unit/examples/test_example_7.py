@@ -1,4 +1,3 @@
-import json
 import typing as t
 import uuid
 from uuid import NAMESPACE_URL
@@ -15,18 +14,19 @@ from pyddd.domain import (
 )
 from pyddd.domain.abstractions import (
     IdType,
-    SnapshotProtocol,
 )
 from pyddd.domain.event_sourcing import (
     EventSourcedEntity,
     SourcedDomainEvent,
-    Snapshot,
 )
 
 __domain__ = DomainName("balance.example")
 
 from pyddd.infrastructure.persistence.abstractions import IESRepository
-from pyddd.infrastructure.persistence.event_store import InMemoryStore
+from pyddd.infrastructure.persistence.event_store import (
+    InMemoryStore,
+    OptimisticConcurrencyError,
+)
 
 from pyddd.infrastructure.persistence.event_store.repository import (
     EventSourcedRepository,
@@ -57,23 +57,6 @@ class Account(EventSourcedEntity[AccountId]):
         if self.balance - amount < 0:
             raise ValueError("Not enough money for withdraw")
         self.trigger_event(Withdrew, amount=amount)
-
-    def snapshot(self) -> SnapshotProtocol:
-        return Snapshot(
-            reference=self.__reference__,
-            version=int(self.__version__),
-            state=self.json().encode(),
-        )
-
-    @classmethod
-    def from_snapshot(cls, snapshot: SnapshotProtocol) -> "Account":
-        state = json.loads(snapshot.__state__)
-        return cls(
-            __reference__=snapshot.__entity_reference__,
-            __version__=snapshot.__entity_version__,
-            owner_id=state["owner_id"],
-            balance=state["balance"],
-        )
 
 
 class BaseAccountEvent(SourcedDomainEvent, domain=__domain__): ...
@@ -127,12 +110,9 @@ class WithdrawAccountCommand(BaseCommand):
 
 @module.register
 def create_account(cmd: CreateAccountCommand, repository: IESRepository[Account]):
-    account_id = Account.generate_id(cmd.owner_id)
-    account = repository.find_by(account_id)
-    if account is None:
-        account = Account.create(owner_id=cmd.owner_id)
-        repository.add(account)
-        repository.commit()
+    account = Account.create(owner_id=cmd.owner_id)
+    repository.add(account)
+    repository.commit()
     return account.__reference__
 
 
@@ -153,16 +133,14 @@ def withdraw_account(cmd: WithdrawAccountCommand, repository: IESRepository[Acco
 def test_account():
     app = Application()
     store = InMemoryStore()
-    repository = EventSourcedRepository(
-        event_store=store,
-        snapshot_store=store,
-        entity_cls=Account,
-        snapshot_interval=2,
-    )
+    repository = EventSourcedRepository(event_store=store)
     app.set_defaults(__domain__, repository=repository)
     app.include(module)
     app.run()
     account_id = app.handle(CreateAccountCommand(owner_id="123"))
+
+    with pytest.raises(OptimisticConcurrencyError):
+        app.handle(CreateAccountCommand(owner_id="123"))
 
     account = repository.find_by(account_id)
 

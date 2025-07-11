@@ -1,4 +1,5 @@
 import uuid
+from copy import deepcopy
 
 import pytest
 
@@ -20,6 +21,7 @@ from pyddd.infrastructure.persistence.abstractions import (
 from pyddd.infrastructure.persistence.event_store import OptimisticConcurrencyError
 from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryStore
 from pyddd.infrastructure.persistence.event_store.repository import (
+    SnapshotEventSourcedRepository,
     EventSourcedRepository,
 )
 
@@ -77,9 +79,9 @@ class TestInMemoryEventStore:
         events = [EntityCreated(entity_reference=str(uuid.uuid4()), entity_version=Version(1), name="123")]
         store.append_to_stream(stream_name, events)
         with pytest.raises(
-            OptimisticConcurrencyError, match=f"Conflict version of stream {stream_name}. Expected version 2 found 1"
+            OptimisticConcurrencyError, match=f"Conflict version of stream {stream_name}. Version 1 exists"
         ):
-            store.append_to_stream(stream_name, events, expected_version=2)
+            store.append_to_stream(stream_name, events)
 
     def test_could_add_and_get_snapshot(self, store, stream_name):
         store.add_snapshot(stream_name, Snapshot(state=b"{}", version=1, reference="123"))
@@ -99,8 +101,41 @@ class TestEventSourcedRepository:
 
     @pytest.fixture
     def repository(self, event_store) -> IESRepository[ExampleEntity]:
-        return EventSourcedRepository(
-            event_store=event_store, snapshot_store=event_store, entity_cls=ExampleEntity, snapshot_interval=2
+        return EventSourcedRepository(event_store=event_store)
+
+    def test_must_impl(self, repository):
+        assert isinstance(repository, IESRepository)
+
+    def test_could_add_and_get(self, repository):
+        entity = ExampleEntity.create("Test")
+        repository.add(entity)
+        repository.commit()
+        new = repository.find_by(entity.__reference__)
+        assert new == entity
+
+    def test_get_and_update(self, repository):
+        entity = ExampleEntity.create("Test")
+        repository.add(entity)
+        repository.commit()
+
+        new = repository.find_by(entity.__reference__)
+        new.rename("New Name")
+        repository.commit()
+
+        updated = repository.find_by(entity.__reference__)
+
+        assert updated.name == "New Name"
+
+
+class TestSnapshotEventSourcedRepository:
+    @pytest.fixture
+    def event_store(self):
+        return InMemoryStore()
+
+    @pytest.fixture
+    def repository(self, event_store) -> IESRepository[ExampleEntity]:
+        return SnapshotEventSourcedRepository(
+            event_store=event_store, snapshot_store=event_store, entity_cls=ExampleEntity, snapshot_interval=10
         )
 
     def test_must_impl(self, repository):
@@ -113,12 +148,23 @@ class TestEventSourcedRepository:
         new = repository.find_by(entity.__reference__)
         assert new == entity
 
+    def test_could_not_save_with_versions_conflict(self, repository):
+        entity = ExampleEntity.create(name="123")
+        copy = deepcopy(entity)
+        repository.add(entity)
+        repository.commit()
+
+        repository.add(copy)
+        with pytest.raises(OptimisticConcurrencyError):
+            repository.commit()
+
     def test_could_get_from_snapshot(self, event_store, repository):
         entity = ExampleEntity.create("Test")
         event_store.add_snapshot(str(entity.__reference__), entity.snapshot())
         new = repository.find_by(entity.__reference__)
         assert new == entity
         assert new.name == "Test"
+        assert entity.__version__ == Version(1)
 
     def test_get_and_update(self, repository):
         entity = ExampleEntity.create("Test")

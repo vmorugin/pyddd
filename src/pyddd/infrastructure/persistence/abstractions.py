@@ -73,9 +73,7 @@ class ILocker(t.Generic[TLock], abc.ABC):
 
 class IEventStore(abc.ABC):
     @abc.abstractmethod
-    def append_to_stream(
-        self, stream_name: str, events: t.Iterable[ISourcedEvent], expected_version: t.Optional[int] = None
-    ):
+    def append_to_stream(self, stream_name: str, events: t.Iterable[ISourcedEvent]):
         """
         Add events to existed stream.
         Expected version - optimistic lock checker, implemented by repository.

@@ -10,6 +10,7 @@ from psycopg import (
     Connection,
     Cursor,
 )
+from psycopg.errors import UniqueViolation
 from psycopg.rows import (
     dict_row,
     DictRow,
@@ -166,18 +167,18 @@ class PostgresEventStore(IEventStore, ICanCreateTable):
             msg = f"Identifier too long: {table_name}. Max length is {MAX_IDENTIFIER_LEN} characters."
             raise ValueError(msg)
 
-    def append_to_stream(
-        self, stream_name: str, events: t.Iterable[ISourcedEvent], expected_version: int = None
-    ) -> None:
+    def append_to_stream(self, stream_name: str, events: t.Iterable[ISourcedEvent]) -> None:
         with self._datastore.cursor() as cur:
-            self._optimistic_concurrency_check(cur, stream_name=stream_name, expected_version=expected_version)
-            cur.executemany(
-                Statements.INSERT_EVENTS.format(
-                    schema=Identifier(self._datastore.schema),
-                    table=Identifier(self._events_table),
-                ),
-                (Converter.event_to_dict(event) for event in events),
-            )
+            try:
+                cur.executemany(
+                    Statements.INSERT_EVENTS.format(
+                        schema=Identifier(self._datastore.schema),
+                        table=Identifier(self._events_table),
+                    ),
+                    (Converter.event_to_dict(event) for event in events),
+                )
+            except UniqueViolation:
+                raise OptimisticConcurrencyError(f"Conflict version of stream {stream_name}.")
 
     def get_from_stream(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[ISourcedEvent]:
         with self._datastore.cursor() as cur:
@@ -198,37 +199,6 @@ class PostgresEventStore(IEventStore, ICanCreateTable):
                     table=Identifier(self._events_table),
                 )
             )
-
-    def _optimistic_concurrency_check(
-        self,
-        cursor: Cursor[dict[str, t.Any]],
-        stream_name: str,
-        expected_version: t.Optional[int] = None,
-    ):
-        cursor.execute(
-            Statements.SELECT_MAX_VERSION.format(
-                schema=Identifier(self._datastore.schema),
-                table=Identifier(self._events_table),
-            ),
-            {"stream_id": stream_name},
-        )
-        row = cursor.fetchone()
-        version = row["max"] if row else None
-        if version != expected_version and expected_version is not None:
-            raise OptimisticConcurrencyError(
-                f"Conflict version of stream {stream_name}. Expected {expected_version} got {version}"
-            )
-
-
-class NullSnapshotStore(ISnapshotStore, ICanCreateTable):
-    def add_snapshot(self, stream_name: str, snapshot: SnapshotProtocol) -> None:
-        raise NotImplementedError("Not implemented for NullSnapshotStore")
-
-    def get_last_snapshot(self, stream_name: str) -> t.Optional[SnapshotProtocol]:
-        return None
-
-    def create_table(self) -> None:
-        pass
 
 
 class PostgresSnapshotStore(ISnapshotStore, ICanCreateTable):
@@ -378,13 +348,6 @@ class Statements:
         SELECT stream_id, version, topic, state, created_at, correlation_id
         FROM {schema}.{table}
         WHERE stream_id = %(stream_id)s AND version BETWEEN %(from_version)s AND %(to_version)s
-        """
-    )
-
-    SELECT_MAX_VERSION = SQL(
-        """
-        SELECT max(version) FROM {schema}.{table}
-        WHERE stream_id = %(stream_id)s
         """
     )
 

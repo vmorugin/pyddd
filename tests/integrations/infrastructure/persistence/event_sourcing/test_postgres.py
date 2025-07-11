@@ -156,7 +156,5 @@ class TestEventStore:
     def test_could_raise_error_if_conflict_of_version(self, store, stream_name):
         events = [ExampleEvent(entity_reference=stream_name, entity_version=Version(1))]
         store.append_to_stream(stream_name, events)
-        with pytest.raises(
-            OptimisticConcurrencyError, match=f"Conflict version of stream {stream_name}. Expected 2 got 1"
-        ):
-            store.append_to_stream(stream_name, events, expected_version=2)
+        with pytest.raises(OptimisticConcurrencyError, match=f"Conflict version of stream {stream_name}."):
+            store.append_to_stream(stream_name, events)

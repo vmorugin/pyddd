@@ -25,9 +25,6 @@ class IEntity(t.Generic[IdType], abc.ABC):
     @abc.abstractmethod
     def __version__(self) -> Version: ...
 
-    @abc.abstractmethod
-    def increment_version(self): ...
-
 
 EntityT = t.TypeVar("EntityT", bound=IEntity)
 
@@ -125,9 +122,16 @@ class ISourcedEventMeta(IMessageMeta, abc.ABC): ...
 
 class ISourcedEvent(IEvent, abc.ABC, metaclass=ISourcedEventMeta):
     @abc.abstractmethod
-    def mutate(self, entity: t.Optional["IEventSourcedEntity"]) -> t.Optional["IEventSourcedEntity"]: ...
+    def mutate(self, entity: t.Optional["IEventSourcedEntity"]) -> "IEventSourcedEntity":
+        """
+        Use for rehydrating entities.
+        Update state of entity, version and return updated entity.
+        """
 
-    def apply(self, entity: "IEventSourcedEntity") -> None: ...
+    def apply(self, entity: "IEventSourcedEntity") -> None:
+        """
+        Modify entity state. Bypass by default.
+        """
 
     @property
     @abc.abstractmethod
@@ -167,14 +171,6 @@ class SnapshotProtocol(t.Protocol):
 
 
 class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
-    @property
-    @abc.abstractmethod
-    def __init_version__(self) -> Version:
-        """
-        The version stored when init aggregate.
-        Not modified when trigger_event.
-        """
-
     @abc.abstractmethod
     def trigger_event(self, event_type: type[EventT]):
         """

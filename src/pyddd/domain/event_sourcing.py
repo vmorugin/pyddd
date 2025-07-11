@@ -16,6 +16,7 @@ from pyddd.domain.abstractions import (
 from pyddd.domain.entity import (
     Entity,
     _EntityMeta,
+    increment_version,
 )
 from pyddd.domain.message import (
     BaseDomainMessage,
@@ -101,7 +102,7 @@ class SourcedDomainEvent(BaseDomainMessage, ISourcedEvent, metaclass=SourcedDoma
 
         self.apply(entity)
 
-        entity.increment_version()
+        increment_version(entity)
 
         return entity
 
@@ -119,11 +120,6 @@ class _EventSourcedEntityMeta(_EntityMeta):
 class EventSourcedEntity(IEventSourcedEntity[IdType, SourcedDomainEvent], Entity, metaclass=_EventSourcedEntityMeta):
     _events: list[SourcedDomainEvent] = PrivateAttr()
     _reference: IdType = PrivateAttr()
-    _init_version: Version = PrivateAttr()
-
-    @property
-    def __init_version__(self) -> Version:
-        return self._init_version
 
     @classmethod
     def _create(cls, event_type: ISourcedEventMeta, reference: IdType, **params):
@@ -139,7 +135,7 @@ class EventSourcedEntity(IEventSourcedEntity[IdType, SourcedDomainEvent], Entity
             **params,
         )
         event.apply(self)
-        self.increment_version()
+        increment_version(self)
         self._events.append(event)
 
     def register_event(self, event: SourcedDomainEvent):
