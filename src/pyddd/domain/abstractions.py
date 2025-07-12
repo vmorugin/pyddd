@@ -124,13 +124,13 @@ class ISourcedEvent(IEvent, abc.ABC, metaclass=ISourcedEventMeta):
     @abc.abstractmethod
     def mutate(self, entity: t.Optional["IEventSourcedEntity"]) -> "IEventSourcedEntity":
         """
-        Use for rehydrating entities.
-        Update state of entity, version and return updated entity.
+        Mutate entity state or create a new entity instance based on the event data.
+        This method should return a new entity instance with the updated state.
         """
 
     def apply(self, entity: "IEventSourcedEntity") -> None:
         """
-        Modify entity state. Bypass by default.
+        This method should be used to update the entity state based on the event data.
         """
 
     @property
@@ -174,8 +174,8 @@ class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
     @abc.abstractmethod
     def trigger_event(self, event_type: type[EventT]):
         """
-        Apply event and update the entity state.
-        Increase __version__ by 1.
+        Trigger event of specific type.
+        This method should be used to create and apply events to the entity.
         """
 
     def snapshot(self) -> SnapshotProtocol:
@@ -191,11 +191,3 @@ class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
         Load entity from specific snapshot
         """
         raise NotImplementedError("Not implemented")
-
-
-class IDomainEventSubscriber(t.Generic[EventT], abc.ABC):
-    @abc.abstractmethod
-    def handle(self, event: EventT): ...
-
-    @abc.abstractmethod
-    def subscribed_to_type(self) -> type[EventT]: ...

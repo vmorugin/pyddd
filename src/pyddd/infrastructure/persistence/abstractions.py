@@ -76,7 +76,7 @@ class IEventStore(abc.ABC):
     def append_to_stream(self, stream_name: str, events: t.Iterable[ISourcedEvent]):
         """
         Add events to existed stream.
-        Expected version - optimistic lock checker, implemented by repository.
+        Optimistic lock checker could be implemented by repository.
         """
 
     @abc.abstractmethod
@@ -88,7 +88,7 @@ class IEventStore(abc.ABC):
     ) -> t.Iterable[ISourcedEvent]:
         """
         Get Events from stream sorted by version, from and to included.
-        Raise events if not created.
+        If stream does not exist, return empty list.
         """
 
 
