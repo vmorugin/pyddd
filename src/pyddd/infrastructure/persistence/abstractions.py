@@ -6,9 +6,7 @@ from typing import ContextManager
 from pyddd.domain.abstractions import (
     ISourcedEvent,
     SnapshotProtocol,
-    IdType,
 )
-from pyddd.domain.event_sourcing import SourcedEntityT
 
 TLock = t.TypeVar("TLock")
 TLockKey: t.TypeAlias = str | None
@@ -107,11 +105,3 @@ class ISnapshotStore(abc.ABC):
         """
         Find latest snapshot from stream.
         """
-
-
-class IESRepository(IRepository, t.Generic[SourcedEntityT], abc.ABC):
-    @abc.abstractmethod
-    def find_by(self, entity_id: IdType) -> t.Optional[SourcedEntityT]: ...
-
-    @abc.abstractmethod
-    def add(self, entity: SourcedEntityT): ...
