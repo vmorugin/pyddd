@@ -17,7 +17,7 @@ from pyddd.domain.abstractions import (
     IdType,
 )
 from pyddd.domain.event_sourcing import (
-    EventSourcedEntity,
+    ESRootEntity,
     SourcedDomainEvent,
 )
 from pyddd.infrastructure.persistence.abstractions import IEventStore
@@ -30,7 +30,7 @@ from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryStore
 class AccountId(str): ...
 
 
-class Account(EventSourcedEntity[AccountId]):
+class Account(ESRootEntity[AccountId]):
     owner_id: str
     balance: int
 
@@ -55,7 +55,7 @@ class BaseAccountEvent(SourcedDomainEvent, domain=__domain__): ...
 class AccountCreated(BaseAccountEvent):
     owner_id: str
 
-    def mutate(self, entity: t.Optional[EventSourcedEntity[IdType]]) -> Account:
+    def mutate(self, entity: t.Optional[ESRootEntity[IdType]]) -> Account:
         return Account(
             __reference__=self.__entity_reference__,
             __version__=self.__entity_version__,

@@ -2,7 +2,7 @@ import typing as t
 from pyddd.domain.abstractions import (
     ISourcedEvent,
 )
-from pyddd.domain.event_sourcing import SourcedEntityT
+from pyddd.domain.event_sourcing import ESEntityT
 from pyddd.infrastructure.persistence.abstractions import (
     ISnapshotStore,
 )
@@ -25,7 +25,7 @@ from pyddd.domain.abstractions import (
     IdType,
 )
 from pyddd.domain.event_sourcing import (
-    EventSourcedEntity,
+    ESRootEntity,
     SourcedDomainEvent,
 )
 
@@ -42,7 +42,7 @@ from pyddd.infrastructure.persistence.event_store import (
 class AccountId(str): ...
 
 
-class Account(EventSourcedEntity[AccountId]):
+class Account(ESRootEntity[AccountId]):
     owner_id: str
     balance: int
 
@@ -71,7 +71,7 @@ class BaseAccountEvent(SourcedDomainEvent, domain=__domain__): ...
 class AccountCreated(BaseAccountEvent):
     owner_id: str
 
-    def mutate(self, entity: t.Optional[EventSourcedEntity[IdType]]) -> Account:
+    def mutate(self, entity: t.Optional[ESRootEntity[IdType]]) -> Account:
         return Account(
             __reference__=self.__entity_reference__,
             __version__=self.__entity_version__,
@@ -142,7 +142,7 @@ class AccountRepository(IAccountRepository):
         self._events.append_to_stream(entity.__reference__, events=events)
         self._capture_snapshot(entity, events=events)
 
-    def _capture_snapshot(self, entity: SourcedEntityT, events: list[ISourcedEvent]):
+    def _capture_snapshot(self, entity: ESEntityT, events: list[ISourcedEvent]):
         for i, event in enumerate(events):
             if event.__entity_version__ % self._interval == 0:
                 rehydrated_entity = self._rehydrate(
@@ -199,7 +199,7 @@ def test_account():
     app.include(module)
     app.run()
     account_id = app.handle(CreateAccountCommand(owner_id="123"))
-    
+
     with pytest.raises(OptimisticConcurrencyError):
         app.handle(CreateAccountCommand(owner_id="123"))
 

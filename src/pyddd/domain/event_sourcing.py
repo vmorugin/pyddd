@@ -10,7 +10,7 @@ from pyddd.domain.abstractions import (
     IdType,
     Version,
     ISourcedEventMeta,
-    IEventSourcedEntity,
+    IESRootEntity,
     SnapshotProtocol,
 )
 from pyddd.domain.entity import (
@@ -23,7 +23,7 @@ from pyddd.domain.message import (
     BaseDomainMessageMeta,
 )
 
-SourcedEntityT = t.TypeVar("SourcedEntityT", bound=IEventSourcedEntity)
+ESEntityT = t.TypeVar("ESEntityT", bound=IESRootEntity)
 
 
 class Snapshot:
@@ -94,7 +94,7 @@ class SourcedDomainEvent(BaseDomainMessage, ISourcedEvent, metaclass=SourcedDoma
     def __entity_version__(self) -> Version:
         return self._entity_version
 
-    def mutate(self, entity: t.Optional[SourcedEntityT]) -> SourcedEntityT:
+    def mutate(self, entity: t.Optional[ESEntityT]) -> ESEntityT:
         assert entity is not None
 
         next_version = entity.__version__ + 1
@@ -106,7 +106,7 @@ class SourcedDomainEvent(BaseDomainMessage, ISourcedEvent, metaclass=SourcedDoma
 
         return entity
 
-    def apply(self, entity: SourcedEntityT) -> None: ...
+    def apply(self, entity: ESEntityT) -> None: ...
 
 
 class _EventSourcedEntityMeta(_EntityMeta):
@@ -117,7 +117,7 @@ class _EventSourcedEntityMeta(_EntityMeta):
         return instance
 
 
-class EventSourcedEntity(IEventSourcedEntity[IdType, SourcedDomainEvent], Entity, metaclass=_EventSourcedEntityMeta):
+class ESRootEntity(IESRootEntity[IdType, SourcedDomainEvent], Entity, metaclass=_EventSourcedEntityMeta):
     _events: list[SourcedDomainEvent] = PrivateAttr()
     _reference: IdType = PrivateAttr()
 

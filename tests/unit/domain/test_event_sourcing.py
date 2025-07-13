@@ -10,14 +10,14 @@ from pyddd.domain.abstractions import (
     SnapshotProtocol,
 )
 from pyddd.domain.event_sourcing import (
-    EventSourcedEntity,
+    ESRootEntity,
     Snapshot,
 )
 
 __domain__ = DomainName("test.event-sourcing")
 
 
-class SomeRootEntity(EventSourcedEntity[str]):
+class SomeRootEntity(ESRootEntity[str]):
     name: str
 
     @classmethod

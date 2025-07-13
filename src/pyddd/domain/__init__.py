@@ -1,7 +1,7 @@
 from .abstractions import (
     IEntity,
     IRootEntity,
-    IEventSourcedEntity,
+    IESRootEntity,
 )
 from .event import (
     DomainEvent,
@@ -22,6 +22,6 @@ __all__ = [
     "RootEntity",
     "DomainName",
     "DomainError",
-    "IEventSourcedEntity",
+    "IESRootEntity",
     "SourcedDomainEvent",
 ]

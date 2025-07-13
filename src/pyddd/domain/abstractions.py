@@ -1,3 +1,4 @@
+from __future__ import annotations
 import abc
 import datetime as dt
 import typing as t
@@ -122,13 +123,13 @@ class ISourcedEventMeta(IMessageMeta, abc.ABC): ...
 
 class ISourcedEvent(IEvent, abc.ABC, metaclass=ISourcedEventMeta):
     @abc.abstractmethod
-    def mutate(self, entity: t.Optional["IEventSourcedEntity"]) -> "IEventSourcedEntity":
+    def mutate(self, entity: t.Optional[IESRootEntity]) -> IESRootEntity:
         """
         Mutate entity state or create a new entity instance based on the event data.
         This method should return a new entity instance with the updated state.
         """
 
-    def apply(self, entity: "IEventSourcedEntity") -> None:
+    def apply(self, entity: IESRootEntity) -> None:
         """
         This method should be used to update the entity state based on the event data.
         """
@@ -170,7 +171,7 @@ class SnapshotProtocol(t.Protocol):
     def __entity_version__(self) -> int: ...
 
 
-class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
+class IESRootEntity(IRootEntity[IdType, EventT], abc.ABC):
     @abc.abstractmethod
     def trigger_event(self, event_type: type[EventT]):
         """
@@ -186,7 +187,7 @@ class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
         raise NotImplementedError("Not implemented")
 
     @classmethod
-    def from_snapshot(cls, snapshot: SnapshotProtocol) -> "IEventSourcedEntity[IdType, EventT]":
+    def from_snapshot(cls, snapshot: SnapshotProtocol) -> IESRootEntity[IdType, EventT]:
         """
         Load entity from specific snapshot
         """

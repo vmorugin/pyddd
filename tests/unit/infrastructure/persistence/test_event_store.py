@@ -10,8 +10,8 @@ from pyddd.domain.abstractions import (
 )
 from pyddd.domain.event_sourcing import (
     Snapshot,
-    SourcedEntityT,
-    EventSourcedEntity,
+    ESEntityT,
+    ESRootEntity,
 )
 from pyddd.infrastructure.persistence.abstractions import (
     IEventStore,
@@ -23,7 +23,7 @@ from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryStore
 class EntityCreated(SourcedDomainEvent, domain="test.event-store"):
     name: str
 
-    def mutate(self, entity: None) -> SourcedEntityT:
+    def mutate(self, entity: None) -> ESEntityT:
         return ExampleEntity(
             __reference__=self.__entity_reference__,
             __version__=self.__entity_version__,
@@ -38,7 +38,7 @@ class EntityRenamed(SourcedDomainEvent, domain="test.event-store"):
         entity.name = self.name
 
 
-class ExampleEntity(EventSourcedEntity[str]):
+class ExampleEntity(ESRootEntity[str]):
     name: str
 
     @classmethod
