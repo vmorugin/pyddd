@@ -4,8 +4,8 @@ from contextlib import AbstractAsyncContextManager
 from typing import ContextManager
 
 from pyddd.domain.abstractions import (
-    ISourcedEvent,
     SnapshotProtocol,
+    IEvent,
 )
 
 TLock = t.TypeVar("TLock")
@@ -69,21 +69,34 @@ class ILocker(t.Generic[TLock], abc.ABC):
     def __call__(self, __lock_key: TLockKey = None, /) -> ILockerContextT: ...
 
 
+class IEventStream(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def version(self) -> int: ...
+
+    @property
+    @abc.abstractmethod
+    def events(self) -> t.Iterable[IEvent]: ...
+
+    @abc.abstractmethod
+    def register(self, event: IEvent) -> None: ...
+
+
 class IEventStore(abc.ABC):
     @abc.abstractmethod
-    def append_to_stream(self, stream_name: str, events: t.Iterable[ISourcedEvent]):
+    def append_to_stream(self, stream_name: str, events: t.Iterable[IEvent]):
         """
         Add events to existed stream.
         Optimistic lock checker could be implemented by repository.
         """
 
     @abc.abstractmethod
-    def get_from_stream(
+    def get_stream(
         self,
         stream_name: str,
         from_version: int,
         to_version: int,
-    ) -> t.Iterable[ISourcedEvent]:
+    ) -> t.Iterable[IEvent]:
         """
         Get Events from stream sorted by version, from and to included.
         If stream does not exist, return empty list.

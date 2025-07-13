@@ -26,18 +26,23 @@ pip install pyddd
 ### Базовый пример
 
 ```python
-from pyddd.application import Module, Application
-from pyddd.domain import DomainCommand, DomainEvent
+from pyddd.application import Module,
+    Application
+from pyddd.domain import DomainCommand,
+    DomainEvent
 from pyddd.domain.entity import RootEntity
+
 
 # Определяем команду
 class CreatePet(DomainCommand, domain="pet"):
     name: str
 
+
 # Определяем событие
 class PetCreated(DomainEvent, domain="pet"):
     pet_id: str
     name: str
+
 
 # Определяем агрегат
 class Pet(RootEntity):
@@ -46,11 +51,13 @@ class Pet(RootEntity):
     @classmethod
     def create(cls, name: str):
         pet = cls(name=name)
-        pet.register_event(PetCreated(name=name, pet_id=str(pet.__reference__)))
+        pet.register(PetCreated(name=name, pet_id=str(pet.__reference__)))
         return pet
+
 
 # Создаем модуль
 pet_module = Module("pet")
+
 
 # Регистрируем обработчик команды
 @pet_module.register
@@ -58,6 +65,7 @@ def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     repository.save(pet)
     return pet.__reference__
+
 
 # Настраиваем приложение
 app = Application()
@@ -298,11 +306,12 @@ customer_module = Module("customer")
 def create_order(cmd: CreateOrder):
     order = Order.create(...)
     # НЕ ДЕЛАЙТЕ ТАК: customer_service.notify_order_created(order)
-    
+
+
 # Используйте события
 def create_order(cmd: CreateOrder):
     order = Order.create(...)
-    order.register_event(OrderCreated(order_id=str(order.__reference__)))
+    order.register(OrderCreated(order_id=str(order.__reference__)))
 ```
 
 ### 3. Небольшие транзакции

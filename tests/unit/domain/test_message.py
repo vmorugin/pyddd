@@ -19,6 +19,7 @@ class TestMessage:
         assert message.__type__ == "EVENT"
         assert message.__message_name__ == "UserCreated"
         assert message.__domain__ == "users.sub"
+        assert message.__version__ == 1
         assert message.to_dict() == {"reference": "123"}
         assert message.to_json() == '{"reference": "123"}'
         assert isinstance(message.__timestamp__, dt.datetime)

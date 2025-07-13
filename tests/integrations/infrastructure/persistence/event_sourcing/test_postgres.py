@@ -6,11 +6,11 @@ import psycopg
 import pytest
 from psycopg.errors import DuplicateDatabase
 
-from pyddd.domain import SourcedDomainEvent
+from pyddd.domain import DomainEvent
 from pyddd.domain.abstractions import (
     Version,
 )
-from pyddd.domain.event_sourcing import Snapshot
+from pyddd.domain.entity import Snapshot
 from pyddd.infrastructure.persistence.abstractions import IEventStore
 from pyddd.infrastructure.persistence.event_store import OptimisticConcurrencyError
 from pyddd.infrastructure.persistence.event_store.postgres import (
@@ -110,7 +110,7 @@ class TestSnapshotRecorder:
         assert store.get_last_snapshot(stream_name) is None
 
 
-class ExampleEvent(SourcedDomainEvent, domain="test.event-sourcing-pg"): ...
+class ExampleEvent(DomainEvent, domain="test.event-sourcing-pg"): ...
 
 
 class TestEventStore:
@@ -142,16 +142,15 @@ class TestEventStore:
         assert isinstance(store, IEventStore)
 
     def test_could_get_empty_stream(self, store, stream_name):
-        assert list(store.get_from_stream(stream_name, 0, 100)) == []
+        assert list(store.get_stream(stream_name, 0, 100)) == []
 
     def test_could_append_to_stream(self, store, stream_name):
         event = ExampleEvent(entity_reference=stream_name, entity_version=Version(1))
         store.append_to_stream(stream_name, [event])
-        events = list(store.get_from_stream(stream_name, 0, 1))
+        events = list(store.get_stream(stream_name, 0, 1))
         assert len(events) == 1
         db_event = events.pop()
-        assert db_event.__entity_reference__ == event.__entity_reference__
-        assert db_event.__entity_version__ == event.__entity_version__
+        assert db_event.__version__ == event.__version__
 
     def test_could_raise_error_if_conflict_of_version(self, store, stream_name):
         events = [ExampleEvent(entity_reference=stream_name, entity_version=Version(1))]

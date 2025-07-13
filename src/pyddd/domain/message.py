@@ -92,6 +92,10 @@ class Message(IMessage):
         return self._name
 
     @property
+    def __version__(self) -> Version:
+        return self._version
+
+    @property
     def __topic__(self) -> MessageTopic:
         return MessageTopic(f"{self._domain}.{self._name}")
 
@@ -118,6 +122,11 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
 
         with suppress(AttributeError):
             _domain_message_collection.register(cls.__topic__, cls)
+
+    def __call__(cls, *args, __version__: int = 1, **kwargs):
+        instance = super().__call__(*args, **kwargs)
+        instance._version = Version(__version__)
+        return instance
 
     @property
     def __domain__(cls) -> str:
@@ -147,6 +156,7 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
 class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessageMeta):
     _occurred_on: dt.datetime = PrivateAttr(default_factory=lambda: dt.datetime.utcnow())
     _reference: UUID = PrivateAttr(default_factory=uuid4)
+    _version: Version = PrivateAttr(default=Version(1))
 
     class Config:
         frozen = True
@@ -170,6 +180,10 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
     @property
     def __timestamp__(self) -> dt.datetime:
         return self._occurred_on
+
+    @property
+    def __version__(self) -> Version:
+        return self._version
 
     def to_dict(self) -> dict:
         return self.dict()

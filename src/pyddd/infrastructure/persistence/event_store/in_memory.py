@@ -1,7 +1,7 @@
 import typing as t
 
 from pyddd.domain.abstractions import (
-    ISourcedEvent,
+    IEvent,
     SnapshotProtocol,
 )
 from pyddd.infrastructure.persistence.abstractions import (
@@ -14,22 +14,22 @@ from pyddd.infrastructure.persistence.event_store import OptimisticConcurrencyEr
 class InMemoryStore(IEventStore, ISnapshotStore):
     def __init__(
         self,
-        events: dict[str, dict[int, ISourcedEvent]] = None,
+        events: dict[str, dict[int, IEvent]] = None,
         snapshots: dict[str, list[SnapshotProtocol]] = None,
     ):
         self._events = events if events is not None else {}
         self._snapshots = snapshots if snapshots is not None else {}
 
-    def append_to_stream(self, stream_name: str, events: t.Iterable[ISourcedEvent]):
+    def append_to_stream(self, stream_name: str, events: t.Iterable[IEvent]):
         stream = self._get_or_create_event_stream(stream_name)
         for event in events:
-            if event.__entity_version__ in stream:
+            if event.__version__ in stream:
                 raise OptimisticConcurrencyError(
-                    f"Conflict version of stream {stream_name}. Version {event.__entity_version__} exists"
+                    f"Conflict version of stream {stream_name}. Version {event.__version__} exists"
                 )
-            stream[event.__entity_version__] = event
+            stream[event.__version__] = event
 
-    def get_from_stream(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[ISourcedEvent]:
+    def get_stream(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[IEvent]:
         stream = self._get_or_create_event_stream(stream_name)
         return [event for version, event in stream.items() if from_version <= version <= to_version]
 
@@ -43,7 +43,7 @@ class InMemoryStore(IEventStore, ISnapshotStore):
             return stream[-1]
         return None
 
-    def _get_or_create_event_stream(self, stream_name: str) -> dict[int, ISourcedEvent]:
+    def _get_or_create_event_stream(self, stream_name: str) -> dict[int, IEvent]:
         event_stream_name = self._get_event_stream_name(stream_name)
         stream = self._events.get(event_stream_name)
         if stream is None:

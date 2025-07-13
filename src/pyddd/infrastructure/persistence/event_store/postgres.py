@@ -21,10 +21,10 @@ from psycopg.sql import (
 )
 
 from pyddd.domain.abstractions import (
-    ISourcedEvent,
     SnapshotProtocol,
+    IEvent,
 )
-from pyddd.domain.event_sourcing import Snapshot
+from pyddd.domain.entity import Snapshot
 from pyddd.domain.message import get_message_class
 from pyddd.infrastructure.persistence.abstractions import (
     IEventStore,
@@ -167,7 +167,7 @@ class PostgresEventStore(IEventStore, ICanCreateTable):
             msg = f"Identifier too long: {table_name}. Max length is {MAX_IDENTIFIER_LEN} characters."
             raise ValueError(msg)
 
-    def append_to_stream(self, stream_name: str, events: t.Iterable[ISourcedEvent]) -> None:
+    def append_to_stream(self, stream_name: str, events: t.Iterable[IEvent]) -> None:
         with self._datastore.cursor() as cur:
             try:
                 cur.executemany(
@@ -175,12 +175,12 @@ class PostgresEventStore(IEventStore, ICanCreateTable):
                         schema=Identifier(self._datastore.schema),
                         table=Identifier(self._events_table),
                     ),
-                    (Converter.event_to_dict(event) for event in events),
+                    (Converter.event_to_dict(stream_name, event) for event in events),
                 )
             except UniqueViolation:
                 raise OptimisticConcurrencyError(f"Conflict version of stream {stream_name}.")
 
-    def get_from_stream(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[ISourcedEvent]:
+    def get_stream(self, stream_name: str, from_version: int, to_version: int) -> t.Iterable[IEvent]:
         with self._datastore.cursor() as cur:
             cur.execute(
                 Statements.SELECT_EVENTS.format(
@@ -250,10 +250,10 @@ class PostgresSnapshotStore(ISnapshotStore, ICanCreateTable):
 
 class Converter:
     @classmethod
-    def event_to_dict(cls, event: ISourcedEvent) -> dict:
+    def event_to_dict(cls, stream_name: str, event: IEvent) -> dict:
         return {
-            "stream_id": event.__entity_reference__,
-            "version": event.__entity_version__,
+            "stream_id": stream_name,
+            "version": event.__version__,
             "correlation_id": event.__message_id__,
             "topic": event.__topic__,
             "state": event.to_json(),
@@ -261,7 +261,7 @@ class Converter:
         }
 
     @classmethod
-    def event_from_dict(cls, data: dict) -> ISourcedEvent:
+    def event_from_dict(cls, data: dict) -> IEvent:
         entity_type = get_message_class(data["topic"])
         event = entity_type.load(
             payload=json.loads(data["state"]),
@@ -270,7 +270,7 @@ class Converter:
             message_id=data["correlation_id"],
             timestamp=data["created_at"],
         )
-        assert isinstance(event, ISourcedEvent)
+        assert isinstance(event, IEvent)
         return event
 
     @classmethod

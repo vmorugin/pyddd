@@ -1,4 +1,5 @@
 import abc
+import dataclasses
 import sys
 import typing as t
 import uuid
@@ -13,13 +14,15 @@ from pyddd.application import (
 from pyddd.domain import (
     DomainName,
     DomainCommand,
+    DomainEvent,
 )
 from pyddd.domain.abstractions import (
     IdType,
+    IEvent,
 )
-from pyddd.domain.event_sourcing import (
-    EventSourcedEntity,
-    SourcedDomainEvent,
+from pyddd.domain.entity import (
+    ESRootEntity,
+    when,
 )
 
 __domain__ = DomainName("balance.example")
@@ -35,9 +38,29 @@ from pyddd.infrastructure.persistence.event_store import (
 class AccountId(str): ...
 
 
-class Account(EventSourcedEntity[AccountId]):
+class BaseAccountEvent(DomainEvent, domain=__domain__): ...
+
+
+class AccountCreated(BaseAccountEvent):
+    owner_id: str
+
+
+class Deposited(BaseAccountEvent):
+    amount: int
+
+
+class Withdrew(BaseAccountEvent):
+    amount: int
+
+
+@dataclasses.dataclass
+class State:
     owner_id: str
     balance: int
+
+
+class Account(ESRootEntity[AccountId]):
+    _state: State
 
     @classmethod
     def generate_id(cls, owner_id: str) -> AccountId:
@@ -45,7 +68,16 @@ class Account(EventSourcedEntity[AccountId]):
 
     @classmethod
     def create(cls, owner_id: str) -> "Account":
-        return cls._create(AccountCreated, reference=cls.generate_id(owner_id), owner_id=owner_id)
+        self = cls(__reference__=cls.generate_id(owner_id))
+        self.trigger_event(AccountCreated, owner_id=owner_id)
+        return self
+
+    @classmethod
+    def from_events(cls, reference: AccountId, events: t.Iterable[IEvent]) -> "Account":
+        self = cls(__reference__=reference)
+        for event in events:
+            self.apply(event)
+        return self
 
     def deposit(self, amount: int):
         if amount <= 0:
@@ -57,34 +89,26 @@ class Account(EventSourcedEntity[AccountId]):
             raise ValueError("Not enough money for withdraw")
         self.trigger_event(Withdrew, amount=amount)
 
+    @property
+    def owner_id(self):
+        return self._state.owner_id
 
-class BaseAccountEvent(SourcedDomainEvent, domain=__domain__): ...
+    @property
+    def balance(self):
+        return self._state.balance
 
+    @when
+    def created(self, event: AccountCreated):
+        state = State(owner_id=event.owner_id, balance=0)
+        self._state = state
 
-class AccountCreated(BaseAccountEvent):
-    owner_id: str
+    @when
+    def deposited(self, event: Deposited):
+        self._state.balance += event.amount
 
-    def mutate(self, entity: t.Optional[EventSourcedEntity[IdType]]) -> Account:
-        return Account(
-            __reference__=self.__entity_reference__,
-            __version__=self.__entity_version__,
-            owner_id=self.owner_id,
-            balance=0,
-        )
-
-
-class Deposited(BaseAccountEvent):
-    amount: int
-
-    def apply(self, entity: Account):
-        entity.balance += self.amount
-
-
-class Withdrew(BaseAccountEvent):
-    amount: int
-
-    def apply(self, entity: Account):
-        entity.balance -= self.amount
+    @when
+    def withdrew(self, event: Withdrew):
+        self._state.balance -= event.amount
 
 
 module = Module(__domain__)
@@ -120,10 +144,8 @@ class AccountRepository(IAccountRepository):
         self._events = event_store
 
     def find_by(self, entity_id: IdType) -> t.Optional[Account]:
-        account: t.Optional[Account] = None
-        stream = self._events.get_from_stream(str(entity_id), from_version=0, to_version=sys.maxsize)
-        for event in stream:
-            account = t.cast(account, event.mutate(account))
+        stream = self._events.get_stream(str(entity_id), from_version=0, to_version=sys.maxsize)
+        account = Account.from_events(reference=entity_id, events=stream)
         return account
 
     def save(self, entity: Account):
