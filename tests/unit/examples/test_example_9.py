@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from functools import singledispatchmethod
-from typing import List, Protocol, Optional
+from typing import List, Optional
 from decimal import Decimal
 import typing as t
 
@@ -22,14 +22,13 @@ from pyddd.domain.entity import Entity
 
 # Example from V.Vernon's book "Implementing Domain-Driven Design" implemented in Python
 
+
 class IPricingService(abc.ABC):
     @abc.abstractmethod
-    def get_welcome_bonus(self, currency: 'Currency') -> 'CurrencyAmount':
-        ...
+    def get_welcome_bonus(self, currency: "Currency") -> "CurrencyAmount": ...
 
     @abc.abstractmethod
-    def get_overdraft_threshold(self, currency: 'Currency') -> 'CurrencyAmount':
-        ...
+    def get_overdraft_threshold(self, currency: "Currency") -> "CurrencyAmount": ...
 
 
 # Domain types
@@ -47,13 +46,14 @@ class Currency(str, Enum):
 @dataclass(frozen=True)
 class CurrencyAmount(ValueObject):
     """Currency amount value object with operator overloading"""
+
     amount: Decimal
     currency: Currency
 
     def __post_init__(self):
         # Ensure amount is Decimal for precision
         if not isinstance(self.amount, Decimal):
-            object.__setattr__(self, 'amount', Decimal(str(self.amount)))
+            object.__setattr__(self, "amount", Decimal(str(self.amount)))
 
     def _check_currency(self, other_currency: Currency, operation: str) -> None:
         if self.currency != other_currency:
@@ -62,40 +62,40 @@ class CurrencyAmount(ValueObject):
                 f"{self.currency.value} {operation} {other_currency.value}"
             )
 
-    def __eq__(self, other: 'CurrencyAmount') -> bool:
+    def __eq__(self, other: "CurrencyAmount") -> bool:
         if not isinstance(other, CurrencyAmount):
             return False
         self._check_currency(other.currency, "==")
         return self.amount == other.amount
 
-    def __ne__(self, other: 'CurrencyAmount') -> bool:
+    def __ne__(self, other: "CurrencyAmount") -> bool:
         return not self.__eq__(other)
 
-    def __lt__(self, other: 'CurrencyAmount') -> bool:
+    def __lt__(self, other: "CurrencyAmount") -> bool:
         self._check_currency(other.currency, "<")
         return self.amount < other.amount
 
-    def __le__(self, other: 'CurrencyAmount') -> bool:
+    def __le__(self, other: "CurrencyAmount") -> bool:
         self._check_currency(other.currency, "<=")
         return self.amount <= other.amount
 
-    def __gt__(self, other: 'CurrencyAmount') -> bool:
+    def __gt__(self, other: "CurrencyAmount") -> bool:
         self._check_currency(other.currency, ">")
         return self.amount > other.amount
 
-    def __ge__(self, other: 'CurrencyAmount') -> bool:
+    def __ge__(self, other: "CurrencyAmount") -> bool:
         self._check_currency(other.currency, ">=")
         return self.amount >= other.amount
 
-    def __add__(self, other: 'CurrencyAmount') -> 'CurrencyAmount':
+    def __add__(self, other: "CurrencyAmount") -> "CurrencyAmount":
         self._check_currency(other.currency, "+")
         return CurrencyAmount(self.amount + other.amount, self.currency)
 
-    def __sub__(self, other: 'CurrencyAmount') -> 'CurrencyAmount':
+    def __sub__(self, other: "CurrencyAmount") -> "CurrencyAmount":
         self._check_currency(other.currency, "-")
         return CurrencyAmount(self.amount - other.amount, self.currency)
 
-    def __neg__(self) -> 'CurrencyAmount':
+    def __neg__(self) -> "CurrencyAmount":
         return CurrencyAmount(-self.amount, self.currency)
 
     def __str__(self) -> str:
@@ -105,9 +105,11 @@ class CurrencyAmount(ValueObject):
 def eur(amount: Decimal) -> CurrencyAmount:
     return CurrencyAmount(amount, Currency.EUR)
 
-class BaseEvent(DomainEvent, domain='pricing'):
+
+class BaseEvent(DomainEvent, domain="pricing"):
     class Config:
         arbitrary_types_allowed = True
+
 
 class CustomerCreated(BaseEvent):
     name: str
@@ -160,9 +162,11 @@ class CustomerChargeAdded(BaseEvent):
     def __str__(self) -> str:
         return f"Charged '{self.charge_name}' {self.charge} | Tx {self.transaction} => {self.new_balance}"
 
-class BaseCommand(DomainCommand, domain='pricing'):
+
+class BaseCommand(DomainCommand, domain="pricing"):
     class Config:
         arbitrary_types_allowed = True
+
 
 class CreateCustomer(BaseCommand):
     reference: CustomerId
@@ -208,8 +212,10 @@ class ChargeCustomer(BaseCommand):
     def __str__(self) -> str:
         return f"Charge {self.amount} - '{self.name}'"
 
+
 class CustomerState(Entity):
     """Customer state built from events"""
+
     name: Optional[str] = None
     created: bool = False
     consumption_locked: bool = False
@@ -222,7 +228,7 @@ class CustomerState(Entity):
         arbitrary_types_allowed = True
 
     @classmethod
-    def from_events(cls, events: List[IEvent]) -> 'CustomerState':
+    def from_events(cls, events: List[IEvent]) -> "CustomerState":
         state = cls()
         for event in events:
             state.mutate(event)
@@ -239,7 +245,7 @@ class CustomerState(Entity):
         self.created = True
         self.name = event.name
         self.currency = event.currency
-        self.balance = CurrencyAmount(Decimal('0'), event.currency)
+        self.balance = CurrencyAmount(Decimal("0"), event.currency)
 
     @mutate.register
     def when_customer_renamed(self, event: CustomerRenamed) -> None:
@@ -262,6 +268,7 @@ class CustomerState(Entity):
 
 class Customer(RootEntity):
     """Customer aggregate root"""
+
     _state: CustomerState
 
     def _apply(self, event: IEvent) -> None:
@@ -273,24 +280,19 @@ class Customer(RootEntity):
         return self._state.reference
 
     @classmethod
-    def create(cls, reference: CustomerId, name: str, currency: Currency, pricing_service: IPricingService) -> 'Customer':
+    def create(
+        cls, reference: CustomerId, name: str, currency: Currency, pricing_service: IPricingService
+    ) -> "Customer":
         self = cls()
         self._state = CustomerState()
-        self._apply(
-            CustomerCreated(
-                name=name,
-                created=datetime.utcnow(),
-                reference=reference,
-                currency=currency
-            )
-        )
+        self._apply(CustomerCreated(name=name, created=datetime.utcnow(), reference=reference, currency=currency))
 
         bonus = pricing_service.get_welcome_bonus(currency)
         self.add_payment("Welcome bonus", bonus)
         return self
 
     @classmethod
-    def from_events(cls, events: t.Iterable[IEvent]) -> 'Customer':
+    def from_events(cls, events: t.Iterable[IEvent]) -> "Customer":
         self = cls()
         self._events.extend(events)
         self._state = CustomerState.from_events(self._events)
@@ -302,10 +304,7 @@ class Customer(RootEntity):
 
         self._apply(
             CustomerRenamed(
-                name=name,
-                reference=self._state.__reference__,
-                old_name=self._state.name,
-                renamed=datetime.utcnow()
+                name=name, reference=self._state.__reference__, old_name=self._state.name, renamed=datetime.utcnow()
             )
         )
 
@@ -313,12 +312,7 @@ class Customer(RootEntity):
         if self._state.consumption_locked:
             return
 
-        self._apply(
-            CustomerLocked(
-                reference=self._state.reference,
-                reason=reason
-            )
-        )
+        self._apply(CustomerLocked(reference=self._state.reference, reason=reason))
 
     def lock_for_account_overdraft(self, comment: str, pricing_service: IPricingService) -> None:
         if self._state.manual_billing:
@@ -336,7 +330,7 @@ class Customer(RootEntity):
                 new_balance=self._state.balance + amount,
                 payment_name=name,
                 transaction=self._state.max_transaction_id + 1,
-                time_utc=datetime.utcnow()
+                time_utc=datetime.utcnow(),
             )
         )
 
@@ -348,12 +342,12 @@ class Customer(RootEntity):
                 new_balance=self._state.balance - amount,
                 charge_name=name,
                 transaction=self._state.max_transaction_id + 1,
-                time_utc=datetime.utcnow()
+                time_utc=datetime.utcnow(),
             )
         )
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ and self._state == getattr(other, '_state')
+        return self.__class__ == other.__class__ and self._state == getattr(other, "_state")
 
 
 class SimplePricingService(IPricingService):
@@ -361,19 +355,19 @@ class SimplePricingService(IPricingService):
 
     def get_welcome_bonus(self, currency: Currency) -> CurrencyAmount:
         bonuses = {
-            Currency.EUR: CurrencyAmount(Decimal('10'), Currency.EUR),
-            Currency.USD: CurrencyAmount(Decimal('12'), Currency.USD),
-            Currency.RUR: CurrencyAmount(Decimal('500'), Currency.RUR)
+            Currency.EUR: CurrencyAmount(Decimal("10"), Currency.EUR),
+            Currency.USD: CurrencyAmount(Decimal("12"), Currency.USD),
+            Currency.RUR: CurrencyAmount(Decimal("500"), Currency.RUR),
         }
-        return bonuses.get(currency, CurrencyAmount(Decimal('0'), currency))
+        return bonuses.get(currency, CurrencyAmount(Decimal("0"), currency))
 
     def get_overdraft_threshold(self, currency: Currency) -> CurrencyAmount:
         thresholds = {
-            Currency.EUR: CurrencyAmount(Decimal('-100'), Currency.EUR),
-            Currency.USD: CurrencyAmount(Decimal('-120'), Currency.USD),
-            Currency.RUR: CurrencyAmount(Decimal('-5000'), Currency.RUR)
+            Currency.EUR: CurrencyAmount(Decimal("-100"), Currency.EUR),
+            Currency.USD: CurrencyAmount(Decimal("-120"), Currency.USD),
+            Currency.RUR: CurrencyAmount(Decimal("-5000"), Currency.RUR),
         }
-        return thresholds.get(currency, CurrencyAmount(Decimal('0'), currency))
+        return thresholds.get(currency, CurrencyAmount(Decimal("0"), currency))
 
 
 def test_example():
@@ -382,9 +376,9 @@ def test_example():
     customer_id = CustomerId(1)
     customer = Customer.create(customer_id, "John Doe", Currency.EUR, pricing_service)
 
-    customer.add_payment("Initial deposit", CurrencyAmount(Decimal('100'), Currency.EUR))
+    customer.add_payment("Initial deposit", CurrencyAmount(Decimal("100"), Currency.EUR))
 
-    customer.charge("Service fee", CurrencyAmount(Decimal('20'), Currency.EUR))
+    customer.charge("Service fee", CurrencyAmount(Decimal("20"), Currency.EUR))
 
     customer.rename("John Smith")
 
