@@ -1,4 +1,3 @@
-import dataclasses
 import json
 import uuid
 
@@ -8,38 +7,17 @@ from pyddd.domain import (
 )
 from pyddd.domain.abstractions import (
     Version,
-    IdType,
+    SnapshotProtocol,
 )
-from pyddd.domain.event_sourcing import EventSourcedEntity, SnapshotABC
+from pyddd.domain.event_sourcing import (
+    ESRootEntity,
+    Snapshot,
+)
 
 __domain__ = DomainName("test.event-sourcing")
 
 
-@dataclasses.dataclass(frozen=True)
-class SomeRootEntitySnapshot(SnapshotABC, domain=__domain__):
-    reference: str
-    version: int
-    name: str
-
-    @property
-    def __state__(self) -> bytes:
-        return json.dumps(self.__dict__).encode()
-
-    @property
-    def __entity_reference__(self):
-        return self.reference
-
-    @property
-    def __entity_version__(self) -> int:
-        return self.version
-
-    @classmethod
-    def load(cls, state: bytes, entity_reference: IdType, entity_version: int):
-        data = json.loads(state.decode())
-        return cls(reference=entity_reference, version=entity_version, name=data["name"])
-
-
-class SomeRootEntity(EventSourcedEntity[str]):
+class SomeRootEntity(ESRootEntity[str]):
     name: str
 
     @classmethod
@@ -49,19 +27,20 @@ class SomeRootEntity(EventSourcedEntity[str]):
     def rename(self, name: str):
         self.trigger_event(EntityRenamed, name=name)
 
-    def snapshot(self) -> SomeRootEntitySnapshot:
-        return SomeRootEntitySnapshot(
+    def snapshot(self) -> SnapshotProtocol:
+        return Snapshot(
             reference=self.__reference__,
             version=int(self.__version__),
-            name=self.name,
+            state=self.json().encode(),
         )
 
     @classmethod
-    def from_snapshot(cls, snapshot: SomeRootEntitySnapshot):
+    def from_snapshot(cls, snapshot: SnapshotProtocol):
+        state = json.loads(snapshot.__state__)
         return cls(
-            __reference__=snapshot.reference,
-            __version__=Version(snapshot.version),
-            name=snapshot.name,
+            __reference__=snapshot.__entity_reference__,
+            __version__=Version(snapshot.__entity_version__),
+            name=state["name"],
         )
 
 
@@ -85,10 +64,9 @@ class EntityRenamed(SourcedDomainEvent, domain=__domain__):
 
 
 class TestEventSourcedEntity:
-    def test_entity_has_init_version(self):
-        entity = SomeRootEntity(name="before")
-        entity.increment_version()
-        assert entity.__init_version__ == Version(1)
+    def test_has_version(self):
+        entity = SomeRootEntity(name="before", __version__=10)
+        assert entity.__version__ == Version(10)
 
     def test_could_be_restored_from_events(self):
         entity = SomeRootEntity.create(name="before")
@@ -103,8 +81,7 @@ class TestEventSourcedEntity:
         assert isinstance(new, SomeRootEntity)
         assert new == entity
         assert new.name == entity.name == "after"
-
-        assert entity.__version__ == Version(2)
+        assert new.__version__ == Version(2)
 
     def test_could_make_snapshot_and_load(self):
         entity = SomeRootEntity(name="123")
@@ -114,12 +91,15 @@ class TestEventSourcedEntity:
     def test_could_update_version_when_apply_event(self):
         entity = SomeRootEntity(name="123")
         entity.trigger_event(EntityRenamed, name="456")
-        assert entity.__version__ == 2
+        assert entity.__version__ == Version(2)
+
+    def test_must_update_entity_and_event_version_when_trigger(self):
+        entity = SomeRootEntity(name="123", __version__=1)
+        entity.trigger_event(EntityRenamed, name="456")
+        entity.trigger_event(EntityRenamed, name="567")
         events = list(entity.collect_events())
-        event = events.pop()
-        assert event.__entity_version__ == 2
-
-
-def test_could_get_class_by_name():
-    cls = SnapshotABC.get_by_name(str(SomeRootEntitySnapshot.__topic__))
-    assert cls is SomeRootEntitySnapshot
+        last_version = Version(3)
+        while events:
+            event = events.pop()
+            assert event.__entity_version__ == last_version
+            last_version = Version(last_version - 1)

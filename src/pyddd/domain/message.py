@@ -40,10 +40,9 @@ class _DomainMessagesCollection:
     def __init__(self):
         self._collection: dict[MessageTopic, IMessageMeta] = dict()
 
-    def register(self, message_cls: IMessageMeta):
-        topic = str(message_cls.__topic__)
-        if topic in self._collection:
-            raise ValueError(f"Message {topic} already registered.")
+    def register(self, topic: MessageTopic, message_cls: IMessageMeta):
+        if topic in self._collection and self._collection[topic] != message_cls:
+            raise ValueError(f"Message {topic} already registered by another class.")
         self._collection[topic] = message_cls
 
     def get_class(self, topic: MessageTopic) -> IMessageMeta:
@@ -118,7 +117,7 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
         cls._message_name = name
 
         with suppress(AttributeError):
-            _domain_message_collection.register(cls)
+            _domain_message_collection.register(cls.__topic__, cls)
 
     @property
     def __domain__(cls) -> str:
@@ -181,3 +180,7 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
 
 def get_message_class(topic: MessageTopic) -> IMessageMeta:
     return _domain_message_collection.get_class(topic)
+
+
+def register_message_alias(alias: MessageTopic, message_cls: IMessageMeta):
+    _domain_message_collection.register(alias, message_cls)

@@ -1,5 +1,5 @@
 [project]
-version = "0.13.2"
+version = "0.20.0a0"
 name = "pyddd"
 description = "Domain-Driven Design for Python"
 readme = "readme.md"

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import abc
 import datetime as dt
 import typing as t
@@ -24,9 +25,6 @@ class IEntity(t.Generic[IdType], abc.ABC):
     @property
     @abc.abstractmethod
     def __version__(self) -> Version: ...
-
-    @abc.abstractmethod
-    def increment_version(self): ...
 
 
 EntityT = t.TypeVar("EntityT", bound=IEntity)
@@ -125,9 +123,16 @@ class ISourcedEventMeta(IMessageMeta, abc.ABC): ...
 
 class ISourcedEvent(IEvent, abc.ABC, metaclass=ISourcedEventMeta):
     @abc.abstractmethod
-    def mutate(self, entity: t.Optional["IEventSourcedEntity"]) -> t.Optional["IEventSourcedEntity"]: ...
+    def mutate(self, entity: t.Optional[IESRootEntity]) -> IESRootEntity:
+        """
+        Mutate entity state or create a new entity instance based on the event data.
+        This method should return a new entity instance with the updated state.
+        """
 
-    def apply(self, entity: "IEventSourcedEntity") -> None: ...
+    def apply(self, entity: IESRootEntity) -> None:
+        """
+        This method should be used to update the entity state based on the event data.
+        """
 
     @property
     @abc.abstractmethod
@@ -166,20 +171,12 @@ class SnapshotProtocol(t.Protocol):
     def __entity_version__(self) -> int: ...
 
 
-class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
-    @property
-    @abc.abstractmethod
-    def __init_version__(self) -> Version:
-        """
-        The version stored when init aggregate.
-        Not modified when trigger_event.
-        """
-
+class IESRootEntity(IRootEntity[IdType, EventT], abc.ABC):
     @abc.abstractmethod
     def trigger_event(self, event_type: type[EventT]):
         """
-        Apply event and update the entity state.
-        Increase __version__ by 1.
+        Trigger event of specific type.
+        This method should be used to create and apply events to the entity.
         """
 
     def snapshot(self) -> SnapshotProtocol:
@@ -190,16 +187,8 @@ class IEventSourcedEntity(IRootEntity[IdType, EventT], abc.ABC):
         raise NotImplementedError("Not implemented")
 
     @classmethod
-    def from_snapshot(cls, snapshot: SnapshotProtocol) -> "IEventSourcedEntity[IdType, EventT]":
+    def from_snapshot(cls, snapshot: SnapshotProtocol) -> IESRootEntity[IdType, EventT]:
         """
         Load entity from specific snapshot
         """
         raise NotImplementedError("Not implemented")
-
-
-class IDomainEventSubscriber(t.Generic[EventT], abc.ABC):
-    @abc.abstractmethod
-    def handle(self, event: EventT): ...
-
-    @abc.abstractmethod
-    def subscribed_to_type(self) -> type[EventT]: ...

@@ -1,6 +1,13 @@
+import typing as t
+from pyddd.domain.abstractions import (
+    ISourcedEvent,
+)
+from pyddd.domain.event_sourcing import ESEntityT
+from pyddd.infrastructure.persistence.abstractions import (
+    ISnapshotStore,
+)
 import abc
 import sys
-import typing as t
 import uuid
 from uuid import NAMESPACE_URL
 
@@ -22,7 +29,7 @@ from pyddd.domain.event_sourcing import (
     SourcedDomainEvent,
 )
 
-__domain__ = DomainName("balance.example")
+__domain__ = DomainName("test.example-with-snapshot")
 
 from pyddd.infrastructure.persistence.abstractions import IEventStore
 
@@ -116,18 +123,51 @@ class IAccountRepository(abc.ABC):
 
 
 class AccountRepository(IAccountRepository):
-    def __init__(self, event_store: IEventStore):
+    def __init__(
+        self,
+        event_store: IEventStore,
+        snapshot_store: ISnapshotStore,
+        snapshot_interval: int,
+    ):
         self._events = event_store
+        self._snapshots = snapshot_store
+        self._interval = snapshot_interval
 
-    def find_by(self, entity_id: IdType) -> t.Optional[Account]:
-        account: t.Optional[Account] = None
-        stream = self._events.get_from_stream(str(entity_id), from_version=0, to_version=sys.maxsize)
-        for event in stream:
-            account = t.cast(account, event.mutate(account))
-        return account
+    def find_by(self, entity_id: AccountId) -> t.Optional[Account]:
+        entity = self._rehydrate(str(entity_id), entity=None, from_version=0, to_version=sys.maxsize)
+        return entity
 
     def save(self, entity: Account):
-        self._events.append_to_stream(entity.__reference__, events=entity.collect_events())
+        events = list(entity.collect_events())
+        self._events.append_to_stream(entity.__reference__, events=events)
+        self._capture_snapshot(entity, events=events)
+
+    def _capture_snapshot(self, entity: ESEntityT, events: list[ISourcedEvent]):
+        for i, event in enumerate(events):
+            if event.__entity_version__ % self._interval == 0:
+                rehydrated_entity = self._rehydrate(
+                    stream_name=str(entity.__reference__),
+                    entity=entity,
+                    from_version=0,
+                    to_version=event.__entity_version__,
+                )
+                assert rehydrated_entity is not None
+                self._snapshots.add_snapshot(str(entity.__reference__), rehydrated_entity.snapshot())
+
+    def _rehydrate(
+        self,
+        stream_name: str,
+        entity: t.Optional[Account],
+        from_version: int,
+        to_version: int,
+    ) -> t.Optional[Account]:
+        snapshot = self._snapshots.get_last_snapshot(stream_name)
+        if snapshot is not None:
+            entity = Account.from_snapshot(snapshot)
+            from_version = entity.__version__ + 1
+        for event in self._events.get_from_stream(stream_name, from_version=from_version, to_version=to_version):
+            entity = t.cast(Account, event.mutate(entity))
+        return entity
 
 
 @module.register
@@ -154,7 +194,7 @@ def withdraw_account(cmd: WithdrawAccountCommand, repository: IAccountRepository
 def test_account():
     app = Application()
     store = InMemoryStore()
-    repository = AccountRepository(event_store=store)
+    repository = AccountRepository(event_store=store, snapshot_store=store, snapshot_interval=2)
     app.set_defaults(__domain__, repository=repository)
     app.include(module)
     app.run()

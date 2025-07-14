@@ -5,8 +5,8 @@ from typing import ContextManager
 
 from pyddd.domain.abstractions import (
     ISourcedEvent,
+    SnapshotProtocol,
 )
-from pyddd.domain.event_sourcing import SnapshotABC
 
 TLock = t.TypeVar("TLock")
 TLockKey: t.TypeAlias = str | None
@@ -71,12 +71,10 @@ class ILocker(t.Generic[TLock], abc.ABC):
 
 class IEventStore(abc.ABC):
     @abc.abstractmethod
-    def append_to_stream(
-        self, stream_name: str, events: t.Iterable[ISourcedEvent], expected_version: t.Optional[int] = None
-    ):
+    def append_to_stream(self, stream_name: str, events: t.Iterable[ISourcedEvent]):
         """
         Add events to existed stream.
-        Expected version - optimistic lock checker, implemented by repository.
+        Optimistic lock checker could be implemented by repository.
         """
 
     @abc.abstractmethod
@@ -85,14 +83,16 @@ class IEventStore(abc.ABC):
         stream_name: str,
         from_version: int,
         to_version: int,
-    ) -> t.Union[t.Iterable[ISourcedEvent], t.Awaitable[t.Iterable[ISourcedEvent]]]:
+    ) -> t.Iterable[ISourcedEvent]:
         """
         Get Events from stream sorted by version, from and to included.
-        Raise events if not created.
+        If stream does not exist, return empty list.
         """
 
+
+class ISnapshotStore(abc.ABC):
     @abc.abstractmethod
-    def add_snapshot(self, stream_name: str, snapshot: SnapshotABC):
+    def add_snapshot(self, stream_name: str, snapshot: SnapshotProtocol):
         """
         Add snapshot to stream.
         """
@@ -101,7 +101,7 @@ class IEventStore(abc.ABC):
     def get_last_snapshot(
         self,
         stream_name: str,
-    ) -> t.Union[t.Optional[SnapshotABC], t.Awaitable[t.Optional[SnapshotABC]]]:
+    ) -> t.Optional[SnapshotProtocol]:
         """
         Find latest snapshot from stream.
         """
