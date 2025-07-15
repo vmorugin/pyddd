@@ -64,6 +64,30 @@ def increment_version(entity: IEntity):
     entity._version = Version(entity.__version__ + 1)
 
 
+class _RootEntityMeta(_EntityMeta):
+    def __call__(cls, *args, __reference__: IdType = None, __version__: int = 1, **kwargs):
+        instance = super().__call__(*args, __reference__=__reference__, __version__=__version__, **kwargs)
+        instance._events = []
+        return instance
+
+
+class RootEntity(IRootEntity[IdType], Entity, metaclass=_RootEntityMeta):
+    _events: list[IEvent] = PrivateAttr()
+    _reference: IdType = PrivateAttr()
+
+    @property
+    def __reference__(self) -> IdType:
+        return self._reference
+
+    def register_event(self, event: IEvent):
+        self._events.append(event)
+
+    def collect_events(self) -> t.Iterable[IEvent]:
+        events = list(self._events)
+        self._events.clear()
+        return events
+
+
 class Snapshot:
     def __init__(self, state: bytes, reference: str, version: int):
         self._state = state
@@ -96,9 +120,6 @@ class ESRootEntity(IEventSourcedEntity[IdType], Entity, metaclass=_EventSourcedE
     def trigger_event(self, event_type: IMessageMeta, **params):
         event = event_type(__version__=Version(self.__version__ + 1), **params)
         self.apply(event)
-        self._events.append(event)
-
-    def register_event(self, event: IEvent):
         self._events.append(event)
 
     def apply(self, event: IEvent):
@@ -156,27 +177,3 @@ class ESRootEntity(IEventSourcedEntity[IdType], Entity, metaclass=_EventSourcedE
 
 
 when = getattr(ESRootEntity.when, "register")
-
-
-class _RootEntityMeta(_EntityMeta):
-    def __call__(cls, *args, __reference__: IdType = None, __version__: int = 1, **kwargs):
-        instance = super().__call__(*args, __reference__=__reference__, __version__=__version__, **kwargs)
-        instance._events = []
-        return instance
-
-
-class RootEntity(IRootEntity[IdType], Entity, metaclass=_RootEntityMeta):
-    _events: list[IEvent] = PrivateAttr()
-    _reference: IdType = PrivateAttr()
-
-    @property
-    def __reference__(self) -> IdType:
-        return self._reference
-
-    def register_event(self, event: IEvent):
-        self._events.append(event)
-
-    def collect_events(self) -> t.Iterable[IEvent]:
-        events = list(self._events)
-        self._events.clear()
-        return events
