@@ -2,7 +2,6 @@ import abc
 import sys
 import typing as t
 import uuid
-from functools import singledispatchmethod
 
 import pytest
 
@@ -20,6 +19,7 @@ from pyddd.domain.abstractions import (
 )
 from pyddd.domain.entity import (
     ESRootEntity,
+    when,
 )
 from pyddd.infrastructure.persistence.abstractions import IEventStore
 
@@ -73,20 +73,16 @@ class Account(ESRootEntity[AccountId]):
             raise ValueError("Not enough money for withdraw")
         self.trigger_event(Withdrew, amount=amount)
 
-    @singledispatchmethod
-    def when(self, event: IEvent):
-        raise NotImplementedError(f"Not implemented for event {event}")
-
-    @when.register
+    @when
     def created(self, event: AccountCreated):
         self.owner_id = event.owner_id
         self.balance = 0
 
-    @when.register
+    @when
     def deposited(self, event: Deposited):
         self.balance += event.amount
 
-    @when.register
+    @when
     def withdrew(self, event: Withdrew):
         self.balance -= event.amount
 

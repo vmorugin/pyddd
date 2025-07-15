@@ -98,9 +98,6 @@ class ESRootEntity(IEventSourcedEntity[IdType], Entity, metaclass=_EventSourcedE
         self.apply(event)
         self._events.append(event)
 
-    def register_event(self, event: IEvent):
-        self._events.append(event)
-
     def apply(self, event: IEvent):
         """
         Mutate the entity state based on the event.
