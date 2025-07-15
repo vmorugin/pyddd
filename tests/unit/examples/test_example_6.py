@@ -47,8 +47,8 @@ class Withdrew(BaseAccountEvent):
 
 
 class Account(ESRootEntity[AccountId]):
-    owner_id: str = None
-    balance: int = None
+    owner_id: str = ''
+    balance: int = 0
 
     @classmethod
     def create(cls, owner_id: str) -> "Account":
@@ -136,7 +136,7 @@ def withdraw_account(cmd: WithdrawAccountCommand, repository: IAccountRepository
     repository.save(account)
 
 
-class InMemoryAccountRepository(IAccountRepository):
+class AccountRepository(IAccountRepository):
     def __init__(self, store: IEventStore):
         self._store = store
 
@@ -152,7 +152,7 @@ class InMemoryAccountRepository(IAccountRepository):
 def test_account():
     app = Application()
     event_store = InMemoryStore()
-    repository = InMemoryAccountRepository(event_store)
+    repository = AccountRepository(event_store)
     app.set_defaults(__domain__, repository=repository)
     app.include(module)
     app.run()
