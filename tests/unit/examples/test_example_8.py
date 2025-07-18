@@ -1,8 +1,4 @@
 import typing as t
-from pyddd.domain.abstractions import (
-    ISourcedEvent,
-)
-from pyddd.domain.event_sourcing import ESEntityT
 from pyddd.infrastructure.persistence.abstractions import (
     ISnapshotStore,
 )
@@ -20,13 +16,15 @@ from pyddd.application import (
 from pyddd.domain import (
     DomainName,
     DomainCommand,
+    DomainEvent,
 )
 from pyddd.domain.abstractions import (
     IdType,
+    IEvent,
 )
-from pyddd.domain.event_sourcing import (
+from pyddd.domain.entity import (
     ESRootEntity,
-    SourcedDomainEvent,
+    when,
 )
 
 __domain__ = DomainName("test.example-with-snapshot")
@@ -42,9 +40,24 @@ from pyddd.infrastructure.persistence.event_store import (
 class AccountId(str): ...
 
 
-class Account(ESRootEntity[AccountId]):
+class BaseAccountEvent(DomainEvent, domain=__domain__): ...
+
+
+class AccountCreated(BaseAccountEvent):
     owner_id: str
-    balance: int
+
+
+class Deposited(BaseAccountEvent):
+    amount: int
+
+
+class Withdrew(BaseAccountEvent):
+    amount: int
+
+
+class Account(ESRootEntity[AccountId]):
+    owner_id: str = None
+    balance: int = None
 
     @classmethod
     def generate_id(cls, owner_id: str) -> AccountId:
@@ -52,7 +65,9 @@ class Account(ESRootEntity[AccountId]):
 
     @classmethod
     def create(cls, owner_id: str) -> "Account":
-        return cls._create(AccountCreated, reference=cls.generate_id(owner_id), owner_id=owner_id)
+        self = cls(__reference__=cls.generate_id(owner_id))
+        self.trigger_event(AccountCreated, owner_id=owner_id)
+        return self
 
     def deposit(self, amount: int):
         if amount <= 0:
@@ -64,34 +79,18 @@ class Account(ESRootEntity[AccountId]):
             raise ValueError("Not enough money for withdraw")
         self.trigger_event(Withdrew, amount=amount)
 
+    @when
+    def on_created(self, event: AccountCreated):
+        self.owner_id = event.owner_id
+        self.balance = 0
 
-class BaseAccountEvent(SourcedDomainEvent, domain=__domain__): ...
+    @when
+    def on_deposited(self, event: Deposited):
+        self.balance += event.amount
 
-
-class AccountCreated(BaseAccountEvent):
-    owner_id: str
-
-    def mutate(self, entity: t.Optional[ESRootEntity[IdType]]) -> Account:
-        return Account(
-            __reference__=self.__entity_reference__,
-            __version__=self.__entity_version__,
-            owner_id=self.owner_id,
-            balance=0,
-        )
-
-
-class Deposited(BaseAccountEvent):
-    amount: int
-
-    def apply(self, entity: Account):
-        entity.balance += self.amount
-
-
-class Withdrew(BaseAccountEvent):
-    amount: int
-
-    def apply(self, entity: Account):
-        entity.balance -= self.amount
+    @when
+    def on_withdrew(self, event: Withdrew):
+        self.balance -= event.amount
 
 
 module = Module(__domain__)
@@ -134,25 +133,27 @@ class AccountRepository(IAccountRepository):
         self._interval = snapshot_interval
 
     def find_by(self, entity_id: AccountId) -> t.Optional[Account]:
-        entity = self._rehydrate(str(entity_id), entity=None, from_version=0, to_version=sys.maxsize)
+        entity = self._rehydrate(
+            str(entity_id), entity=Account(__reference__=entity_id), from_version=0, to_version=sys.maxsize
+        )
         return entity
 
     def save(self, entity: Account):
         events = list(entity.collect_events())
         self._events.append_to_stream(entity.__reference__, events=events)
-        self._capture_snapshot(entity, events=events)
+        self._capture_snapshot(entity.__reference__, events=events)
 
-    def _capture_snapshot(self, entity: ESEntityT, events: list[ISourcedEvent]):
+    def _capture_snapshot(self, reference: AccountId, events: list[IEvent]):
         for i, event in enumerate(events):
-            if event.__entity_version__ % self._interval == 0:
+            if event.__version__ % self._interval == 0:
                 rehydrated_entity = self._rehydrate(
-                    stream_name=str(entity.__reference__),
-                    entity=entity,
+                    entity=Account(__reference__=reference),
+                    stream_name=str(reference),
                     from_version=0,
-                    to_version=event.__entity_version__,
+                    to_version=event.__version__,
                 )
                 assert rehydrated_entity is not None
-                self._snapshots.add_snapshot(str(entity.__reference__), rehydrated_entity.snapshot())
+                self._snapshots.add_snapshot(str(reference), rehydrated_entity.snapshot())
 
     def _rehydrate(
         self,
@@ -165,8 +166,9 @@ class AccountRepository(IAccountRepository):
         if snapshot is not None:
             entity = Account.from_snapshot(snapshot)
             from_version = entity.__version__ + 1
-        for event in self._events.get_from_stream(stream_name, from_version=from_version, to_version=to_version):
-            entity = t.cast(Account, event.mutate(entity))
+        events = self._events.get_stream(stream_name, from_version=from_version, to_version=to_version)
+        for event in events:
+            entity.apply(event)
         return entity
 
 

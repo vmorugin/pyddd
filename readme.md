@@ -26,20 +26,23 @@ pip install pyddd
 ### Базовый пример
 
 ```python
-from pyddd.application import Module, Application
-from pyddd.domain import DomainCommand, DomainEvent
+import abc
+from pyddd.application import Module,
+    Application
+from pyddd.domain import DomainCommand,
+    DomainEvent
 from pyddd.domain.entity import RootEntity
 
-# Определяем команду
+
 class CreatePet(DomainCommand, domain="pet"):
     name: str
 
-# Определяем событие
+
 class PetCreated(DomainEvent, domain="pet"):
     pet_id: str
     name: str
 
-# Определяем агрегат
+
 class Pet(RootEntity):
     name: str
 
@@ -49,17 +52,27 @@ class Pet(RootEntity):
         pet.register_event(PetCreated(name=name, pet_id=str(pet.__reference__)))
         return pet
 
-# Создаем модуль
+
 pet_module = Module("pet")
 
-# Регистрируем обработчик команды
+
+class IPetRepository(abc.ABC):
+    @abc.abstractmethod
+    def save(self, pet: Pet):
+        ...
+    
+    @abc.abstractmethod
+    def get(self, pet_id: str) -> Pet:
+        ...
+
+
 @pet_module.register
 def create_pet(cmd: CreatePet, repository: IPetRepository):
     pet = Pet.create(cmd.name)
     repository.save(pet)
     return pet.__reference__
 
-# Настраиваем приложение
+
 app = Application()
 app.include(pet_module)
 app.set_defaults("pet", repository=InMemoryPetRepository({}))
@@ -87,7 +100,7 @@ class UpdatePrice(DomainCommand, domain="product"):
 
 ### Доменные события
 
-События уведомляют о произошедших изменениях:
+События уведомляют о произошедших изменениях. Имя события состоит из действия в прошедшем времени.
 
 ```python
 class ProductCreated(DomainEvent, domain="product"):
@@ -130,7 +143,7 @@ class Product(RootEntity):
 
 ### Подписка на события
 
-Вы можете подписываться на события и автоматически выполнять команды:
+Вы можете подписываться на события. Все события будут преобразованы в команду. 
 
 ```python
 greet_module = Module("greet")
@@ -149,16 +162,28 @@ def register_pet(cmd: CreateGreetLogCommand, repository: IPetGreetRepo):
 
 ```python
 from pyddd.application import Equal, Not
+from pyddd.domain.command import DomainCommand
 
-@module.subscribe(ProductCreated.__topic__, condition=Equal(price=0))
+
+class HandleFreeProductCommand(DomainCommand, domain='statistics'):
+    reference: str
+
+    
+class HandlePaidProductCommand(DomainCommand, domain='statistics'):
+    reference: str
+    amount: int
+
+
+@module.subscribe('product.ProductCreated', condition=Equal(price=0))
 @module.register
 def handle_free_product(cmd: HandleFreeProductCommand):
-    print(f"Free product created: {cmd.reference}")
+    print(f"Free product created: {cmd.reference} without price")
 
-@module.subscribe(ProductCreated.__topic__, condition=Not(Equal(price=0)))
+
+@module.subscribe('product.ProductCreated', condition=Not(Equal(price=0)))
 @module.register
 def handle_paid_product(cmd: HandlePaidProductCommand):
-    print(f"Paid product created: {cmd.reference}")
+    print(f"Paid product created: {cmd.reference} with price {cmd.price}")
 ```
 
 ## Асинхронная поддержка
@@ -193,9 +218,9 @@ pet_id = await app.handle(CreatePet(name="Fluffy"))
     converter=lambda x: {"pet_id": x["reference"], "name": x["name"]}
 )
 @greet_module.register
-async def register_pet(cmd: CreateGreetLogCommand, repository: IPetGreetRepo):
-    # Обработка команды
-    pass
+async def record_log(cmd: CreateGreetLogCommand):
+    print("Created greet log for pet:", cmd.pet_id)
+    
 ```
 
 ## Unit of Work
@@ -249,29 +274,6 @@ async def update_product_price(
     await repository.save(product)
 ```
 
-## Event Store
-
-Пример реализации хранилища событий:
-
-```python
-class EventStoreListener(IEventSubscriber):
-    def __init__(self, event_store: IEventStore):
-        self._event_store = event_store
-
-    def notify(self, event: IEvent):
-        stored_event = StoredEvent(
-            id=str(uuid.uuid4()),
-            occurred_on=event.__timestamp__,
-            event_name=event.__topic__,
-            payload=event.to_json(),
-        )
-        self._event_store.insert(stored_event)
-
-# Подключение к издателю событий
-publisher = EventPublisher()
-publisher.subscribe(EventStoreListener(event_store))
-```
-
 ## Лучшие практики
 
 ### 1. Разделение доменов
@@ -298,7 +300,8 @@ customer_module = Module("customer")
 def create_order(cmd: CreateOrder):
     order = Order.create(...)
     # НЕ ДЕЛАЙТЕ ТАК: customer_service.notify_order_created(order)
-    
+
+
 # Используйте события
 def create_order(cmd: CreateOrder):
     order = Order.create(...)

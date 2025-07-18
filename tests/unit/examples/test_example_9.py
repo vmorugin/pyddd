@@ -8,7 +8,6 @@ from decimal import Decimal
 import typing as t
 
 from pyddd.domain import (
-    RootEntity,
     DomainEvent,
     DomainCommand,
 )
@@ -17,7 +16,10 @@ from pyddd.domain.abstractions import (
     IEvent,
     IdType,
 )
-from pyddd.domain.entity import Entity
+from pyddd.domain.entity import (
+    Entity,
+    ESRootEntity,
+)
 
 
 # Example from V.Vernon's book "Implementing Domain-Driven Design" implemented in Python
@@ -266,53 +268,50 @@ class CustomerState(Entity):
         self.max_transaction_id = event.transaction
 
 
-class Customer(RootEntity):
-    """Customer aggregate root"""
-
+class Customer(ESRootEntity):
     _state: CustomerState
-
-    def _apply(self, event: IEvent) -> None:
-        """Apply event to state and add to changes"""
-        self._state.mutate(event)
-        self._events.append(event)
-
-    def __reference__(self) -> IdType:
-        return self._state.reference
 
     @classmethod
     def create(
         cls, reference: CustomerId, name: str, currency: Currency, pricing_service: IPricingService
     ) -> "Customer":
-        self = cls()
+        self = cls(__reference__=reference)
         self._state = CustomerState()
-        self._apply(CustomerCreated(name=name, created=datetime.utcnow(), reference=reference, currency=currency))
+        self.trigger_event(
+            CustomerCreated, name=name, created=datetime.utcnow(), reference=reference, currency=currency
+        )
 
         bonus = pricing_service.get_welcome_bonus(currency)
         self.add_payment("Welcome bonus", bonus)
         return self
 
     @classmethod
-    def from_events(cls, events: t.Iterable[IEvent]) -> "Customer":
-        self = cls()
+    def from_events(cls, reference: IdType, events: t.Iterable[IEvent]) -> "Customer":
+        self = cls(__reference__=reference)
         self._events.extend(events)
         self._state = CustomerState.from_events(self._events)
         return self
+
+    def when(self, event: IEvent) -> None:
+        self._state.mutate(event)
 
     def rename(self, name: str) -> None:
         if self._state.name == name:
             return
 
-        self._apply(
-            CustomerRenamed(
-                name=name, reference=self._state.__reference__, old_name=self._state.name, renamed=datetime.utcnow()
-            )
+        self.trigger_event(
+            CustomerRenamed,
+            name=name,
+            reference=self._state.__reference__,
+            old_name=self._state.name,
+            renamed=datetime.utcnow(),
         )
 
     def lock_customer(self, reason: str) -> None:
         if self._state.consumption_locked:
             return
 
-        self._apply(CustomerLocked(reference=self._state.reference, reason=reason))
+        self.trigger_event(CustomerLocked, reference=self._state.reference, reason=reason)
 
     def lock_for_account_overdraft(self, comment: str, pricing_service: IPricingService) -> None:
         if self._state.manual_billing:
@@ -323,31 +322,26 @@ class Customer(RootEntity):
             self.lock_customer(f"Overdraft. {comment}")
 
     def add_payment(self, name: str, amount: CurrencyAmount) -> None:
-        self._apply(
-            CustomerPaymentAdded(
-                reference=self._state.__reference__,
-                payment=amount,
-                new_balance=self._state.balance + amount,
-                payment_name=name,
-                transaction=self._state.max_transaction_id + 1,
-                time_utc=datetime.utcnow(),
-            )
+        self.trigger_event(
+            CustomerPaymentAdded,
+            reference=self._state.__reference__,
+            payment=amount,
+            new_balance=self._state.balance + amount,
+            payment_name=name,
+            transaction=self._state.max_transaction_id + 1,
+            time_utc=datetime.utcnow(),
         )
 
     def charge(self, name: str, amount: CurrencyAmount) -> None:
-        self._apply(
-            CustomerChargeAdded(
-                reference=self._state.__reference__,
-                charge=amount,
-                new_balance=self._state.balance - amount,
-                charge_name=name,
-                transaction=self._state.max_transaction_id + 1,
-                time_utc=datetime.utcnow(),
-            )
+        self.trigger_event(
+            CustomerChargeAdded,
+            reference=self._state.__reference__,
+            charge=amount,
+            new_balance=self._state.balance - amount,
+            charge_name=name,
+            transaction=self._state.max_transaction_id + 1,
+            time_utc=datetime.utcnow(),
         )
-
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ and self._state == getattr(other, "_state")
 
 
 class SimplePricingService(IPricingService):
@@ -387,6 +381,6 @@ def test_example():
     for event in events:
         print(f"- {event}")
 
-    new = Customer.from_events(events)
+    new = Customer.from_events(reference=customer_id, events=events)
 
     assert new == customer

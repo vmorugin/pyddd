@@ -3,6 +3,7 @@ import pytest
 from pyddd.domain import DomainEvent
 from pyddd.domain.abstractions import (
     MessageType,
+    Version,
 )
 
 
@@ -19,6 +20,7 @@ class TestDomainEvent:
         assert event.__domain__ == "test.event"
         assert event.__message_name__ == "ExampleEvent"
         assert event.__topic__ == "test.event.ExampleEvent"
+        assert event.__version__ == 1
 
     def test_attrs_from_cls(self):
         assert ExampleEvent.__message_name__ == "ExampleEvent"
@@ -29,3 +31,9 @@ class TestDomainEvent:
         with pytest.raises(ValueError):
 
             class ExampleEvent(DomainEvent): ...
+
+    def test_could_create_with_version(self):
+        class VersionedEvent(DomainEvent, domain="test.event"): ...
+
+        event = VersionedEvent(__version__=2)
+        assert event.__version__ == Version(2)

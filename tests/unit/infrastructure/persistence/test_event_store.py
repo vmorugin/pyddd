@@ -3,15 +3,14 @@ import uuid
 import pytest
 
 from pyddd.domain import (
-    SourcedDomainEvent,
+    DomainEvent,
 )
 from pyddd.domain.abstractions import (
     Version,
 )
-from pyddd.domain.event_sourcing import (
-    Snapshot,
-    ESEntityT,
+from pyddd.domain.entity import (
     ESRootEntity,
+    Snapshot,
 )
 from pyddd.infrastructure.persistence.abstractions import (
     IEventStore,
@@ -20,10 +19,10 @@ from pyddd.infrastructure.persistence.event_store import OptimisticConcurrencyEr
 from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryStore
 
 
-class EntityCreated(SourcedDomainEvent, domain="test.event-store"):
+class EntityCreated(DomainEvent, domain="test.event-store"):
     name: str
 
-    def mutate(self, entity: None) -> ESEntityT:
+    def mutate(self, entity: None):
         return ExampleEntity(
             __reference__=self.__entity_reference__,
             __version__=self.__entity_version__,
@@ -31,7 +30,7 @@ class EntityCreated(SourcedDomainEvent, domain="test.event-store"):
         )
 
 
-class EntityRenamed(SourcedDomainEvent, domain="test.event-store"):
+class EntityRenamed(DomainEvent, domain="test.event-store"):
     name: str
 
     def apply(self, entity: "ExampleEntity") -> None:
@@ -62,15 +61,15 @@ class TestInMemoryEventStore:
         assert isinstance(store, IEventStore)
 
     def test_could_get_empty_stream(self, store, stream_name):
-        assert list(store.get_from_stream(stream_name, 0, 100)) == []
+        assert list(store.get_stream(stream_name, 0, 100)) == []
 
     def test_could_append_to_stream(self, store, stream_name):
         events = [EntityCreated(entity_reference=str(uuid.uuid4()), entity_version=Version(1), name="123")]
         store.append_to_stream(stream_name, events)
-        assert store.get_from_stream(stream_name, 0, 1) == events
+        assert store.get_stream(stream_name, 0, 1) == events
 
     def test_could_raise_error_if_conflict_of_version(self, store, stream_name):
-        events = [EntityCreated(entity_reference=str(uuid.uuid4()), entity_version=Version(1), name="123")]
+        events = [EntityCreated(__version__=Version(1), name="123")]
         store.append_to_stream(stream_name, events)
         with pytest.raises(
             OptimisticConcurrencyError, match=f"Conflict version of stream {stream_name}. Version 1 exists"

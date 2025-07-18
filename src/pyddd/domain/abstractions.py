@@ -1,4 +1,3 @@
-from __future__ import annotations
 import abc
 import datetime as dt
 import typing as t
@@ -99,6 +98,10 @@ class IMessage(abc.ABC, metaclass=IMessageMeta):
     @abc.abstractmethod
     def __timestamp__(self) -> dt.datetime: ...
 
+    @property
+    @abc.abstractmethod
+    def __version__(self) -> Version: ...
+
     @abc.abstractmethod
     def to_dict(self) -> dict: ...
 
@@ -115,49 +118,18 @@ class IEvent(IMessage, abc.ABC):
         return MessageType.EVENT
 
 
-EventT = t.TypeVar("EventT", bound=IEvent)
-
-
-class ISourcedEventMeta(IMessageMeta, abc.ABC): ...
-
-
-class ISourcedEvent(IEvent, abc.ABC, metaclass=ISourcedEventMeta):
-    @abc.abstractmethod
-    def mutate(self, entity: t.Optional[IESRootEntity]) -> IESRootEntity:
-        """
-        Mutate entity state or create a new entity instance based on the event data.
-        This method should return a new entity instance with the updated state.
-        """
-
-    def apply(self, entity: IESRootEntity) -> None:
-        """
-        This method should be used to update the entity state based on the event data.
-        """
-
-    @property
-    @abc.abstractmethod
-    def __entity_reference__(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def __entity_version__(self) -> Version: ...
-
-
 class ICommand(IMessage, abc.ABC):
     @property
     def __type__(self) -> MessageType:
         return MessageType.COMMAND
 
 
-class ICanStoreEvents(t.Generic[EventT], abc.ABC):
+class IRootEntity(IEntity[IdType], abc.ABC):
     @abc.abstractmethod
-    def register_event(self, event: EventT): ...
+    def register_event(self, event: IEvent): ...
 
     @abc.abstractmethod
-    def collect_events(self) -> t.Iterable[EventT]: ...
-
-
-class IRootEntity(IEntity[IdType], ICanStoreEvents[EventT], abc.ABC): ...
+    def collect_events(self) -> t.Iterable[IEvent]: ...
 
 
 class SnapshotProtocol(t.Protocol):
@@ -171,12 +143,27 @@ class SnapshotProtocol(t.Protocol):
     def __entity_version__(self) -> int: ...
 
 
-class IESRootEntity(IRootEntity[IdType, EventT], abc.ABC):
+class IESRootEntity(IEntity[IdType], abc.ABC):
     @abc.abstractmethod
-    def trigger_event(self, event_type: type[EventT]):
+    def trigger_event(self, event_type: IMessageMeta, **params):
         """
         Trigger event of specific type.
-        This method should be used to create and apply events to the entity.
+        This method should be used to create and mutate the entity.
+        Register events to changes.
+        """
+
+    @abc.abstractmethod
+    def apply(self, event: IEvent) -> None:
+        """
+        Mutate entity state based on the event.
+        This method should be used to apply the event to the entity.
+        """
+
+    @abc.abstractmethod
+    def collect_events(self) -> t.Iterable[IEvent]:
+        """
+        Collect events that were applied to the entity.
+        This method should be used to retrieve all events that have been applied to the entity.
         """
 
     def snapshot(self) -> SnapshotProtocol:
@@ -187,7 +174,7 @@ class IESRootEntity(IRootEntity[IdType, EventT], abc.ABC):
         raise NotImplementedError("Not implemented")
 
     @classmethod
-    def from_snapshot(cls, snapshot: SnapshotProtocol) -> IESRootEntity[IdType, EventT]:
+    def from_snapshot(cls, snapshot: SnapshotProtocol) -> "IESRootEntity[IdType]":
         """
         Load entity from specific snapshot
         """
