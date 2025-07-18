@@ -1,29 +1,47 @@
-name: publish
+name: Tag, Release & Publish
 
 on:
-  release:
-    types: [ published ]
+  push:
+    branches:
+      - master
 
 jobs:
-  sdist:
+  release-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: Extract version from pyproject.toml
+        id: get_version
+        run: |
+          VERSION=$(grep -Po '(?<=^version = ")[^"]+' pyproject.toml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag "v${{ steps.get_version.outputs.version }}"
+          git push origin "v${{ steps.get_version.outputs.version }}"
+
+      - name: Create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.get_version.outputs.version }}" \
+            --repo="$GITHUB_REPOSITORY" \
+            --title="${GITHUB_REPOSITORY#*/} ${{ steps.get_version.outputs.version }}" \
+            --generate-notes
 
       - name: Setup python
         uses: actions/setup-python@v5
         with:
           python-version: 3.9
 
-      - name: Resetting git to main
-        run: |
-          git fetch origin main
-          git reset --hard origin/main
-
       - name: Install uv
         run: python -m pip install uv
 
-      - name: Publishing to pypi
+      - name: Publish to PyPI
         run: |
           uv build
           uv publish
