@@ -21,8 +21,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git tag "v${{ steps.get_version.outputs.version }}"
-          git push origin "v${{ steps.get_version.outputs.version }}"
+          gh auth setup-git
+          gh release create "v${{ steps.get_version.outputs.version }}" \
+            --repo="$GITHUB_REPOSITORY" \
+            --title="${GITHUB_REPOSITORY#*/} ${{ steps.get_version.outputs.version }}" \
+            --generate-notes
 
       - name: Create GitHub release
         env:
