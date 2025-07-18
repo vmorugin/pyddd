@@ -6,7 +6,7 @@ from functools import (
 )
 from importlib.metadata import version as meta_version
 
-from pyddd.domain import IEventSourcedEntity
+from pyddd.domain import IESRootEntity
 from pyddd.domain.abstractions import (
     EntityUid,
     IdType,
@@ -114,7 +114,7 @@ class _EventSourcedEntityMeta(_EntityMeta):
         return instance
 
 
-class ESRootEntity(IEventSourcedEntity[IdType], Entity, metaclass=_EventSourcedEntityMeta):
+class ESRootEntity(IESRootEntity[IdType], Entity, metaclass=_EventSourcedEntityMeta):
     _events: list[IEvent]
 
     def trigger_event(self, event_type: IMessageMeta, **params):

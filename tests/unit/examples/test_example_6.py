@@ -47,7 +47,7 @@ class Withdrew(BaseAccountEvent):
 
 
 class Account(ESRootEntity[AccountId]):
-    owner_id: str = ''
+    owner_id: str = ""
     balance: int = 0
 
     @classmethod

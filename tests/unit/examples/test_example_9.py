@@ -277,7 +277,9 @@ class Customer(ESRootEntity):
     ) -> "Customer":
         self = cls(__reference__=reference)
         self._state = CustomerState()
-        self.trigger_event(CustomerCreated, name=name, created=datetime.utcnow(), reference=reference, currency=currency)
+        self.trigger_event(
+            CustomerCreated, name=name, created=datetime.utcnow(), reference=reference, currency=currency
+        )
 
         bonus = pricing_service.get_welcome_bonus(currency)
         self.add_payment("Welcome bonus", bonus)
@@ -299,8 +301,10 @@ class Customer(ESRootEntity):
 
         self.trigger_event(
             CustomerRenamed,
-                name=name, reference=self._state.__reference__, old_name=self._state.name, renamed=datetime.utcnow()
-
+            name=name,
+            reference=self._state.__reference__,
+            old_name=self._state.name,
+            renamed=datetime.utcnow(),
         )
 
     def lock_customer(self, reason: str) -> None:
@@ -320,25 +324,25 @@ class Customer(ESRootEntity):
     def add_payment(self, name: str, amount: CurrencyAmount) -> None:
         self.trigger_event(
             CustomerPaymentAdded,
-                reference=self._state.__reference__,
-                payment=amount,
-                new_balance=self._state.balance + amount,
-                payment_name=name,
-                transaction=self._state.max_transaction_id + 1,
-                time_utc=datetime.utcnow(),
+            reference=self._state.__reference__,
+            payment=amount,
+            new_balance=self._state.balance + amount,
+            payment_name=name,
+            transaction=self._state.max_transaction_id + 1,
+            time_utc=datetime.utcnow(),
         )
 
     def charge(self, name: str, amount: CurrencyAmount) -> None:
         self.trigger_event(
             CustomerChargeAdded,
-                reference=self._state.__reference__,
-                charge=amount,
-                new_balance=self._state.balance - amount,
-                charge_name=name,
-                transaction=self._state.max_transaction_id + 1,
-                time_utc=datetime.utcnow(),
-
+            reference=self._state.__reference__,
+            charge=amount,
+            new_balance=self._state.balance - amount,
+            charge_name=name,
+            transaction=self._state.max_transaction_id + 1,
+            time_utc=datetime.utcnow(),
         )
+
 
 class SimplePricingService(IPricingService):
     """Simple pricing service implementation"""

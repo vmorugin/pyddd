@@ -143,7 +143,7 @@ class SnapshotProtocol(t.Protocol):
     def __entity_version__(self) -> int: ...
 
 
-class IEventSourcedEntity(IEntity[IdType], abc.ABC):
+class IESRootEntity(IEntity[IdType], abc.ABC):
     @abc.abstractmethod
     def trigger_event(self, event_type: IMessageMeta, **params):
         """
@@ -174,7 +174,7 @@ class IEventSourcedEntity(IEntity[IdType], abc.ABC):
         raise NotImplementedError("Not implemented")
 
     @classmethod
-    def from_snapshot(cls, snapshot: SnapshotProtocol) -> "IEventSourcedEntity[IdType]":
+    def from_snapshot(cls, snapshot: SnapshotProtocol) -> "IESRootEntity[IdType]":
         """
         Load entity from specific snapshot
         """
