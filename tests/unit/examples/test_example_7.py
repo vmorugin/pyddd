@@ -14,18 +14,17 @@ from pyddd.application import (
 from pyddd.domain import (
     DomainName,
     DomainCommand,
-    DomainEvent,
 )
 from pyddd.domain.abstractions import (
     IdType,
     IEvent,
 )
-from pyddd.domain.entity import (
-    ESRootEntity,
+from pyddd.domain.event_sourcing import (
+    RootEntity,
     when,
+    DomainEvent,
 )
 
-__domain__ = DomainName("balance.example")
 
 from pyddd.infrastructure.persistence.abstractions import IEventStore
 
@@ -33,6 +32,8 @@ from pyddd.infrastructure.persistence.event_store import (
     InMemoryStore,
     OptimisticConcurrencyError,
 )
+
+__domain__ = DomainName("balance.example")
 
 
 class AccountId(str): ...
@@ -59,7 +60,7 @@ class State:
     balance: int
 
 
-class Account(ESRootEntity[AccountId]):
+class Account(RootEntity[AccountId]):
     _state: State
 
     @classmethod

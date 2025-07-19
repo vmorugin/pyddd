@@ -47,6 +47,10 @@ class IMessageMeta(abc.ABCMeta):
     @abc.abstractmethod
     def __topic__(cls) -> MessageTopic: ...
 
+    @property
+    @abc.abstractmethod
+    def __version__(self) -> Version: ...
+
     @abc.abstractmethod
     def load(
         cls,
@@ -132,6 +136,19 @@ class IRootEntity(IEntity[IdType], abc.ABC):
     def collect_events(self) -> t.Iterable[IEvent]: ...
 
 
+class IESEventMeta(IMessageMeta, abc.ABC): ...
+
+
+class IESEvent(IEvent, abc.ABC, metaclass=IESEventMeta):
+    @property
+    @abc.abstractmethod
+    def __entity_reference__(self) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def __entity_version__(self) -> int: ...
+
+
 class SnapshotProtocol(t.Protocol):
     @property
     def __state__(self) -> bytes: ...
@@ -145,7 +162,7 @@ class SnapshotProtocol(t.Protocol):
 
 class IESRootEntity(IEntity[IdType], abc.ABC):
     @abc.abstractmethod
-    def trigger_event(self, event_type: IMessageMeta, **params):
+    def trigger_event(self, event_type: IESEventMeta, **params):
         """
         Trigger event of specific type.
         This method should be used to create and mutate the entity.
@@ -153,14 +170,14 @@ class IESRootEntity(IEntity[IdType], abc.ABC):
         """
 
     @abc.abstractmethod
-    def apply(self, event: IEvent) -> None:
+    def apply(self, event: IESEvent) -> None:
         """
         Mutate entity state based on the event.
         This method should be used to apply the event to the entity.
         """
 
     @abc.abstractmethod
-    def collect_events(self) -> t.Iterable[IEvent]:
+    def collect_events(self) -> t.Iterable[IESEvent]:
         """
         Collect events that were applied to the entity.
         This method should be used to retrieve all events that have been applied to the entity.

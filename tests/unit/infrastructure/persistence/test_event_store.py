@@ -2,15 +2,13 @@ import uuid
 
 import pytest
 
-from pyddd.domain import (
-    DomainEvent,
-)
 from pyddd.domain.abstractions import (
     Version,
 )
-from pyddd.domain.entity import (
-    ESRootEntity,
+from pyddd.domain.event_sourcing import (
+    RootEntity,
     Snapshot,
+    DomainEvent,
 )
 from pyddd.infrastructure.persistence.abstractions import (
     IEventStore,
@@ -19,25 +17,19 @@ from pyddd.infrastructure.persistence.event_store import OptimisticConcurrencyEr
 from pyddd.infrastructure.persistence.event_store.in_memory import InMemoryStore
 
 
-class EntityCreated(DomainEvent, domain="test.event-store"):
+class BaseEvent(DomainEvent, domain="test.event-store"):
+    pass
+
+
+class EntityCreated(BaseEvent):
     name: str
 
-    def mutate(self, entity: None):
-        return ExampleEntity(
-            __reference__=self.__entity_reference__,
-            __version__=self.__entity_version__,
-            name=self.name,
-        )
 
-
-class EntityRenamed(DomainEvent, domain="test.event-store"):
+class EntityRenamed(BaseEvent):
     name: str
 
-    def apply(self, entity: "ExampleEntity") -> None:
-        entity.name = self.name
 
-
-class ExampleEntity(ESRootEntity[str]):
+class ExampleEntity(RootEntity[str]):
     name: str
 
     @classmethod
@@ -69,7 +61,7 @@ class TestInMemoryEventStore:
         assert store.get_stream(stream_name, 0, 1) == events
 
     def test_could_raise_error_if_conflict_of_version(self, store, stream_name):
-        events = [EntityCreated(__version__=Version(1), name="123")]
+        events = [EntityCreated(entity_version=Version(1), entity_reference=stream_name, name="123")]
         store.append_to_stream(stream_name, events)
         with pytest.raises(
             OptimisticConcurrencyError, match=f"Conflict version of stream {stream_name}. Version 1 exists"

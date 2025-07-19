@@ -1,10 +1,11 @@
 import pytest
 
-from pyddd.domain import DomainEvent
 from pyddd.domain.abstractions import (
     MessageType,
     Version,
 )
+from pyddd.domain.event_sourcing import DomainEvent as ESDomainEvent
+from pyddd.domain.event import DomainEvent
 
 
 class ExampleEvent(DomainEvent, domain="test.event"):
@@ -33,7 +34,43 @@ class TestDomainEvent:
             class ExampleEvent(DomainEvent): ...
 
     def test_could_create_with_version(self):
-        class VersionedEvent(DomainEvent, domain="test.event"): ...
+        class VersionedEvent(DomainEvent, domain="test.event", version=2): ...
 
-        event = VersionedEvent(__version__=2)
-        assert event.__version__ == Version(2)
+        event = VersionedEvent(some_attr="123")
+        assert VersionedEvent.__version__ == event.__version__ == Version(2)
+
+
+class ExampleESEvent(ESDomainEvent, domain="test.event"):
+    some_attr: str
+
+
+class TestESDomainEvent:
+    def test_es_event(self):
+        event = ExampleESEvent(
+            some_attr="123",
+            entity_reference="entity-1",
+            entity_version=5,
+        )
+
+        assert event.__type__ == MessageType.EVENT
+        assert event.to_dict() == {"some_attr": "123"}
+        assert event.__domain__ == "test.event"
+        assert event.__message_name__ == "ExampleESEvent"
+        assert event.__topic__ == "test.event.ExampleESEvent"
+        assert event.__version__ == 1
+        assert event.__entity_reference__ == "entity-1"
+        assert event.__entity_version__ == 5
+
+    def test_could_raise_error_if_entity_reference_not_set(self):
+        with pytest.raises(ValueError):
+            ExampleESEvent(some_attr="123", entity_version=5)
+
+    def test_could_raise_error_if_entity_version_not_set(self):
+        with pytest.raises(ValueError):
+            ExampleESEvent(some_attr="123", entity_reference="entity-1")
+
+    def test_could_load(self):
+        event = ExampleESEvent.load(payload=dict(some_attr="123"), entity_version=123, entity_reference="entity-1")
+        assert event.some_attr == "123"
+        assert event.__entity_reference__ == "entity-1"
+        assert event.__entity_version__ == 123

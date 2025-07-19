@@ -4,27 +4,29 @@ from functools import singledispatchmethod
 
 from pyddd.domain import (
     DomainName,
-    DomainEvent,
 )
 from pyddd.domain.abstractions import (
     Version,
     IdType,
     IEvent,
 )
-from pyddd.domain.entity import (
+from pyddd.domain.event_sourcing import (
     Entity,
-    ESRootEntity,
+    RootEntity,
+    DomainEvent,
 )
 
 __domain__ = DomainName("test.event-sourcing")
 
 
-class EntityCreated(DomainEvent, domain=__domain__):
-    reference: IdType
+class BaseEvent(DomainEvent, domain=__domain__): ...
+
+
+class EntityCreated(BaseEvent):
     name: str
 
 
-class EntityRenamed(DomainEvent, domain=__domain__):
+class EntityRenamed(BaseEvent):
     name: str
 
 
@@ -32,11 +34,11 @@ class SomeState(Entity):
     name: str
 
 
-class SomeRootEntity(ESRootEntity[str]):
+class SomeRootEntity(RootEntity[str]):
     _state: SomeState
 
     @classmethod
-    def create(cls, name: str) -> "ESRootEntity":
+    def create(cls, name: str) -> "RootEntity":
         reference = str(uuid.uuid4())
         self = cls(__reference__=reference)
         self.trigger_event(EntityCreated, name=name, reference=self.trigger_event)
@@ -57,12 +59,12 @@ class SomeRootEntity(ESRootEntity[str]):
         return self._state.name
 
     @singledispatchmethod
-    def when(self, event: IEvent) -> "ESRootEntity":
+    def when(self, event: IEvent) -> "RootEntity":
         raise NotImplementedError("Not implemented")
 
     @when.register
     def created(self, event: EntityCreated):
-        state = SomeState(__reference__=event.reference, name=event.name)
+        state = SomeState(__reference__=event.__entity_reference__, name=event.name)
         self._state = state
 
     @when.register
@@ -102,10 +104,10 @@ class TestEventSourcedEntity:
         last_version = Version(3)
         while events:
             event = events.pop()
-            assert event.__version__ == last_version
+            assert event.__entity_version__ == last_version
             last_version = Version(last_version - 1)
 
     def test_could_update_version_when_apply(self):
         entity = SomeRootEntity.create(name="123")
-        entity.apply(EntityRenamed(name="456", __version__=2))
+        entity.apply(EntityRenamed(name="456", entity_version=2, entity_reference=str(entity.__reference__)))
         assert entity.__version__ == Version(2)

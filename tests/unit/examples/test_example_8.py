@@ -1,4 +1,10 @@
 import typing as t
+
+from pyddd.domain.event_sourcing import (
+    RootEntity,
+    when,
+    DomainEvent,
+)
 from pyddd.infrastructure.persistence.abstractions import (
     ISnapshotStore,
 )
@@ -16,15 +22,10 @@ from pyddd.application import (
 from pyddd.domain import (
     DomainName,
     DomainCommand,
-    DomainEvent,
 )
 from pyddd.domain.abstractions import (
     IdType,
     IEvent,
-)
-from pyddd.domain.entity import (
-    ESRootEntity,
-    when,
 )
 
 __domain__ = DomainName("test.example-with-snapshot")
@@ -55,7 +56,7 @@ class Withdrew(BaseAccountEvent):
     amount: int
 
 
-class Account(ESRootEntity[AccountId]):
+class Account(RootEntity[AccountId]):
     owner_id: str = None
     balance: int = None
 

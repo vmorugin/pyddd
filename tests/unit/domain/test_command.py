@@ -52,6 +52,7 @@ class TestDomainCommand:
         assert isinstance(command.__message_id__, str)
 
     def test_could_create_with_version(self):
-        class VersionedCommand(DomainCommand, domain=__domain__): ...
+        class VersionedCommand(DomainCommand, domain=__domain__, version=2): ...
 
-        assert VersionedCommand(__version__=2).__version__ == Version(2)
+        command = VersionedCommand()
+        assert command.__version__ == VersionedCommand.__version__ == Version(2)

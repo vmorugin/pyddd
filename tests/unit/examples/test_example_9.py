@@ -8,7 +8,6 @@ from decimal import Decimal
 import typing as t
 
 from pyddd.domain import (
-    DomainEvent,
     DomainCommand,
 )
 from pyddd.domain.abstractions import (
@@ -16,9 +15,10 @@ from pyddd.domain.abstractions import (
     IEvent,
     IdType,
 )
-from pyddd.domain.entity import (
+from pyddd.domain.event_sourcing import (
     Entity,
-    ESRootEntity,
+    RootEntity,
+    DomainEvent,
 )
 
 
@@ -268,7 +268,7 @@ class CustomerState(Entity):
         self.max_transaction_id = event.transaction
 
 
-class Customer(ESRootEntity):
+class Customer(RootEntity):
     _state: CustomerState
 
     @classmethod

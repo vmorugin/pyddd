@@ -6,6 +6,7 @@ from typing import ContextManager
 from pyddd.domain.abstractions import (
     SnapshotProtocol,
     IEvent,
+    IESEvent,
 )
 
 TLock = t.TypeVar("TLock")
@@ -84,7 +85,7 @@ class IEventStream(abc.ABC):
 
 class IEventStore(abc.ABC):
     @abc.abstractmethod
-    def append_to_stream(self, stream_name: str, events: t.Iterable[IEvent]):
+    def append_to_stream(self, stream_name: str, events: t.Iterable[IESEvent]):
         """
         Add events to existed stream.
         Optimistic lock checker could be implemented by repository.
@@ -96,7 +97,7 @@ class IEventStore(abc.ABC):
         stream_name: str,
         from_version: int,
         to_version: int,
-    ) -> t.Iterable[IEvent]:
+    ) -> t.Iterable[IESEvent]:
         """
         Get Events from stream sorted by version, from and to included.
         If stream does not exist, return empty list.

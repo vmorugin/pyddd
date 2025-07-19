@@ -109,24 +109,20 @@ class Message(IMessage):
 class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     _domain_name: DomainName
     _message_name: str
+    _version: Version
 
-    def __new__(mcs, name, bases, namespace, domain: Optional[str] = None):
+    def __new__(mcs, name, bases, namespace, domain: Optional[str] = None, version: int = 1):
         cls: "BaseDomainMessageMeta" = super().__new__(mcs, name, bases, namespace)  # type: ignore[assignment]
         if domain is not None:
             cls._domain_name = DomainName(domain)
         return cls
 
-    def __init__(cls, name, bases, namespace, *, domain: Optional[str] = None):
+    def __init__(cls, name, bases, namespace, *, domain: Optional[str] = None, version: int = 1):
         super().__init__(name, bases, namespace, domain=domain)
         cls._message_name = name
-
+        cls._version = Version(version)
         with suppress(AttributeError):
             _domain_message_collection.register(cls.__topic__, cls)
-
-    def __call__(cls, *args, __version__: int = 1, **kwargs):
-        instance = super().__call__(*args, **kwargs)
-        instance._version = Version(__version__)
-        return instance
 
     @property
     def __domain__(cls) -> str:
@@ -139,6 +135,10 @@ class BaseDomainMessageMeta(IMessageMeta, ModelMetaclass, abc.ABCMeta):
     @property
     def __topic__(cls) -> MessageTopic:
         return MessageTopic(f"{cls._domain_name}.{cls._message_name}")
+
+    @property
+    def __version__(cls) -> Version:
+        return cls._version
 
     def load(  # type: ignore[misc]
         cls: type[_T],

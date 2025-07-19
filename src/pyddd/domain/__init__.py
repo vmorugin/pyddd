@@ -7,7 +7,10 @@ from .event import (
     DomainEvent,
 )
 from .command import DomainCommand
-from .entity import RootEntity
+from .entity import (
+    RootEntity,
+    Entity,
+)
 from .types import (
     DomainName,
     DomainError,
@@ -18,6 +21,7 @@ __all__ = [
     "DomainCommand",
     "IEntity",
     "IRootEntity",
+    "Entity",
     "RootEntity",
     "DomainName",
     "DomainError",
