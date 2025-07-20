@@ -2,6 +2,8 @@ import typing as t
 import uuid
 from functools import singledispatchmethod
 
+import pytest
+
 from pyddd.domain import (
     DomainName,
 )
@@ -111,3 +113,8 @@ class TestEventSourcedEntity:
         entity = SomeRootEntity.create(name="123")
         entity.apply(EntityRenamed(name="456", entity_version=2, entity_reference=str(entity.__reference__)))
         assert entity.__version__ == Version(2)
+
+    def test_could_not_apply_event_with_wrong_reference(self):
+        entity = SomeRootEntity.create(name="123")
+        with pytest.raises(AssertionError):
+            entity.apply(EntityRenamed(name="456", entity_version=2, entity_reference="wrong_reference"))

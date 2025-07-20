@@ -118,7 +118,10 @@ class RootEntity(IESRootEntity[IdType], Entity, metaclass=_EventSourcedEntityMet
     def apply(self, event: IESEvent):
         """
         Mutate the entity state based on the event.
+        Ensure that the event has the correct reference and version.
         """
+        assert str(event.__entity_reference__) == str(self.__reference__)
+
         next_version = Version(self.__version__ + 1)
         assert event.__entity_version__ == next_version
 
