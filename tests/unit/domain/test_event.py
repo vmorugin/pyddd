@@ -34,10 +34,46 @@ class TestDomainEvent:
             class ExampleEvent(DomainEvent): ...
 
     def test_could_create_with_version(self):
-        class VersionedEvent(DomainEvent, domain="test.event", version=2): ...
+        class VersionedEvent(DomainEvent, domain="test.event", version=2):
+            @staticmethod
+            def upcast_v1_v2(state): ...
 
         event = VersionedEvent(some_attr="123")
         assert VersionedEvent.__version__ == event.__version__ == Version(2)
+
+    def test_could_raise_error_if_could_not_upcast(self):
+        class BrokenVersionedEvent(DomainEvent, domain="test.event", version=2): ...
+
+        with pytest.raises(ValueError):
+            BrokenVersionedEvent.load(payload={}, version=1)
+
+    def test_can_upcast(self):
+        class VersionedEventV2(DomainEvent, domain="test.event"):
+            some_attr: int
+
+            @staticmethod
+            def upcast_v1_v2(state):
+                state["some_attr"] = 0
+
+        event = VersionedEventV2()
+
+        assert event.some_attr == 0
+
+    def test_can_upcast_from_class_version(self):
+        class VersionedEventV2(DomainEvent, domain="test.event", version=3):
+            renamed_attr: int
+
+            @staticmethod
+            def upcast_v1_v2(state):
+                assert False, "Should not be called"
+
+            @staticmethod
+            def upcast_v2_v3(state):
+                state["renamed_attr"] = state["some_attr"]
+
+        event = VersionedEventV2(some_attr=123, class_version=2)
+
+        assert event.renamed_attr == 123
 
 
 class ExampleESEvent(ESDomainEvent, domain="test.event"):

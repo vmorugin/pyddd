@@ -23,13 +23,18 @@ from pyddd.domain.abstractions import (
     MessageTopic,
 )
 
+from pydantic import (
+    BaseModel,
+    PrivateAttr,
+    root_validator,
+)
+
 pydantic_version = package_version("pydantic")
 
 if pydantic_version.startswith("2"):
-    from pydantic import BaseModel, PrivateAttr
     from pydantic._internal._model_construction import ModelMetaclass
 elif pydantic_version.startswith("1"):
-    from pydantic.main import ModelMetaclass, BaseModel, PrivateAttr  # type: ignore[no-redef]
+    from pydantic.main import ModelMetaclass  # type: ignore[no-redef]
 else:
     raise ImportError("Can not import pydantic. Please setup pydantic >= 1.x.x <= 2.x.x")
 
@@ -190,6 +195,21 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
 
     def to_json(self) -> str:
         return self.json()
+
+    @root_validator(pre=True, allow_reuse=True)
+    def upcast(cls, values):
+        class_version = values.get("class_version", 1)
+        while class_version != cls._version:
+            next_version = class_version + 1
+            upcast = getattr(cls, f"upcast_v{class_version}_v{next_version}", None)
+            if upcast is None:
+                raise ValueError(
+                    f"Could not upcast message {cls.__domain__}.{cls.__message_name__} "
+                    f"from version {class_version} to {next_version}"
+                )
+            upcast(values)
+            class_version = next_version
+        return values
 
 
 def get_message_class(topic: MessageTopic) -> IMessageMeta:

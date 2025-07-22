@@ -52,7 +52,9 @@ class TestDomainCommand:
         assert isinstance(command.__message_id__, str)
 
     def test_could_create_with_version(self):
-        class VersionedCommand(DomainCommand, domain=__domain__, version=2): ...
+        class VersionedCommand(DomainCommand, domain=__domain__, version=2):
+            @staticmethod
+            def upcast_v1_v2(state): ...
 
         command = VersionedCommand()
         assert command.__version__ == VersionedCommand.__version__ == Version(2)
