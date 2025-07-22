@@ -48,7 +48,7 @@ class TestDomainEvent:
             BrokenVersionedEvent.load(payload={}, version=1)
 
     def test_can_upcast(self):
-        class VersionedEventV2(DomainEvent, domain="test.event"):
+        class VersionedEventV2(DomainEvent, domain="test.event", version=2):
             some_attr: int
 
             @staticmethod
@@ -60,7 +60,7 @@ class TestDomainEvent:
         assert event.some_attr == 0
 
     def test_can_upcast_from_class_version(self):
-        class VersionedEventV2(DomainEvent, domain="test.event", version=3):
+        class VersionedEventV3(DomainEvent, domain="test.event", version=3):
             renamed_attr: int
 
             @staticmethod
@@ -71,7 +71,7 @@ class TestDomainEvent:
             def upcast_v2_v3(state):
                 state["renamed_attr"] = state["some_attr"]
 
-        event = VersionedEventV2(some_attr=123, class_version=2)
+        event = VersionedEventV3(some_attr=123, class_version=2)
 
         assert event.renamed_attr == 123
 
