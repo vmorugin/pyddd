@@ -1,11 +1,11 @@
 import pytest
 from testcontainers.postgres import PostgresContainer
-from testcontainers.redis import RedisContainer
+from testcontainers.redis import AsyncRedisContainer
 
 
 @pytest.fixture(scope="session")
 def postgres_container():
-    with PostgresContainer("postgres:14.5") as postgres:
+    with PostgresContainer("postgres:14.5", driver=None) as postgres:
         yield {
             "host": postgres.get_container_host_ip(),
             "port": postgres.get_exposed_port(postgres.port),
@@ -17,8 +17,5 @@ def postgres_container():
 
 @pytest.fixture(scope="session")
 def redis_container():
-    with RedisContainer("redis:6.2.10") as redis:
-        yield {
-            "host": redis.get_container_host_ip(),
-            "port": redis.get_exposed_port(redis.port),
-        }
+    with AsyncRedisContainer("redis:6.2.10") as redis:
+        yield redis
