@@ -1,4 +1,3 @@
-import os
 import uuid
 from contextlib import suppress
 
@@ -22,54 +21,43 @@ from pyddd.infrastructure.persistence.event_store.postgres import (
 
 
 @pytest.fixture
-def postgres_config():
-    return {
-        "dbname": os.getenv("POSTGRES_DB", "eventsourcing"),
-        "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": os.getenv("POSTGRES_PORT", "5432"),
-        "username": os.getenv("POSTGRES_USERNAME", "postgres"),
-        "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
-    }
-
-
-@pytest.fixture
-def root_conn(postgres_config):
+def root_conn(postgres_container):
     return psycopg.connect(
         dbname="postgres",
-        host=postgres_config["host"],
-        port=postgres_config["port"],
-        user=postgres_config["username"],
-        password=postgres_config["password"],
+        host=postgres_container["host"],
+        port=postgres_container["port"],
+        user=postgres_container["username"],
+        password=postgres_container["password"],
         autocommit=True,
     )
 
 
 @pytest.fixture
-def pg_conn(postgres_config):
+def pg_conn(postgres_container):
     return psycopg.connect(
-        dbname=postgres_config["dbname"],
-        host=postgres_config["host"],
-        port=postgres_config["port"],
-        user=postgres_config["username"],
-        password=postgres_config["password"],
+        dbname=postgres_container["dbname"],
+        host=postgres_container["host"],
+        port=postgres_container["port"],
+        user=postgres_container["username"],
+        password=postgres_container["password"],
         autocommit=True,
     )
 
 
 @pytest.fixture
-def prepare_database(postgres_config, root_conn):
+def prepare_database(postgres_container, root_conn):
     with suppress(DuplicateDatabase):
-        root_conn.execute("CREATE DATABASE {database};".format(database=postgres_config["dbname"]))
+        root_conn.execute("CREATE DATABASE {database};".format(database=postgres_container["dbname"]))
 
 
 @pytest.fixture
-def datastore(postgres_config, prepare_database, pg_conn):
+def datastore(postgres_container, prepare_database, pg_conn):
     datastore = PostgresDatastore(
-        dbname=postgres_config["dbname"],
-        host=postgres_config["host"],
-        port=postgres_config["port"],
-        user=postgres_config["username"],
-        password=postgres_config["password"],
+        dbname=postgres_container["dbname"],
+        host=postgres_container["host"],
+        port=postgres_container["port"],
+        user=postgres_container["username"],
+        password=postgres_container["password"],
         schema="public",
     )
     yield datastore

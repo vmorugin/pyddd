@@ -1,4 +1,3 @@
-import os
 import uuid
 
 import pytest
@@ -15,8 +14,8 @@ from pyddd.infrastructure.transport.core.tracker_factory import (
 
 
 @pytest.fixture
-def redis():
-    return Redis(host=os.getenv("REDIS_HOST"))
+def redis(redis_container):
+    return Redis(host=redis_container["host"], port=redis_container["port"])
 
 
 @pytest.fixture
