@@ -23,6 +23,7 @@ from psycopg.sql import (
 from pyddd.domain.abstractions import (
     SnapshotProtocol,
     IESEvent,
+    MessageTopic,
 )
 from pyddd.domain.event_sourcing import Snapshot
 from pyddd.domain.message import get_message_class
@@ -255,14 +256,16 @@ class Converter:
             "stream_id": stream_name,
             "version": event.__entity_version__,
             "correlation_id": event.__message_id__,
-            "topic": event.__topic__,
+            "domain": event.__domain__,
+            "name": event.__message_name__,
             "state": event.to_json(),
             "created_at": event.__timestamp__,
         }
 
     @classmethod
     def event_from_dict(cls, data: dict) -> IESEvent:
-        entity_type = get_message_class(data["topic"])
+        topic = MessageTopic(f"{data['domain']}.{data['name']}")
+        entity_type = get_message_class(topic)
         event = entity_type.load(
             payload=json.loads(data["state"]),
             entity_reference=data["stream_id"],
@@ -298,7 +301,8 @@ class Statements:
         CREATE TABLE IF NOT EXISTS {schema}.{table} (
             stream_id VARCHAR NOT NULL,
             version BIGINT NOT NULL,
-            topic TEXT,
+            domain VARCHAR,
+            name VARCHAR,
             state BYTEA,
             notification_id BIGSERIAL,
             correlation_id UUID NOT NULL,
@@ -338,14 +342,14 @@ class Statements:
     INSERT_EVENTS = SQL(
         """
         INSERT INTO {schema}.{table} 
-        (stream_id, version, correlation_id, topic, state, created_at)
-        VALUES (%(stream_id)s, %(version)s, %(correlation_id)s, %(topic)s, %(state)s, %(created_at)s)
+        (stream_id, version, correlation_id, domain, name, state, created_at)
+        VALUES (%(stream_id)s, %(version)s, %(correlation_id)s, %(domain)s, %(name)s, %(state)s, %(created_at)s)
         """
     )
 
     SELECT_EVENTS = SQL(
         """
-        SELECT stream_id, version, topic, state, created_at, correlation_id
+        SELECT stream_id, version, domain, name, state, created_at, correlation_id
         FROM {schema}.{table}
         WHERE stream_id = %(stream_id)s AND version BETWEEN %(from_version)s AND %(to_version)s
         """

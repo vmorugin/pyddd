@@ -1,5 +1,6 @@
 import pytest
 
+from pyddd.domain.abstractions import MessageTopic
 from pyddd.domain.types import (
     DomainName,
     DomainError,
@@ -60,3 +61,14 @@ class TestDomainError:
 
         err = TestError("Custom error")
         assert str(err) == "Custom error"
+
+
+class TestMessageTopic:
+    def test_could_parse_string(self):
+        topic = MessageTopic('sub.test.MessageName')
+        assert topic.domain == "sub.test"
+        assert topic.name == "MessageName"
+
+    def test_could_raise_error_if_no_domain(self):
+        with pytest.raises(ValueError):
+            MessageTopic("InvalidTopic")

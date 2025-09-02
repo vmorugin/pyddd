@@ -12,7 +12,21 @@ class ValueObject: ...
 class EntityUid(ValueObject, UUID): ...
 
 
-MessageTopic: t.TypeAlias = str
+class MessageTopic(str):
+    def __new__(cls, value: str):
+        if not isinstance(value, str) or "." not in value:
+            raise ValueError(f"Invalid topic format: {value}. Expected format 'domain.message_name'")
+        return super().__new__(cls, value)
+
+    @property
+    def domain(self) -> str:
+        return self.rsplit(".", 1)[0]
+
+    @property
+    def name(self) -> str:
+        return self.rsplit(".", maxsplit=1)[-1]
+
+
 IdType = t.TypeVar("IdType")
 Version = t.NewType("Version", int)
 
