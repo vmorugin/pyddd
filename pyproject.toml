@@ -1,5 +1,5 @@
 [project]
-version = "0.21.2"
+version = "0.21.3"
 name = "pyddd"
 description = "Domain-Driven Design for Python"
 readme = "readme.md"
@@ -11,7 +11,6 @@ license = "MIT"
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
