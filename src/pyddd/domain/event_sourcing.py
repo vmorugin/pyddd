@@ -1,7 +1,6 @@
 import datetime as dt
 import json
 import typing as t
-from functools import singledispatchmethod
 from typing import Mapping
 from uuid import UUID
 
@@ -80,6 +79,30 @@ class DomainEvent(BaseDomainMessage, IESEvent, metaclass=_ESDomainEventMeta):
     def __entity_version__(self) -> int:
         return self._entity_version
 
+    def mutate(self, entity: t.Optional[IESRootEntity]) -> IESRootEntity:
+        """
+        Mutate the entity state based on the event.
+        Ensure that the event has the correct reference and version.
+        """
+        assert entity is not None
+
+        assert str(self._entity_reference) == str(entity.__reference__)
+
+        next_version = Version(entity.__version__ + 1)
+        assert self.__entity_version__ == next_version
+
+        self.apply(entity)
+
+        increment_version(entity)
+
+        return entity
+
+    def apply(self, entity: IESRootEntity):
+        """
+        Mutate the entity state based on the event.
+        """
+        pass
+
 
 class _EventSourcedEntityMeta(_EntityMeta):
     def __call__(cls, *args, __reference__: IdType = None, __version__: int = 0, **kwargs):
@@ -110,45 +133,20 @@ class Snapshot:
 class RootEntity(IESRootEntity[IdType], Entity, metaclass=_EventSourcedEntityMeta):
     _events: list[IESEvent]
 
+    @classmethod
+    def _create(cls, event_type: IESEventMeta, reference: IdType, **params):
+        created = event_type(entity_reference=reference, entity_version=Version(1), **params)
+        obj = created.mutate(None)
+        obj.register_event(created)
+        return obj
+
     def trigger_event(self, event_type: IESEventMeta, **params):
         event = event_type(entity_version=self.__version__ + 1, entity_reference=str(self.__reference__), **params)
-        self.apply(event)
+        event.mutate(self)
+        self.register_event(event)
+
+    def register_event(self, event: IESEvent):
         self._events.append(event)
-
-    def apply(self, event: IESEvent):
-        """
-        Mutate the entity state based on the event.
-        Ensure that the event has the correct reference and version.
-        """
-        assert str(event.__entity_reference__) == str(self.__reference__)
-
-        next_version = Version(self.__version__ + 1)
-        assert event.__entity_version__ == next_version
-
-        self.when(event)
-        increment_version(self)
-
-    @singledispatchmethod
-    def when(self, event: IESEvent) -> "RootEntity":
-        """
-        Implement the method to apply events by type.
-
-        Example:
-        from pyddd.entity import when
-
-        ...
-
-        @when
-        def _(self, event: EntityCreated):
-            state = State(name=event.name)
-            self._state = state
-
-        @when
-        def _(self, event: EntityRenamed):
-            self._state.name = event.name
-        """
-
-        raise NotImplementedError(f"Mutate method not implemented for event type: {type(event)}")
 
     def collect_events(self) -> t.Iterable[IESEvent]:
         events = self._events
@@ -170,6 +168,3 @@ class RootEntity(IESRootEntity[IdType], Entity, metaclass=_EventSourcedEntityMet
             __version__=Version(snapshot.__entity_version__),
             **state,
         )
-
-
-when = getattr(RootEntity.when, "register")

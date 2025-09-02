@@ -1,3 +1,4 @@
+from __future__ import annotations
 import abc
 import datetime as dt
 import typing as t
@@ -148,6 +149,20 @@ class IESEvent(IEvent, abc.ABC, metaclass=IESEventMeta):
     @abc.abstractmethod
     def __entity_version__(self) -> int: ...
 
+    @abc.abstractmethod
+    def mutate(self, entity: t.Optional[IESRootEntity]) -> IESRootEntity:
+        """
+        Mutate the given entity based on the event.
+        This method should be implemented in subclasses to define how the event affects the entity.
+        """
+
+    @abc.abstractmethod
+    def apply(self, entity: IESRootEntity):
+        """
+        Apply the event to the given entity.
+        This method should be implemented in subclasses to define how the event is applied to the entity.
+        """
+
 
 class SnapshotProtocol(t.Protocol):
     @property
@@ -162,18 +177,14 @@ class SnapshotProtocol(t.Protocol):
 
 class IESRootEntity(IEntity[IdType], abc.ABC):
     @abc.abstractmethod
+    def register_event(self, event: IESEvent): ...
+
+    @abc.abstractmethod
     def trigger_event(self, event_type: IESEventMeta, **params):
         """
         Trigger event of specific type.
         This method should be used to create and mutate the entity.
         Register events to changes.
-        """
-
-    @abc.abstractmethod
-    def apply(self, event: IESEvent) -> None:
-        """
-        Mutate entity state based on the event.
-        This method should be used to apply the event to the entity.
         """
 
     @abc.abstractmethod

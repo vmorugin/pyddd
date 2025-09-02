@@ -1,6 +1,5 @@
 import typing as t
 import uuid
-from functools import singledispatchmethod
 
 import pytest
 
@@ -10,7 +9,7 @@ from pyddd.domain import (
 from pyddd.domain.abstractions import (
     Version,
     IdType,
-    IEvent,
+    IESEvent,
 )
 from pyddd.domain.event_sourcing import (
     Entity,
@@ -27,9 +26,17 @@ class BaseEvent(DomainEvent, domain=__domain__): ...
 class EntityCreated(BaseEvent):
     name: str
 
+    def mutate(self, _: None) -> "SomeRootEntity":
+        entity = SomeRootEntity(__reference__=self.__entity_reference__, __version__=self.__entity_version__)
+        entity._state = SomeState(__reference__=self.__entity_reference__, name=self.name)
+        return entity
+
 
 class EntityRenamed(BaseEvent):
     name: str
+
+    def apply(self, entity: "SomeRootEntity"):
+        entity._state.name = self.name
 
 
 class SomeState(Entity):
@@ -42,15 +49,13 @@ class SomeRootEntity(RootEntity[str]):
     @classmethod
     def create(cls, name: str) -> "RootEntity":
         reference = str(uuid.uuid4())
-        self = cls(__reference__=reference)
-        self.trigger_event(EntityCreated, name=name, reference=self.trigger_event)
-        return self
+        return cls._create(EntityCreated, reference=reference, name=name)
 
     @classmethod
-    def restore(cls, reference: IdType, events: t.Iterable[IEvent]) -> "SomeRootEntity":
-        self = cls(__reference__=reference)
+    def restore(cls, reference: IdType, events: t.Iterable[IESEvent]) -> "SomeRootEntity":
+        self = cls(__reference__=reference, __version__=1)
         for event in events:
-            self.apply(event)
+            self = event.mutate(self)
         return self
 
     def rename(self, name: str):
@@ -60,18 +65,9 @@ class SomeRootEntity(RootEntity[str]):
     def name(self):
         return self._state.name
 
-    @singledispatchmethod
-    def when(self, event: IEvent) -> "RootEntity":
-        raise NotImplementedError("Not implemented")
-
-    @when.register
     def created(self, event: EntityCreated):
         state = SomeState(__reference__=event.__entity_reference__, name=event.name)
         self._state = state
-
-    @when.register
-    def renamed(self, event: EntityRenamed):
-        self._state.name = event.name
 
 
 class TestEventSourcedEntity:
@@ -109,12 +105,14 @@ class TestEventSourcedEntity:
             assert event.__entity_version__ == last_version
             last_version = Version(last_version - 1)
 
-    def test_could_update_version_when_apply(self):
+    def test_could_update_version_when_mutate(self):
         entity = SomeRootEntity.create(name="123")
-        entity.apply(EntityRenamed(name="456", entity_version=2, entity_reference=str(entity.__reference__)))
+        event = EntityRenamed(name="456", entity_version=2, entity_reference=str(entity.__reference__))
+        event.mutate(entity)
         assert entity.__version__ == Version(2)
 
     def test_could_not_apply_event_with_wrong_reference(self):
         entity = SomeRootEntity.create(name="123")
+        event = EntityRenamed(name="456", entity_version=2, entity_reference="wrong_reference")
         with pytest.raises(AssertionError):
-            entity.apply(EntityRenamed(name="456", entity_version=2, entity_reference="wrong_reference"))
+            event.mutate(entity)

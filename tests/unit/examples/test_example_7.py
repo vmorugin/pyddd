@@ -1,3 +1,4 @@
+from __future__ import annotations
 import abc
 import dataclasses
 import sys
@@ -17,11 +18,10 @@ from pyddd.domain import (
 )
 from pyddd.domain.abstractions import (
     IdType,
-    IEvent,
+    IESEvent,
 )
 from pyddd.domain.event_sourcing import (
     RootEntity,
-    when,
     DomainEvent,
 )
 
@@ -45,13 +45,22 @@ class BaseAccountEvent(DomainEvent, domain=__domain__): ...
 class AccountCreated(BaseAccountEvent):
     owner_id: str
 
+    def apply(self, entity: Account):
+        entity.on_created(self)
+
 
 class Deposited(BaseAccountEvent):
     amount: int
 
+    def apply(self, entity: Account):
+        entity.on_deposited(self)
+
 
 class Withdrew(BaseAccountEvent):
     amount: int
+
+    def apply(self, entity: Account):
+        entity.on_withdrew(self)
 
 
 @dataclasses.dataclass
@@ -74,10 +83,10 @@ class Account(RootEntity[AccountId]):
         return self
 
     @classmethod
-    def from_events(cls, reference: AccountId, events: t.Iterable[IEvent]) -> "Account":
+    def from_events(cls, reference: AccountId, events: t.Iterable[IESEvent]) -> "Account":
         self = cls(__reference__=reference)
         for event in events:
-            self.apply(event)
+            self = event.mutate(self)
         return self
 
     def deposit(self, amount: int):
@@ -98,17 +107,14 @@ class Account(RootEntity[AccountId]):
     def balance(self):
         return self._state.balance
 
-    @when
-    def created(self, event: AccountCreated):
+    def on_created(self, event: AccountCreated):
         state = State(owner_id=event.owner_id, balance=0)
         self._state = state
 
-    @when
-    def deposited(self, event: Deposited):
+    def on_deposited(self, event: Deposited):
         self._state.balance += event.amount
 
-    @when
-    def withdrew(self, event: Withdrew):
+    def on_withdrew(self, event: Withdrew):
         self._state.balance -= event.amount
 
 

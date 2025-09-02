@@ -1,3 +1,4 @@
+from __future__ import annotations
 import abc
 import sys
 import typing as t
@@ -14,11 +15,10 @@ from pyddd.domain import (
     DomainCommand,
 )
 from pyddd.domain.abstractions import (
-    IEvent,
+    IESEvent,
 )
 from pyddd.domain.event_sourcing import (
     RootEntity,
-    when,
     DomainEvent,
 )
 from pyddd.infrastructure.persistence.abstractions import IEventStore
@@ -37,13 +37,23 @@ class BaseAccountEvent(DomainEvent, domain=__domain__): ...
 class AccountCreated(BaseAccountEvent):
     owner_id: str
 
+    def apply(self, entity: Account):
+        entity.owner_id = self.owner_id
+        entity.balance = 0
+
 
 class Deposited(BaseAccountEvent):
     amount: int
 
+    def apply(self, entity: Account):
+        entity.balance += self.amount
+
 
 class Withdrew(BaseAccountEvent):
     amount: int
+
+    def apply(self, entity: Account):
+        entity.balance -= self.amount
 
 
 class Account(RootEntity[AccountId]):
@@ -57,10 +67,10 @@ class Account(RootEntity[AccountId]):
         return self
 
     @classmethod
-    def from_events(cls, reference: AccountId, events: t.Iterable[IEvent]) -> "Account":
+    def from_events(cls, reference: AccountId, events: t.Iterable[IESEvent]) -> "Account":
         self = cls(__reference__=reference)
         for event in events:
-            self.apply(event)
+            self = event.mutate(self)
         return self
 
     def deposit(self, amount: int):
@@ -72,19 +82,6 @@ class Account(RootEntity[AccountId]):
         if self.balance - amount < 0:
             raise ValueError("Not enough money for withdraw")
         self.trigger_event(Withdrew, amount=amount)
-
-    @when
-    def created(self, event: AccountCreated):
-        self.owner_id = event.owner_id
-        self.balance = 0
-
-    @when
-    def deposited(self, event: Deposited):
-        self.balance += event.amount
-
-    @when
-    def withdrew(self, event: Withdrew):
-        self.balance -= event.amount
 
 
 module = Module(__domain__)

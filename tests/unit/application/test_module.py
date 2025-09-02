@@ -49,6 +49,15 @@ class TestModule:
 
         assert foo(cmd=ExampleCommand()) is True
 
+    def test_could_register_with_str_annotation(self):
+        module = Module("test")
+
+        @module.register
+        def foo(cmd: "ExampleCommand"):
+            return True
+
+        assert foo(cmd=ExampleCommand()) is True
+
     def test_subscribe_as_decorator(self):
         module = Module("test")
 

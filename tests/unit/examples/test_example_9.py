@@ -1,19 +1,24 @@
+from __future__ import annotations
 import abc
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from functools import singledispatchmethod
-from typing import List, Optional
+from typing import (
+    Optional,
+)
 from decimal import Decimal
 import typing as t
 
 from pyddd.domain import (
     DomainCommand,
+    IESRootEntity,
 )
 from pyddd.domain.abstractions import (
     ValueObject,
     IEvent,
     IdType,
+    IESEvent,
 )
 from pyddd.domain.event_sourcing import (
     Entity,
@@ -112,15 +117,24 @@ class BaseEvent(DomainEvent, domain="pricing"):
     class Config:
         arbitrary_types_allowed = True
 
+    def apply(self, entity: IESRootEntity):
+        customer = t.cast(Customer, entity)
+        customer.when(self)
+
 
 class CustomerCreated(BaseEvent):
     name: str
     created: datetime
-    reference: CustomerId
     currency: Currency
 
     def __str__(self) -> str:
         return f"Customer {self.name} created with {self.currency.value.upper()}"
+
+    def mutate(self, _: t.Optional[IESRootEntity]) -> Customer:
+        customer = Customer(__reference__=self.__entity_reference__, __version__=self.__entity_version__)
+        customer._state = CustomerState()
+        customer.when(self)
+        return customer
 
 
 class CustomerRenamed(BaseEvent):
@@ -229,13 +243,6 @@ class CustomerState(Entity):
     class Config:
         arbitrary_types_allowed = True
 
-    @classmethod
-    def from_events(cls, events: List[IEvent]) -> "CustomerState":
-        state = cls()
-        for event in events:
-            state.mutate(event)
-        return state
-
     @singledispatchmethod
     def mutate(self, event: IEvent) -> None:
         """Apply event to state using dynamic dispatch"""
@@ -243,7 +250,7 @@ class CustomerState(Entity):
 
     @mutate.register
     def when_customer_created(self, event: CustomerCreated) -> None:
-        self._reference = event.reference
+        self._reference = event.__entity_reference__
         self.created = True
         self.name = event.name
         self.currency = event.currency
@@ -275,22 +282,21 @@ class Customer(RootEntity):
     def create(
         cls, reference: CustomerId, name: str, currency: Currency, pricing_service: IPricingService
     ) -> "Customer":
-        self = cls(__reference__=reference)
-        self._state = CustomerState()
-        self.trigger_event(
-            CustomerCreated, name=name, created=datetime.utcnow(), reference=reference, currency=currency
+        self = cls._create(
+            CustomerCreated, reference=reference, name=name, created=datetime.utcnow(), currency=currency
         )
-
         bonus = pricing_service.get_welcome_bonus(currency)
         self.add_payment("Welcome bonus", bonus)
         return self
 
     @classmethod
-    def from_events(cls, reference: IdType, events: t.Iterable[IEvent]) -> "Customer":
-        self = cls(__reference__=reference)
-        self._events.extend(events)
-        self._state = CustomerState.from_events(self._events)
-        return self
+    def from_events(cls, reference: IdType, events: t.Iterable[IESEvent]) -> Customer:
+        self = None
+        for event in events:
+            self = event.mutate(self)
+        if self is None:
+            raise ValueError(f"Could not rehydrate Customer from events, no events for {reference}")
+        return t.cast(Customer, self)
 
     def when(self, event: IEvent) -> None:
         self._state.mutate(event)
@@ -343,6 +349,9 @@ class Customer(RootEntity):
             time_utc=datetime.utcnow(),
         )
 
+    def get_state(self) -> dict:
+        return self._state.dict()
+
 
 class SimplePricingService(IPricingService):
     """Simple pricing service implementation"""
@@ -376,7 +385,7 @@ def test_example():
 
     customer.rename("John Smith")
 
-    events = customer.collect_events()
+    events = list(customer.collect_events())
     print("Events generated:")
     for event in events:
         print(f"- {event}")
@@ -384,3 +393,15 @@ def test_example():
     new = Customer.from_events(reference=customer_id, events=events)
 
     assert new == customer
+
+    state = new.get_state()
+
+    assert state == {
+        "balance": {"amount": Decimal("90"), "currency": "eur"},
+        "consumption_locked": False,
+        "created": True,
+        "currency": Currency.EUR,
+        "manual_billing": False,
+        "max_transaction_id": 3,
+        "name": "John Smith",
+    }

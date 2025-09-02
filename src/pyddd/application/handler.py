@@ -82,7 +82,9 @@ class CommandHandler(ICommandHandler):
 
     @staticmethod
     def _get_command_param(func, signature: inspect.Signature):
+        hint = t.get_type_hints(func)
         for name, param in signature.parameters.items():
-            if issubclass(param.annotation, DomainCommand):
-                return param
+            annotation = hint[name]
+            if issubclass(annotation, DomainCommand):
+                return inspect.Parameter(name, param.kind, annotation=annotation, default=param.default)
         raise AttributeError(f"Can not find command param for {func} with params {signature}")

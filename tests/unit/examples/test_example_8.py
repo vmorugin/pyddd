@@ -1,8 +1,8 @@
+from __future__ import annotations
 import typing as t
 
 from pyddd.domain.event_sourcing import (
     RootEntity,
-    when,
     DomainEvent,
 )
 from pyddd.infrastructure.persistence.abstractions import (
@@ -22,6 +22,7 @@ from pyddd.application import (
 from pyddd.domain import (
     DomainName,
     DomainCommand,
+    IESRootEntity,
 )
 from pyddd.domain.abstractions import (
     IdType,
@@ -47,13 +48,26 @@ class BaseAccountEvent(DomainEvent, domain=__domain__): ...
 class AccountCreated(BaseAccountEvent):
     owner_id: str
 
+    def mutate(self, _: t.Optional[IESRootEntity]) -> Account:
+        entity = Account(__reference__=self.__entity_reference__, __version__=self.__entity_version__)
+        entity.on_created(self)
+        return entity
+
 
 class Deposited(BaseAccountEvent):
     amount: int
 
+    def apply(self, entity: IESRootEntity):
+        account = t.cast(Account, entity)
+        account.on_deposited(self)
+
 
 class Withdrew(BaseAccountEvent):
     amount: int
+
+    def apply(self, entity: IESRootEntity):
+        account = t.cast(Account, entity)
+        account.on_withdrew(self)
 
 
 class Account(RootEntity[AccountId]):
@@ -66,8 +80,7 @@ class Account(RootEntity[AccountId]):
 
     @classmethod
     def create(cls, owner_id: str) -> "Account":
-        self = cls(__reference__=cls.generate_id(owner_id))
-        self.trigger_event(AccountCreated, owner_id=owner_id)
+        self = cls._create(AccountCreated, reference=cls.generate_id(owner_id), owner_id=owner_id)
         return self
 
     def deposit(self, amount: int):
@@ -80,16 +93,13 @@ class Account(RootEntity[AccountId]):
             raise ValueError("Not enough money for withdraw")
         self.trigger_event(Withdrew, amount=amount)
 
-    @when
     def on_created(self, event: AccountCreated):
         self.owner_id = event.owner_id
         self.balance = 0
 
-    @when
     def on_deposited(self, event: Deposited):
         self.balance += event.amount
 
-    @when
     def on_withdrew(self, event: Withdrew):
         self.balance -= event.amount
 
@@ -169,7 +179,7 @@ class AccountRepository(IAccountRepository):
             from_version = entity.__version__ + 1
         events = self._events.get_stream(stream_name, from_version=from_version, to_version=to_version)
         for event in events:
-            entity.apply(event)
+            entity = event.mutate(entity)
         return entity
 
 
