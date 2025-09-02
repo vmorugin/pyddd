@@ -176,7 +176,8 @@ class BaseDomainMessage(BaseModel, IMessage, abc.ABC, metaclass=BaseDomainMessag
 
     @property
     def __topic__(self) -> MessageTopic:
-        return MessageTopic(self.__class__.__topic__)
+        cls: BaseDomainMessageMeta = self.__class__
+        return cls.__topic__
 
     @property
     def __message_id__(self) -> str:

@@ -66,6 +66,9 @@ include = [
 
 [tool.mypy]
 no_implicit_optional = false
+exclude = [
+    '^tests/*',
+]
 
 [tool.ruff]
 line-length = 120
