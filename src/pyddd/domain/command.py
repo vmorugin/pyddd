@@ -4,10 +4,11 @@ from pyddd.domain.message import (
 )
 from pyddd.domain.abstractions import (
     ICommand,
+    ICommandMeta,
 )
 
 
-class _DomainCommandMeta(BaseDomainMessageMeta):
+class _DomainCommandMeta(BaseDomainMessageMeta, ICommandMeta):
     def __init__(cls, name, bases, namespace, *, domain: str = None, version: int = 1):
         super().__init__(name, bases, namespace, domain=domain, version=version)
         if domain is None and cls.__module__ != __name__:

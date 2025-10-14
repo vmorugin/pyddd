@@ -65,7 +65,7 @@ class TestDomainError:
 
 class TestMessageTopic:
     def test_could_parse_string(self):
-        topic = MessageTopic('sub.test.MessageName')
+        topic = MessageTopic("sub.test.MessageName")
         assert topic.domain == "sub.test"
         assert topic.name == "MessageName"
 

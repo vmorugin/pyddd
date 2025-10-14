@@ -6,10 +6,11 @@ from pyddd.domain.message import (
 )
 from pyddd.domain.abstractions import (
     IEvent,
+    IEventMeta,
 )
 
 
-class _DomainEventMeta(BaseDomainMessageMeta):
+class _DomainEventMeta(BaseDomainMessageMeta, IEventMeta):
     def __init__(cls, name, bases, namespace, *, domain: t.Optional[str] = None, version: int = 1):
         super().__init__(name, bases, namespace, domain=domain, version=version)
         if domain is None and cls.__module__ != __name__:
