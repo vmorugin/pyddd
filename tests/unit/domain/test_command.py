@@ -32,6 +32,7 @@ class TestDomainCommand:
         assert ExampleCommand.__message_name__ == "ExampleCommand"
         assert ExampleCommand.__domain__ == "test.command"
         assert ExampleCommand.__topic__ == "test.command.ExampleCommand"
+        assert ExampleCommand.__type__ == MessageType.COMMAND
 
     def test_command_without_domain(self):
         with pytest.raises(ValueError):

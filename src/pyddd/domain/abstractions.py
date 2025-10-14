@@ -131,13 +131,25 @@ class IMessage(abc.ABC, metaclass=IMessageMeta):
         return f"{self.__topic__}:{self.to_json()}"
 
 
-class IEvent(IMessage, abc.ABC):
+class IEventMeta(IMessageMeta, abc.ABCMeta):
+    @property
+    def __type__(cls) -> MessageType:
+        return MessageType.EVENT
+
+
+class IEvent(IMessage, abc.ABC, metaclass=IEventMeta):
     @property
     def __type__(self) -> MessageType:
         return MessageType.EVENT
 
 
-class ICommand(IMessage, abc.ABC):
+class ICommandMeta(IMessageMeta, abc.ABCMeta):
+    @property
+    def __type__(cls) -> MessageType:
+        return MessageType.COMMAND
+
+
+class ICommand(IMessage, abc.ABC, metaclass=ICommandMeta):
     @property
     def __type__(self) -> MessageType:
         return MessageType.COMMAND
@@ -151,7 +163,7 @@ class IRootEntity(IEntity[IdType], abc.ABC):
     def collect_events(self) -> t.Iterable[IEvent]: ...
 
 
-class IESEventMeta(IMessageMeta, abc.ABC): ...
+class IESEventMeta(IEventMeta, abc.ABC): ...
 
 
 class IESEvent(IEvent, abc.ABC, metaclass=IESEventMeta):

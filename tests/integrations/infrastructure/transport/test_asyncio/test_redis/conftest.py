@@ -1,6 +1,8 @@
+import os
 import uuid
 
 import pytest
+from redis.asyncio import Redis
 
 from pyddd.infrastructure.transport.asyncio.redis.stream_group.consumer import (
     GroupStreamHandler,
@@ -13,9 +15,8 @@ from pyddd.infrastructure.transport.core.tracker_factory import (
 
 
 @pytest.fixture
-async def redis(redis_container):
-    client = await redis_container.get_async_client()
-    yield client
+async def redis():
+    return Redis(host=os.getenv("REDIS_HOST"))
 
 
 @pytest.fixture

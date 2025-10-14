@@ -27,6 +27,7 @@ class TestDomainEvent:
         assert ExampleEvent.__message_name__ == "ExampleEvent"
         assert ExampleEvent.__domain__ == "test.event"
         assert ExampleEvent.__topic__ == "test.event.ExampleEvent"
+        assert ExampleEvent.__type__ == MessageType.EVENT
 
     def test_event_without_domain(self):
         with pytest.raises(ValueError):
