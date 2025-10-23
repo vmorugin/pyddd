@@ -1,5 +1,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/vmorugin/pyddd/badge.svg?branch=master)](https://coveralls.io/github/vmorugin/pyddd?branch=master) [![PyPI - License](https://img.shields.io/pypi/l/pyddd)](https://pypi.org/project/pyddd) [![PyPI](https://img.shields.io/pypi/v/pyddd)](https://pypi.org/project/pyddd) [![PyPI](https://img.shields.io/pypi/pyversions/pyddd)](https://pypi.org/project/pyddd) [![Mypy](http://www.mypy-lang.org/static/mypy_badge.svg)]()
 
+# Inspired by https://dddmisc.github.io/
+
 # PyDDD - Domain-Driven Design для Python
 
 PyDDD - это библиотека для реализации Domain-Driven Design (DDD) паттернов в Python с поддержкой как синхронного, 
